@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "geneagent"
+version = "0.1.0"
+description = "Local AI assistant skeleton for population genetics and quantitative genetics workflows on Linux clusters."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.115,<1.0",
+  "pydantic>=2.7,<3.0",
+  "pydantic-settings>=2.2,<3.0",
+  "rich>=13.7,<14.0",
+  "typer>=0.12,<1.0",
+  "uvicorn>=0.30,<1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "httpx>=0.27,<1.0",
+  "pytest>=8.0,<9.0",
+]
+
+[project.scripts]
+geneagent = "cli.app:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = [
+  "api*",
+  "audit*",
+  "cli*",
+  "contracts*",
+  "knowledge*",
+  "memory*",
+  "orchestration*",
+  "pipeline*",
+  "runtime*",
+  "safety*",
+  "scheduler*",
+  "tools*",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

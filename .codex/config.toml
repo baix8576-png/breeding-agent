@@ -1,0 +1,73 @@
+enabled = true
+
+sandbox_mode = "workspace-write"
+[routing]
+default_agent = "orchestrator"
+prefer_repo_scoped_skills = true
+
+[routing.path_rules]
+"AGENTS.md" = "orchestrator"
+".codex/config.toml" = "orchestrator"
+".env.example" = "orchestrator"
+".codex/agents/*" = "orchestrator"
+".codex/environments/*" = "orchestrator"
+".agents/skills/prd-planning/*" = "orchestrator"
+".agents/skills/architecture-review/*" = "architect"
+".agents/skills/llm-workflow-design/*" = "llm_orchestrator"
+".agents/skills/popgen-quantgen-pipeline/*" = "popgen_quantgen"
+".agents/skills/hpc-job-design/*" = "hpc_scheduler"
+".agents/skills/safety-gating/*" = "safety_fuse"
+".agents/skills/test-benchmark/*" = "test_eval"
+"pyproject.toml" = "orchestrator"
+"src/api/*" = "orchestrator"
+"src/cli/*" = "orchestrator"
+"src/runtime/*" = "orchestrator"
+"src/contracts/*" = "architect"
+"src/orchestration/*" = "llm_orchestrator"
+"src/knowledge/*" = "llm_orchestrator"
+"src/memory/*" = "llm_orchestrator"
+"src/tools/*" = "llm_orchestrator"
+"src/pipeline/*" = "popgen_quantgen"
+"src/scheduler/*" = "hpc_scheduler"
+"src/safety/*" = "safety_fuse"
+"src/audit/*" = "orchestrator"
+"scripts/qc_pipeline/*" = "popgen_quantgen"
+"scripts/pca_pipeline/*" = "popgen_quantgen"
+"scripts/grm_builder/*" = "popgen_quantgen"
+"scripts/genomic_prediction/*" = "popgen_quantgen"
+"scripts/report_generator/*" = "popgen_quantgen"
+"references/input_specs/*" = "popgen_quantgen"
+"references/qc_rules/*" = "popgen_quantgen"
+"references/structure_analysis/*" = "popgen_quantgen"
+"references/modeling_guides/*" = "popgen_quantgen"
+"references/evaluation/*" = "popgen_quantgen"
+"references/report_templates/*" = "popgen_quantgen"
+"tests/*" = "test_eval"
+
+[[skills.config]]
+path = ".agents/skills/prd-planning"
+enabled = true
+
+[[skills.config]]
+path = ".agents/skills/architecture-review"
+enabled = true
+
+[[skills.config]]
+path = ".agents/skills/llm-workflow-design"
+enabled = true
+
+[[skills.config]]
+path = ".agents/skills/popgen-quantgen-pipeline"
+enabled = true
+
+[[skills.config]]
+path = ".agents/skills/hpc-job-design"
+enabled = true
+
+[[skills.config]]
+path = ".agents/skills/safety-gating"
+enabled = true
+
+[[skills.config]]
+path = ".agents/skills/test-benchmark"
+enabled = true
