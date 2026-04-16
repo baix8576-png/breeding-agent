@@ -1,24 +1,25 @@
 # scripts index
 
-This directory holds future shell templates and wrapper entrypoints owned by the genetics pipeline layer.
+This directory holds executable shell wrappers owned by the genetics pipeline layer.
 
 Current status:
-- All script directories are placeholders only.
-- No real genetics algorithm, scheduler submission logic, or destructive file operation is implemented here.
-- The purpose of this index is to keep file naming and ownership stable while multiple roles work in parallel.
+- `qc_pipeline/run_qc_pipeline.sh` executes QC metrics with plink2/bcftools.
+- `pca_pipeline/run_pca_pipeline.sh` executes PCA, LD, ROH, and optional Fst/pi/Tajima's D.
+- `grm_builder/run_grm_builder.sh` executes GRM/kinship generation with plink2 and optional gcta64.
+- `genomic_prediction/run_genomic_prediction.sh` executes GWAS plus optional heritability/prediction with gcta64.
+- Scheduler submission still belongs to `src/scheduler`; scripts are pure analysis wrappers.
 
 Subdirectories:
-- `qc_pipeline/`: input checks, sample QC wrappers, variant QC wrappers, and QC report assembly.
-- `pca_pipeline/`: LD pruning, PCA export, and structure summary helpers.
-- `grm_builder/`: relationship matrix builders, format converters, and matrix QC helpers.
-- `genomic_prediction/`: genomic prediction launchers for GBLUP, ssGBLUP, Bayes, or equivalent placeholder routes.
+- `qc_pipeline/`: sample and variant QC execution wrappers.
+- `pca_pipeline/`: LD pruning, PCA, population-statistics wrappers.
+- `grm_builder/`: relationship matrix builders and matrix QC wrappers.
+- `genomic_prediction/`: GWAS, heritability, and genomic prediction wrappers.
 - `report_generator/`: artifact indexing, figure collection, summary report rendering, and traceability export.
 
-Expected placeholder file pattern per subdirectory:
-- `README.md`: scope, inputs, outputs, and future file inventory.
-- `manifest.yaml` or `manifest.example.yaml`: tool contract placeholder.
-- `run_<workflow>.sh`: future non-destructive wrapper entrypoint.
-- `assemble_<report>.sh`: future report or artifact assembly helper when relevant.
+Expected file pattern per subdirectory:
+- `README.md`: scope, inputs, outputs, and runtime dependencies.
+- `build_result_index.sh`, `collect_figures.sh`, `render_summary_report.sh`, `export_traceability.sh`: executable report-packaging entrypoints.
+- `manifest.example.yaml`: example contract for workflow integration.
 
 Conventions:
 - Keep raw data read-only from this layer.

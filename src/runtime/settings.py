@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     max_cpu: int = 64
     max_mem_gb: int = 256
     dry_run_default: bool = True
+    scheduler_real_execution_enabled: bool = False
+    scheduler_retry_max_attempts: int = 3
+    scheduler_retry_backoff_seconds: list[int] = Field(default_factory=lambda: [2, 5, 10])
+    scheduler_command_timeout_seconds: int = 60
     allow_cloud_fields: list[str] = Field(
         default_factory=lambda: [
             "prompt",

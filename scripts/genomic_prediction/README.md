@@ -1,15 +1,13 @@
 # genomic_prediction
 
-Placeholder directory for genomic prediction workflow scripts.
+Execution wrapper directory for quantitative-genetics analyses in v1.
 
-Planned contents:
-- `manifest.example.yaml`: placeholder contract for genomic prediction wrappers.
-- `run_genomic_prediction.sh`: future top-level launcher.
-- `run_gblup.sh`: GBLUP route placeholder.
-- `run_ssgblup.sh`: ssGBLUP route placeholder.
-- `run_bayes_placeholder.sh`: Bayesian-family placeholder route.
-- `design_cross_validation.sh`: validation-design helper placeholder.
-- `assemble_prediction_report.sh`: report assembly helper placeholder.
+Main entrypoint:
+- `run_genomic_prediction.sh`
+
+Supported toolchain:
+- `plink2`: GWAS (`--glm`) and genotype preprocessing.
+- `gcta64`: GRM generation, REML heritability, random-effect prediction (when available).
 
 Expected inputs:
 - genotype-bearing dataset: VCF or PLINK trio
@@ -21,10 +19,12 @@ Expected outputs:
 - `results/prediction/cohort_alignment.json`
 - `results/prediction/model_family.md`
 - `results/prediction/model_spec.json`
+- `results/prediction/gwas/README.md`
 - `results/prediction/predictions.tsv`
 - `results/prediction/validation_plan.md`
 - `results/prediction/metrics.tsv`
+- `results/prediction/heritability/heritability.hsq` (optional, requires gcta64)
 - `reports/genomic_prediction_summary.md`
 
 Notes:
-- No model fitting or predictive result generation is implemented in this placeholder layer.
+- The wrapper executes real algorithms but does not auto-generate breeding decisions.

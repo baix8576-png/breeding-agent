@@ -1,4 +1,4 @@
-"""Named analysis families supported by the genetics pipeline placeholder layer."""
+"""Named analysis families supported by the genetics v1 execution layer."""
 
 PIPELINE_CATALOG = {
     "qc_pipeline": [
@@ -41,8 +41,8 @@ PIPELINE_ALIASES = {
 }
 
 PIPELINE_FOCUS = {
-    "qc_pipeline": "Input sanity checks and quality-control planning for genotype-driven analysis.",
+    "qc_pipeline": "Input sanity checks and quality-control execution for genotype-driven analysis.",
     "pca_pipeline": "Population structure exploration and stratification-aware review.",
-    "grm_builder": "Relationship matrix construction planning and artifact packaging.",
-    "genomic_prediction": "Quantitative genetics workflow planning for prediction and breeding-value reporting.",
+    "grm_builder": "Relationship matrix construction and artifact packaging.",
+    "genomic_prediction": "Quantitative genetics workflow for prediction and breeding-value reporting.",
 }

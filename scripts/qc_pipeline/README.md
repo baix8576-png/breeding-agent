@@ -1,26 +1,27 @@
 # qc_pipeline
 
-Placeholder directory for quality-control shell templates and wrapper scripts.
+Execution wrapper directory for genotype QC in v1.
 
-Planned contents:
-- `manifest.example.yaml`: placeholder contract for QC tool wrappers and expected sidecar files.
-- `run_qc_pipeline.sh`: future non-destructive QC launcher entrypoint.
-- `sample_qc.sh`: sample-level QC wrapper placeholder.
-- `variant_qc.sh`: marker-level QC wrapper placeholder.
-- `assemble_qc_report.sh`: QC artifact bundling helper placeholder.
+Main entrypoint:
+- `run_qc_pipeline.sh`
+
+Supported toolchain:
+- `plink2`: sample/variant missingness, HWE, allele frequency.
+- `bcftools`: VCF-level stats.
 
 Expected inputs:
 - genotype-bearing dataset: VCF or PLINK trio
 - optional phenotype table
+- optional covariate table
 - optional pedigree table
 
 Expected outputs:
 - `results/qc/input_manifest.json`
 - `results/qc/sample_qc.tsv`
 - `results/qc/variant_qc.tsv`
-- `reports/qc_summary.md`
 - `results/qc/retained_dataset/README.md`
+- `reports/qc_summary.md`
 
 Notes:
-- This directory defines wrapper boundaries only.
-- Real filtering logic, thresholds, and scheduler submission remain out of scope here.
+- Wrapper supports explicit input arguments and automatic discovery under `--input-root`.
+- Scheduler integration is handled by `src/scheduler`; this directory focuses on algorithm execution only.

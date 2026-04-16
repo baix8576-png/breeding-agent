@@ -22,10 +22,15 @@ class PipelineSpec(BaseModel):
 
     name: str
     domain: TaskDomain
+    blueprint_key: str | None = None
+    analysis_targets: list[str] = Field(default_factory=list)
     stages: list[str] = Field(default_factory=list)
+    stage_contract: list[str] = Field(default_factory=list)
+    stage_io_contract: list[dict[str, object]] = Field(default_factory=list)
     input_paths: list[str] = Field(default_factory=list)
     requested_outputs: list[str] = Field(default_factory=list)
     deliverables: list[str] = Field(default_factory=list)
+    artifact_contract: list[str] = Field(default_factory=list)
 
 
 class TaskPlan(BaseModel):
@@ -93,7 +98,13 @@ class ExecutionArtifacts(BaseModel):
     stdout_path: str | None = None
     stderr_path: str | None = None
     result_paths: list[str] = Field(default_factory=list)
+    figure_paths: list[str] = Field(default_factory=list)
+    log_paths: list[str] = Field(default_factory=list)
     report_paths: list[str] = Field(default_factory=list)
+    artifact_index: dict[str, list[str]] = Field(default_factory=dict)
+    report_summary: str | None = None
+    audit_record_path: str | None = None
+    memory_handoff_summary: str | None = None
 
 
 class JobHandle(BaseModel):
@@ -111,8 +122,20 @@ class SubmissionPreview(BaseModel):
     """Combined dry-run payload returned to entry points."""
 
     run_context: RunContext
+    mode: str = "dry-run"
+    cluster_execution_enabled: bool = True
     working_directory: str
     command: list[str] = Field(default_factory=list)
     script_preview: str
+    wrapper_preview: str | None = None
+    scheduler_script_path: str | None = None
+    wrapper_path: str | None = None
     job_handle: JobHandle
+    polling_hint: str | None = None
+    poll_strategy: list[str] = Field(default_factory=list)
+    failure_recovery: list[str] = Field(default_factory=list)
+    gate_status: str | None = None
+    gate_decision: str | None = None
+    manual_confirmation_items: list[str] = Field(default_factory=list)
+    circuit_break_conditions: list[str] = Field(default_factory=list)
     artifacts: ExecutionArtifacts | None = None

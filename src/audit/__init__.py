@@ -1,5 +1,5 @@
 """Audit record helpers."""
 
-from audit.store import AuditEvent, InMemoryAuditStore
+from audit.store import AuditEvent, FileAuditStore, InMemoryAuditStore
 
-__all__ = ["AuditEvent", "InMemoryAuditStore"]
+__all__ = ["AuditEvent", "InMemoryAuditStore", "FileAuditStore"]

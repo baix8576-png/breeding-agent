@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 
-from contracts.common import GateStatus, RoleOutputHeader
+from contracts.common import GateStatus, RoleOutputHeader, TaskDomain
 from contracts.execution import PipelineSpec, RunContext, TaskPlan
 from contracts.tasks import UserRequest
 from knowledge.retrieval import KnowledgeResolver
@@ -41,7 +41,7 @@ class OrchestratorService:
         self._workflow_composer = WorkflowComposer(tool_registry=self._tool_registry)
 
     def draft_plan(self, request: UserRequest, run_context: RunContext | None = None) -> TaskPlan:
-        """Generate a stable planning skeleton from free-form text."""
+        """Generate a stable planning and execution-ready workflow from free-form text."""
 
         classification = self._intent_router.analyze(request.text)
         resolved_context = self._resolve_run_context(
@@ -59,6 +59,7 @@ class OrchestratorService:
         run_record = self._memory_coordinator.plan_run(
             task_id=resolved_context.task_id,
             run_id=resolved_context.run_id,
+            session_id=resolved_context.session_id,
             request_text=request.text,
             domain=classification.domain,
             stage_specs=[
@@ -74,16 +75,35 @@ class OrchestratorService:
             retrieval_sources=retrieval.source_labels,
         )
         estimate = self._resource_estimator.estimate_for_domain(classification.domain)
-        gate_stage_present = any(stage.stage_id == "stage_05_resource_and_gate" for stage in workflow.stages)
-        gate_ready = gate_stage_present and self._circuit_breaker.allows_automatic_submission()
+        is_bio_chain = classification.domain == TaskDomain.BIOINFORMATICS
+        gate_stage_present = any(stage.stage_id == "stage_06_resource_and_safety_gate" for stage in workflow.stages)
+        gate_ready = (
+            gate_stage_present and self._circuit_breaker.allows_automatic_submission()
+            if is_bio_chain
+            else True
+        )
         risks = [
-            "This plan is a workflow skeleton and does not submit jobs yet.",
-            "Tool manifests describe planning contracts, not completed execution.",
+            "Submission remains gate-controlled and requires dry-run or manual confirmation for high-risk actions.",
+            "Analysis outputs still require domain review before final biological interpretation.",
         ]
+        if not workflow.execution_enabled:
+            risks.append("Non-bio requests stay on the lightweight branch and skip scheduler script generation.")
         if retrieval.fallback_used:
-            risks.append("Local knowledge coverage was incomplete, so external retrieval remains placeholder-only.")
+            risks.append("Local knowledge coverage was incomplete, so external retrieval guidance should be reviewed.")
         if classification.risk_hints:
             risks.append(f"Potential risk hints detected: {', '.join(classification.risk_hints)}.")
+        selected_blueprint = workflow.selected_blueprint or workflow.name
+        selected_blueprint_key = workflow.selected_blueprint_key
+        pipeline_stages = workflow.blueprint_stage_ids or [stage.stage_id for stage in workflow.stages]
+        pipeline_deliverables = workflow.artifact_contract or workflow.stable_outputs
+        stage_io_contract = [
+            {
+                "stage_id": stage.stage_id,
+                "inputs": stage.inputs,
+                "outputs": stage.outputs,
+            }
+            for stage in workflow.stages
+        ]
         header = RoleOutputHeader(
             role="orchestrator",
             task_id=resolved_context.task_id,
@@ -100,14 +120,14 @@ class OrchestratorService:
                 "retrieval_context",
                 "tool_plan",
                 "memory_handoff",
-                "resource_placeholder",
+                "resource_and_safety_gate",
                 "pipeline_spec",
             ],
             risks=risks,
             next_actions=[
-                "Bind manifest names to concrete tool implementations.",
-                "Wire scheduler dry-run and polling outputs into stage transitions.",
-                "Add regression tests against the stable workflow step format.",
+                "Confirm runtime dependencies (plink2/bcftools/vcftools/gcta) on target cluster.",
+                "Validate pipeline outputs against species-specific SOP thresholds.",
+                "Expand regression tests for multi-tool fallback behavior.",
             ],
             ready_for_gate=GateStatus.DESIGN_PASS if gate_ready else GateStatus.NOT_READY,
         )
@@ -115,8 +135,8 @@ class OrchestratorService:
             header=header,
             run_context=resolved_context,
             summary=(
-                f"{classification.domain.value} workflow skeleton ready; "
-                f"name={workflow.name}; stages={len(workflow.stages)}; "
+                f"{classification.domain.value} workflow ready; "
+                f"name={workflow.name}; blueprint={selected_blueprint}; stages={len(workflow.stages)}; "
                 f"retrieval={retrieval.retrieval_mode}; tools={len(workflow.referenced_tools)}"
             ),
             domain=classification.domain,
@@ -124,29 +144,40 @@ class OrchestratorService:
             workflow_steps=workflow.steps,
             assumptions=[
                 "Raw genomic data remains on the local cluster.",
-                "External retrieval remains placeholder-only until a sanitized connector is wired in.",
-                "Workflow stages are planning contracts, not evidence of completed analysis.",
+                "External retrieval results require sanitization and local review before execution.",
+                "Workflow stages map to executable wrappers and audited scheduler actions.",
                 f"run_id={resolved_context.run_id}",
                 f"retrieval_coverage={retrieval.coverage}",
                 f"gate_stage_status={'design_pass' if gate_ready else 'not_ready'}",
+                f"execution_enabled={str(workflow.execution_enabled).lower()}",
+                f"selected_blueprint={selected_blueprint}",
+                f"selected_blueprint_key={selected_blueprint_key or 'none'}",
                 f"memory_handoffs={len(run_record.handoffs)}",
                 f"stable_outputs={','.join(workflow.stable_outputs)}",
             ],
             deliverables=[
                 "parsed_request_summary",
                 f"workflow_stage_map:{','.join(stage.stage_id for stage in workflow.stages)}",
+                f"blueprint_stage_contract:{','.join(pipeline_stages)}",
+                f"artifact_contract:{','.join(pipeline_deliverables) if pipeline_deliverables else 'none'}",
+                f"stage_io_contract_count:{len(stage_io_contract)}",
                 f"context_sources:{','.join(retrieval.source_labels) if retrieval.source_labels else 'none'}",
                 f"tool_registry_selection:{','.join(workflow.referenced_tools) if workflow.referenced_tools else 'none'}",
                 f"memory_handoff_count:{len(run_record.handoffs)}",
-                "resource_placeholder",
+                "resource_and_safety_gate_summary",
             ],
             required_roles=workflow.required_roles,
             pipeline_spec=PipelineSpec(
-                name=workflow.name,
+                name=selected_blueprint,
                 domain=classification.domain,
-                stages=workflow.steps,
+                blueprint_key=selected_blueprint_key,
+                analysis_targets=sorted(classification.analysis_targets),
+                stages=pipeline_stages,
+                stage_contract=pipeline_stages,
+                stage_io_contract=stage_io_contract,
                 requested_outputs=request.requested_outputs,
-                deliverables=workflow.stable_outputs,
+                deliverables=pipeline_deliverables,
+                artifact_contract=pipeline_deliverables,
             ),
             resource_estimate=estimate,
         )

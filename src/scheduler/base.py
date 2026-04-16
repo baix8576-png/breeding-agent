@@ -1,11 +1,14 @@
-"""Abstract scheduler adapter API with dry-run planning support."""
+"""Abstract scheduler adapter API with planning and optional real execution."""
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from pathlib import PurePosixPath, PureWindowsPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 import re
 import shlex
+import subprocess
+import time
+from typing import Callable
 
 from contracts.common import JobState, SchedulerKind
 from contracts.execution import JobHandle, RunContext
@@ -13,10 +16,48 @@ from contracts.tasks import ResourceEstimate
 from scheduler.models import SchedulerPaths, SchedulerResourceRequest, SubmissionPlan
 
 
+class SchedulerExecutionError(RuntimeError):
+    """Raised when a real scheduler command cannot complete successfully."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        command: list[str] | None = None,
+        stdout: str = "",
+        stderr: str = "",
+        attempts: int = 0,
+    ) -> None:
+        super().__init__(message)
+        self.command = command or []
+        self.stdout = stdout
+        self.stderr = stderr
+        self.attempts = attempts
+
+
 class BaseSchedulerAdapter(ABC):
     """Scheduler abstraction used by SLURM and PBS adapters."""
 
     kind: SchedulerKind
+
+    def __init__(
+        self,
+        *,
+        real_execution_enabled: bool = False,
+        retry_max_attempts: int = 3,
+        retry_backoff_seconds: list[int] | None = None,
+        command_timeout_seconds: int = 60,
+        command_runner: Callable[[list[str], str | None, int], subprocess.CompletedProcess[str]] | None = None,
+    ) -> None:
+        self._real_execution_enabled = real_execution_enabled
+        self._retry_max_attempts = max(1, int(retry_max_attempts))
+        self._retry_backoff_seconds = retry_backoff_seconds or [2, 5, 10]
+        self._command_timeout_seconds = max(1, int(command_timeout_seconds))
+        self._command_runner = command_runner or self._default_command_runner
+
+    @property
+    def real_execution_enabled(self) -> bool:
+        return self._real_execution_enabled
 
     def render_submission_script(
         self,
@@ -64,6 +105,17 @@ class BaseSchedulerAdapter(ABC):
             task_id=tracking["task_id"],
             run_id=tracking["run_id"],
         )
+        submit_command = self._submit_command(paths.script_path)
+        wrapper_preview = self._compose_wrapper(
+            submit_command=submit_command,
+            poll_command_hint=self._poll_command_hint(
+                f"{self.kind.value.upper()}-JOB-PLACEHOLDER-{tracking['run_id']}"
+            ),
+            paths=paths,
+            mode=mode,
+            task_id=tracking["task_id"],
+            run_id=tracking["run_id"],
+        )
         handle = self._build_job_handle(
             paths=paths,
             job_name=request.job_name,
@@ -71,6 +123,8 @@ class BaseSchedulerAdapter(ABC):
             task_id=tracking["task_id"],
             run_id=tracking["run_id"],
         )
+        poll_strategy = self._poll_strategy(handle=handle)
+        failure_recovery = self._failure_recovery_plan(handle=handle, request=request, paths=paths)
         warnings = self._plan_warnings(
             request=request,
             mode=mode,
@@ -88,11 +142,14 @@ class BaseSchedulerAdapter(ABC):
             command=resolved_command,
             command_preview=shlex.join(resolved_command),
             script_preview=script_preview,
-            submit_command=self._submit_command(paths.script_path),
+            wrapper_preview=wrapper_preview,
+            submit_command=submit_command,
             job_handle=handle,
             warnings=warnings,
             compatibility_notes=self.compatibility_notes(),
             polling_hint=self._poll_command_hint(handle.job_id),
+            poll_strategy=poll_strategy,
+            failure_recovery=failure_recovery,
         )
 
     def dry_run_submit(
@@ -126,25 +183,81 @@ class BaseSchedulerAdapter(ABC):
         task_id: str | None = None,
         run_id: str | None = None,
     ) -> JobHandle:
-        """Return a plan-only handle and intentionally avoid real cluster submission."""
+        """Submit a scheduler script in real mode, or return preview handle when disabled."""
 
         plan = self.build_submission_plan(
-            command=command or ["echo", "geneagent-submit-preview"],
+            command=command or ["echo", "geneagent-submit"],
             working_directory=working_directory,
             resources=resources,
             job_name=job_name,
-            mode="submit-preview",
+            mode="submit",
             task_id=task_id,
             run_id=run_id,
         )
-        return plan.job_handle
+        if not self._real_execution_enabled:
+            return plan.job_handle
+
+        self._materialize_submission_files(plan=plan)
+        errors: list[SchedulerExecutionError] = []
+        for attempt in range(1, self._retry_max_attempts + 1):
+            try:
+                result = self._run_command(
+                    command=plan.submit_command,
+                    cwd=plan.paths.working_directory,
+                    timeout_seconds=self._command_timeout_seconds,
+                )
+                if result.returncode != 0:
+                    raise SchedulerExecutionError(
+                        "Scheduler submit command returned non-zero exit code.",
+                        command=plan.submit_command,
+                        stdout=result.stdout,
+                        stderr=result.stderr,
+                        attempts=attempt,
+                    )
+                job_id = self._parse_submit_output(
+                    stdout=result.stdout,
+                    stderr=result.stderr,
+                    returncode=result.returncode,
+                )
+                return JobHandle(
+                    run_context=RunContext(
+                        task_id=plan.task_id,
+                        run_id=plan.run_id,
+                        working_directory=plan.paths.working_directory,
+                    ),
+                    scheduler=self.kind,
+                    job_id=job_id,
+                    state=JobState.QUEUED,
+                    stdout_path=plan.paths.stdout_path,
+                    stderr_path=plan.paths.stderr_path,
+                )
+            except SchedulerExecutionError as error:
+                errors.append(error)
+                if attempt >= self._retry_max_attempts:
+                    break
+                backoff = self._retry_backoff_seconds[min(attempt - 1, len(self._retry_backoff_seconds) - 1)]
+                time.sleep(max(0, backoff))
+
+        last = errors[-1] if errors else SchedulerExecutionError("Scheduler submission failed.")
+        raise SchedulerExecutionError(
+            "Scheduler submission failed after retry attempts.",
+            command=last.command,
+            stdout=last.stdout,
+            stderr=last.stderr,
+            attempts=len(errors),
+        )
 
     def poll(self, job_id: str) -> JobState:
-        """Infer a state from a synthetic job identifier without calling the scheduler."""
+        """Query scheduler state in real mode; otherwise infer from synthetic identifiers."""
 
         normalized = job_id.upper()
-        if normalized.startswith(("DRYRUN-", "PLAN-")):
+        if normalized.startswith(("DRYRUN-", "PLAN-", "SKIPPED-NONBIO-")):
             return JobState.DRAFT
+        if self._real_execution_enabled:
+            try:
+                return self._poll_real(job_id)
+            except SchedulerExecutionError:
+                return JobState.UNKNOWN
         if any(token in normalized for token in ("PENDING", "QUEUED", "WAIT", "HOLD")):
             return JobState.QUEUED
         if any(token in normalized for token in ("RUN", "EXEC")):
@@ -168,6 +281,14 @@ class BaseSchedulerAdapter(ABC):
         """Return the scheduler-specific poll command hint."""
 
     @abstractmethod
+    def _parse_submit_output(self, *, stdout: str, stderr: str, returncode: int) -> str:
+        """Extract a scheduler job id from submit command output."""
+
+    @abstractmethod
+    def _poll_real(self, job_id: str) -> JobState:
+        """Query real scheduler state for a concrete job id."""
+
+    @abstractmethod
     def compatibility_notes(self) -> list[str]:
         """Describe the current compatibility boundaries of the adapter."""
 
@@ -183,6 +304,7 @@ class BaseSchedulerAdapter(ABC):
         return SchedulerPaths(
             working_directory=str(workdir),
             script_path=str(script_dir / f"{safe_job_name}.{extension}.sh"),
+            wrapper_path=str(script_dir / f"{safe_job_name}.wrapper.sh"),
             stdout_path=str(log_dir / f"{safe_job_name}.{self.kind.value}.stdout.log"),
             stderr_path=str(log_dir / f"{safe_job_name}.{self.kind.value}.stderr.log"),
         )
@@ -198,7 +320,10 @@ class BaseSchedulerAdapter(ABC):
         hints: list[str] = []
         if resources.conservative_default:
             hints.append("Resource request still uses conservative defaults from the estimator.")
-        hints.append("Submission remains plan-only until the real cluster integration is enabled.")
+        if self._real_execution_enabled:
+            hints.append("Scheduler real execution is enabled; submit() may call sbatch/qsub.")
+        else:
+            hints.append("Submission remains plan-only until scheduler real execution is enabled.")
         return SchedulerResourceRequest(
             job_name=self._safe_job_name(job_name or "geneagent-job"),
             nodes=1,
@@ -255,9 +380,77 @@ class BaseSchedulerAdapter(ABC):
         for key, value in request.environment_exports.items():
             lines.append(f"export {key}={shlex.quote(value)}")
         lines.append("")
-        lines.append("# Synthetic plan: do not assume this script has been submitted.")
+        lines.append("# Generated by GeneAgent scheduler adapter.")
         lines.append(shlex.join(command or ["echo", "geneagent-placeholder"]))
         return "\n".join(lines)
+
+    def _compose_wrapper(
+        self,
+        *,
+        submit_command: list[str],
+        poll_command_hint: str,
+        paths: SchedulerPaths,
+        mode: str,
+        task_id: str,
+        run_id: str,
+    ) -> str:
+        """Compose a wrapper preview that documents submit and poll behavior."""
+
+        path_cls = self._path_class(paths.working_directory)
+        wrapper_dir = path_cls(paths.wrapper_path).parent
+        lines = [
+            "#!/usr/bin/env bash",
+            "set -euo pipefail",
+            "",
+            f"# task_id: {task_id}",
+            f"# run_id: {run_id}",
+            f"# mode: {mode}",
+            f"mkdir -p {shlex.quote(str(wrapper_dir))}",
+            f"cd {shlex.quote(paths.working_directory)}",
+            "",
+            "# 1) Submit phase:",
+            shlex.join(submit_command),
+            "",
+            "# 2) Poll loop hint:",
+            f"echo \"poll_hint: {poll_command_hint}\"",
+            "echo \"recommended: queued->running poll with backoff 15s/30s/60s\"",
+            "",
+            "# 3) Failure recovery hook:",
+            "echo \"if failed: inspect stderr, auto-retry transient scheduler failures, then require manual confirmation\"",
+        ]
+        return "\n".join(lines)
+
+    def _poll_strategy(self, handle: JobHandle) -> list[str]:
+        """Return a deterministic poll strategy skeleton for dry-run and submit-preview."""
+
+        poll_hint = self._poll_command_hint(handle.job_id)
+        return [
+            f"queued: sleep 15s then poll -> {poll_hint}",
+            f"running: sleep 30s then poll -> {poll_hint}",
+            "stalled: after 10 polls collect scheduler diagnostics and queue constraints",
+            "completed: collect outputs and build report index",
+            "failed: trigger failure recovery checklist",
+        ]
+
+    def _failure_recovery_plan(
+        self,
+        *,
+        handle: JobHandle,
+        request: SchedulerResourceRequest,
+        paths: SchedulerPaths,
+    ) -> list[str]:
+        """Return a conservative failure recovery checklist."""
+
+        bumped_cpu = max(request.cpus_per_task + 2, int(request.cpus_per_task * 1.25))
+        bumped_mem = max(request.memory_gb + 8, int(request.memory_gb * 1.25))
+        return [
+            f"capture logs: stdout={paths.stdout_path}, stderr={paths.stderr_path}",
+            f"job_id={handle.job_id}: classify failure as resource, environment, or input issue",
+            "auto retry strategy: transient submit errors retried with configured backoff before surfacing failure",
+            "resource recovery: rerun dry-run with +25% CPU or memory before any resubmission",
+            f"suggested retry resources: cpus_per_task={bumped_cpu}, memory_gb={bumped_mem}",
+            "require manual approval before requeue when output overwrite or bulk recompute is involved",
+        ]
 
     def _build_job_handle(
         self,
@@ -270,6 +463,7 @@ class BaseSchedulerAdapter(ABC):
         """Create a synthetic job handle for dry-run or submit-preview flows."""
 
         prefix = "DRYRUN" if mode == "dry-run" else "PLAN"
+        state = JobState.DRAFT if mode in {"dry-run", "submit-preview", "submit"} else JobState.UNKNOWN
         return JobHandle(
             run_context=RunContext(
                 task_id=task_id,
@@ -278,7 +472,7 @@ class BaseSchedulerAdapter(ABC):
             ),
             scheduler=self.kind,
             job_id=f"{prefix}-{self.kind.value.upper()}-{self._safe_job_name(task_id)}-{self._safe_job_name(run_id)}-{job_name.upper()}",
-            state=JobState.DRAFT,
+            state=state,
             stdout_path=paths.stdout_path,
             stderr_path=paths.stderr_path,
         )
@@ -292,14 +486,19 @@ class BaseSchedulerAdapter(ABC):
     ) -> list[str]:
         """Return planning-time warnings that should be shown to the caller."""
 
-        warnings = [
-            "No real scheduler command will be executed from this adapter.",
-            "Job identifiers are synthetic and suitable only for dry-run or planning flows.",
-        ]
+        warnings: list[str] = []
+        if not self._real_execution_enabled:
+            warnings.append("No real scheduler command will be executed from this adapter.")
+            warnings.append("Job identifiers are synthetic and suitable only for dry-run or planning flows.")
+        else:
+            warnings.append("Real scheduler execution is enabled; submit() may issue sbatch/qsub.")
+            warnings.append(
+                f"Transient submit failures will auto-retry up to {self._retry_max_attempts} attempts."
+            )
         if request.conservative_default:
             warnings.append("Resource sizing still comes from conservative defaults, not empirical profiling.")
-        if mode != "dry-run":
-            warnings.append("submit() currently returns a submit-preview handle until real submission is enabled.")
+        if mode == "submit-preview":
+            warnings.append("submit-preview mode does not issue real scheduler submission.")
         if not task_id_supplied:
             warnings.append("task_id was not supplied by upstream orchestration; a compatibility fallback was generated.")
         if not run_id_supplied:
@@ -309,7 +508,7 @@ class BaseSchedulerAdapter(ABC):
     def _ready_for_gate_status(self, mode: str) -> str:
         """Return a stage-oriented gate status instead of a boolean readiness flag."""
 
-        if mode == "submit-preview":
+        if mode in {"submit-preview", "submit"}:
             return "awaiting_submission_gate"
         return "scheduler_plan_ready"
 
@@ -345,3 +544,61 @@ class BaseSchedulerAdapter(ABC):
         if raw_path.startswith("/") or ("/" in raw_path and "\\" not in raw_path):
             return PurePosixPath
         return PureWindowsPath
+
+    def _materialize_submission_files(self, plan: SubmissionPlan) -> None:
+        """Write scheduler script and wrapper files before real submission."""
+
+        try:
+            script_path = Path(plan.paths.script_path)
+            wrapper_path = Path(plan.paths.wrapper_path)
+            script_path.parent.mkdir(parents=True, exist_ok=True)
+            wrapper_path.parent.mkdir(parents=True, exist_ok=True)
+            script_path.write_text(plan.script_preview + "\n", encoding="utf-8")
+            wrapper_path.write_text(plan.wrapper_preview + "\n", encoding="utf-8")
+        except OSError as error:
+            raise SchedulerExecutionError(
+                f"Failed to materialize scheduler files: {error}",
+                command=plan.submit_command,
+            ) from error
+
+    def _run_command(
+        self,
+        *,
+        command: list[str],
+        cwd: str | None,
+        timeout_seconds: int,
+    ) -> subprocess.CompletedProcess[str]:
+        try:
+            return self._command_runner(command, cwd, timeout_seconds)
+        except FileNotFoundError as error:
+            raise SchedulerExecutionError(
+                "Scheduler command not found in runtime environment.",
+                command=command,
+            ) from error
+        except subprocess.TimeoutExpired as error:
+            raise SchedulerExecutionError(
+                "Scheduler command timed out.",
+                command=command,
+                stdout=(error.stdout or "") if isinstance(error.stdout, str) else "",
+                stderr=(error.stderr or "") if isinstance(error.stderr, str) else "",
+            ) from error
+        except OSError as error:
+            raise SchedulerExecutionError(
+                f"Scheduler command execution failed: {error}",
+                command=command,
+            ) from error
+
+    def _default_command_runner(
+        self,
+        command: list[str],
+        cwd: str | None,
+        timeout_seconds: int,
+    ) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            command,
+            cwd=cwd,
+            timeout=timeout_seconds,
+            check=False,
+            capture_output=True,
+            text=True,
+        )

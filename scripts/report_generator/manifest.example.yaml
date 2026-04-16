@@ -1,0 +1,18 @@
+version: v1
+tool_family: report_generator
+workdir: D:/geneagent
+inputs:
+  report_index: results/report_index.json
+  traceability_manifest: results/traceability/traceability.json
+  figure_roots:
+    - results/structure/figures
+    - results/prediction/figures
+outputs:
+  report_index: results/report_index.json
+  figures: results/figures
+  summary_report: reports/summary_report.md
+  traceability_dir: results/traceability
+rules:
+  overwrite_policy: no_overwrite_by_default
+  package_only_declared_artifacts: true
+  raw_data: read_only

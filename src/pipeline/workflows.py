@@ -1,4 +1,4 @@
-"""Pipeline blueprints used to keep genetics workflow planning explicit."""
+"""Pipeline blueprints used to keep genetics workflow execution explicit."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from pipeline.validators import InputDataType
 
 
 class PipelineBlueprint(BaseModel):
-    """Description of a genetics workflow without implementation details."""
+    """Description of a genetics workflow with execution-ready contracts."""
 
     name: str
     summary: str
@@ -41,7 +41,7 @@ def build_output_template(name: str) -> list[dict[str, object]]:
 
 
 def list_blueprints() -> list[str]:
-    """List canonical blueprint names supported by the placeholder layer."""
+    """List canonical blueprint names supported by the v1 execution layer."""
 
     return sorted(_BLUEPRINT_BUILDERS.keys())
 
@@ -68,7 +68,7 @@ def _qc_blueprint() -> PipelineBlueprint:
             "id": "dataset_inventory",
             "title": "Dataset Inventory",
             "kind": "input",
-            "objective": "Record genotype, phenotype, covariate, and pedigree assets before analysis planning.",
+            "objective": "Record genotype, phenotype, covariate, and pedigree assets before analysis execution.",
             "required_inputs": ["genotype_dataset"],
             "optional_inputs": ["phenotype_table", "covariate_table", "pedigree_table"],
             "checks": [
@@ -81,7 +81,7 @@ def _qc_blueprint() -> PipelineBlueprint:
                     "input_manifest",
                     "results/qc/input_manifest.json",
                     "json",
-                    "Normalized placeholder manifest of detected local inputs and inferred types.",
+                    "Normalized manifest of detected local inputs and inferred types.",
                 )
             ],
         },
@@ -89,7 +89,7 @@ def _qc_blueprint() -> PipelineBlueprint:
             "id": "sample_qc",
             "title": "Sample Quality Control",
             "kind": "qc",
-            "objective": "Plan missingness, heterozygosity, and sample anomaly review without executing algorithms.",
+            "objective": "Run missingness, heterozygosity, and sample anomaly quality control.",
             "required_inputs": ["genotype_dataset"],
             "optional_inputs": ["phenotype_table", "pedigree_table"],
             "checks": [
@@ -100,7 +100,7 @@ def _qc_blueprint() -> PipelineBlueprint:
                     "sample_qc_table",
                     "results/qc/sample_qc.tsv",
                     "tsv",
-                    "Placeholder table for per-sample QC metrics and retain/drop recommendations.",
+                    "Per-sample QC metrics and retain/drop recommendations generated from PLINK outputs.",
                 )
             ],
         },
@@ -119,7 +119,7 @@ def _qc_blueprint() -> PipelineBlueprint:
                     "variant_qc_table",
                     "results/qc/variant_qc.tsv",
                     "tsv",
-                    "Placeholder table for per-marker QC metrics and retain/drop recommendations.",
+                    "Per-marker QC metrics and retain/drop recommendations generated from PLINK outputs.",
                 )
             ],
         },
@@ -138,13 +138,13 @@ def _qc_blueprint() -> PipelineBlueprint:
                     "qc_summary_report",
                     "reports/qc_summary.md",
                     "markdown",
-                    "Human-readable placeholder report for QC decisions, caveats, and retained dataset notes.",
+                    "Human-readable report for QC decisions, caveats, and retained dataset notes.",
                 ),
                 _artifact(
                     "retained_dataset_index",
                     "results/qc/retained_dataset/README.md",
                     "markdown",
-                    "Index of future cleaned dataset outputs without generating real filtered files yet.",
+                    "Index of cleaned dataset outputs and filtering provenance.",
                 ),
             ],
         },
@@ -152,7 +152,7 @@ def _qc_blueprint() -> PipelineBlueprint:
     outputs = [artifact for stage in stages for artifact in stage["outputs"]]
     return PipelineBlueprint(
         name="qc_pipeline",
-        summary="Quality control planning workflow for genotype-centered analyses.",
+        summary="Quality control workflow for genotype-centered analyses.",
         focus=PIPELINE_FOCUS["qc_pipeline"],
         input_requirements=[
             {
@@ -186,13 +186,13 @@ def _qc_blueprint() -> PipelineBlueprint:
         },
         report_sections=[
             "Input inventory",
-            "Sample QC placeholder metrics",
-            "Variant QC placeholder metrics",
+            "Sample QC metrics",
+            "Variant QC metrics",
             "Retained dataset note",
             "Known risks and unresolved checks",
         ],
         interpretation_notes=[
-            "QC thresholds in this blueprint are placeholders and must be confirmed by project-specific SOPs.",
+            "QC thresholds should follow project-specific SOP defaults and be captured in audit logs.",
             "QC summaries do not imply biological interpretation or publication-ready sample exclusion criteria.",
         ],
         ready_for_gate="design_ready",
@@ -205,7 +205,7 @@ def _pca_blueprint() -> PipelineBlueprint:
             "id": "ld_pruning",
             "title": "Marker Pruning Plan",
             "kind": "qc",
-            "objective": "Define placeholder LD-pruning steps before PCA and stratification review.",
+            "objective": "Perform LD-pruning before PCA and population-statistics analysis.",
             "required_inputs": ["genotype_dataset"],
             "optional_inputs": [],
             "checks": [
@@ -216,7 +216,7 @@ def _pca_blueprint() -> PipelineBlueprint:
                     "pruning_manifest",
                     "results/structure/pruning_manifest.json",
                     "json",
-                    "Planned LD-pruning configuration and prerequisite notes.",
+                    "Executed LD-pruning configuration and prerequisite notes.",
                 )
             ],
         },
@@ -224,7 +224,7 @@ def _pca_blueprint() -> PipelineBlueprint:
             "id": "pca_computation",
             "title": "PCA Blueprint",
             "kind": "structure",
-            "objective": "Describe how principal components would be computed and exported.",
+            "objective": "Compute principal components and export eigenvectors/eigenvalues.",
             "required_inputs": ["genotype_dataset"],
             "optional_inputs": ["covariate_table"],
             "checks": [
@@ -232,16 +232,51 @@ def _pca_blueprint() -> PipelineBlueprint:
             ],
             "outputs": [
                 _artifact(
-                    "eigenvec_placeholder",
+                    "eigenvec_table",
                     "results/structure/pca/eigenvec.tsv",
                     "tsv",
-                    "Placeholder principal component scores table.",
+                    "Principal component scores table.",
                 ),
                 _artifact(
-                    "eigenval_placeholder",
+                    "eigenval_table",
                     "results/structure/pca/eigenval.tsv",
                     "tsv",
-                    "Placeholder eigenvalue summary table.",
+                    "Eigenvalue summary table.",
+                ),
+                _artifact(
+                    "ld_decay_table",
+                    "results/structure/ld/ld_decay.ld.gz",
+                    "tsv.gz",
+                    "Pairwise LD output for LD-decay diagnostics.",
+                    required=False,
+                ),
+                _artifact(
+                    "roh_segments",
+                    "results/structure/roh/roh.hom",
+                    "tsv",
+                    "Runs-of-homozygosity segment output.",
+                    required=False,
+                ),
+                _artifact(
+                    "fst_table",
+                    "results/structure/popstats/fst.weir.fst",
+                    "tsv",
+                    "Windowed Fst output between supplied populations.",
+                    required=False,
+                ),
+                _artifact(
+                    "pi_table",
+                    "results/structure/popstats/pi.windowed.pi",
+                    "tsv",
+                    "Windowed nucleotide diversity output.",
+                    required=False,
+                ),
+                _artifact(
+                    "tajima_d_table",
+                    "results/structure/popstats/tajima.Tajima.D",
+                    "tsv",
+                    "Windowed Tajima's D output.",
+                    required=False,
                 ),
             ],
         },
@@ -250,7 +285,7 @@ def _pca_blueprint() -> PipelineBlueprint:
             "title": "Population Structure Summary",
             "kind": "structure",
             "objective": "Package structure plots, clustering notes, and cohort separation caveats.",
-            "required_inputs": ["eigenvec_placeholder", "eigenval_placeholder"],
+            "required_inputs": ["eigenvec_table", "eigenval_table"],
             "optional_inputs": [],
             "checks": [
                 "Keep cluster descriptions descriptive rather than biological or breed-assignment claims.",
@@ -260,7 +295,7 @@ def _pca_blueprint() -> PipelineBlueprint:
                     "pca_plot_index",
                     "results/structure/figures/README.md",
                     "markdown",
-                    "Placeholder index for PCA scatter plots and color-coding decisions.",
+                    "Index for PCA scatter plots and color-coding decisions.",
                 ),
                 _artifact(
                     "structure_summary_report",
@@ -300,7 +335,7 @@ def _pca_blueprint() -> PipelineBlueprint:
                 "role": "genotype_dataset",
                 "accepted_types": [InputDataType.VCF.value, InputDataType.PLINK_BED.value],
                 "required": True,
-                "description": "Genotype matrix used for LD-pruned PCA planning.",
+                "description": "Genotype matrix used for LD-pruned PCA execution.",
             },
             {
                 "role": "covariate_table",
@@ -327,7 +362,7 @@ def _pca_blueprint() -> PipelineBlueprint:
             "Stratification caveats",
         ],
         interpretation_notes=[
-            "The placeholder layer must not assign biological ancestry or breed labels automatically.",
+            "The pipeline must not assign biological ancestry or breed labels automatically.",
             "PC inclusion in downstream models remains a design decision and is not fixed by this blueprint alone.",
         ],
         ready_for_gate="design_ready",
@@ -351,7 +386,7 @@ def _grm_blueprint() -> PipelineBlueprint:
                     "marker_standardization_note",
                     "results/grm/marker_standardization.md",
                     "markdown",
-                    "Placeholder note covering matrix-preparation assumptions.",
+                    "Note covering matrix-preparation assumptions.",
                 )
             ],
         },
@@ -359,7 +394,7 @@ def _grm_blueprint() -> PipelineBlueprint:
             "id": "relationship_estimation",
             "title": "Relationship Matrix Blueprint",
             "kind": "relationship",
-            "objective": "Define how a GRM or relatedness matrix would be built and stored.",
+            "objective": "Build and export a GRM or relatedness matrix for downstream models.",
             "required_inputs": ["genotype_dataset"],
             "optional_inputs": ["pedigree_table"],
             "checks": [
@@ -368,10 +403,10 @@ def _grm_blueprint() -> PipelineBlueprint:
             ],
             "outputs": [
                 _artifact(
-                    "grm_matrix_placeholder",
+                    "grm_matrix",
                     "results/grm/grm_matrix.tsv",
                     "tsv",
-                    "Placeholder matrix export or pointer to a future binary matrix artifact.",
+                    "Relationship matrix export (square matrix).",
                 ),
                 _artifact(
                     "grm_id_map",
@@ -386,17 +421,17 @@ def _grm_blueprint() -> PipelineBlueprint:
             "title": "Matrix QC Summary",
             "kind": "relationship",
             "objective": "Reserve checks for symmetry, diagonals, scale, and sample coverage.",
-            "required_inputs": ["grm_matrix_placeholder", "grm_id_map"],
+            "required_inputs": ["grm_matrix", "grm_id_map"],
             "optional_inputs": [],
             "checks": [
-                "Record placeholder checks for symmetry, diagonals, scale, and missing samples.",
+                "Record checks for symmetry, diagonals, scale, and missing samples.",
             ],
             "outputs": [
                 _artifact(
                     "grm_qc_report",
                     "reports/grm_qc.md",
                     "markdown",
-                    "Placeholder report for matrix completeness and sanity checks.",
+                    "Report for matrix completeness and sanity checks.",
                 )
             ],
         },
@@ -408,14 +443,14 @@ def _grm_blueprint() -> PipelineBlueprint:
             "required_inputs": ["grm_qc_report"],
             "optional_inputs": [],
             "checks": [
-                "Expose future deliverables without fabricating matrix values.",
+                "Expose GRM deliverables and matrix provenance for downstream consumers.",
             ],
             "outputs": [
                 _artifact(
                     "grm_package_index",
                     "results/grm/README.md",
                     "markdown",
-                    "Inventory of future GRM deliverables and consumer modules.",
+                    "Inventory of GRM deliverables and consumer modules.",
                 )
             ],
         },
@@ -423,7 +458,7 @@ def _grm_blueprint() -> PipelineBlueprint:
     outputs = [artifact for stage in stages for artifact in stage["outputs"]]
     return PipelineBlueprint(
         name="grm_builder",
-        summary="Relationship matrix planning workflow for relatedness and prediction stages.",
+        summary="Relationship matrix workflow for relatedness and prediction stages.",
         focus=PIPELINE_FOCUS["grm_builder"],
         input_requirements=[
             {
@@ -456,7 +491,7 @@ def _grm_blueprint() -> PipelineBlueprint:
             "Downstream consumer notes",
         ],
         interpretation_notes=[
-            "Placeholder matrix outputs are not valid relatedness estimates until a concrete backend is implemented and validated.",
+            "Matrix outputs should be validated for symmetry and sample-order consistency before downstream use.",
         ],
         ready_for_gate="design_ready",
     )
@@ -480,7 +515,7 @@ def _genomic_prediction_blueprint() -> PipelineBlueprint:
                     "cohort_alignment_manifest",
                     "results/prediction/cohort_alignment.json",
                     "json",
-                    "Placeholder manifest for train and validation cohorts, trait columns, and merge keys.",
+                    "Manifest for train and validation cohorts, trait columns, and merge keys.",
                 )
             ],
         },
@@ -488,7 +523,7 @@ def _genomic_prediction_blueprint() -> PipelineBlueprint:
             "id": "relationship_selection",
             "title": "Relationship Backbone Selection",
             "kind": "relationship",
-            "objective": "Select placeholder path among GBLUP, ssGBLUP, Bayes, or equivalent modeling backbones.",
+            "objective": "Select path among GBLUP, ssGBLUP, Bayes, or equivalent modeling backbones.",
             "required_inputs": ["genotype_dataset", "phenotype_table"],
             "optional_inputs": ["pedigree_table"],
             "checks": [
@@ -499,7 +534,7 @@ def _genomic_prediction_blueprint() -> PipelineBlueprint:
                     "model_family_note",
                     "results/prediction/model_family.md",
                     "markdown",
-                    "Decision note for GBLUP, ssGBLUP, Bayes, or equivalent placeholder routes.",
+                    "Decision note for GBLUP, ssGBLUP, Bayes, or equivalent routes.",
                 )
             ],
         },
@@ -518,13 +553,20 @@ def _genomic_prediction_blueprint() -> PipelineBlueprint:
                     "model_spec",
                     "results/prediction/model_spec.json",
                     "json",
-                    "Structured placeholder spec for trait, effects, and model backend choices.",
+                    "Structured spec for trait, effects, and model backend choices.",
                 ),
                 _artifact(
-                    "prediction_table_placeholder",
+                    "prediction_table",
                     "results/prediction/predictions.tsv",
                     "tsv",
-                    "Placeholder EBV or GEBV prediction table schema.",
+                    "EBV or GEBV prediction table.",
+                ),
+                _artifact(
+                    "gwas_results_index",
+                    "results/prediction/gwas/README.md",
+                    "markdown",
+                    "Index of GWAS result files produced by PLINK2.",
+                    required=False,
                 ),
             ],
         },
@@ -543,13 +585,20 @@ def _genomic_prediction_blueprint() -> PipelineBlueprint:
                     "validation_plan",
                     "results/prediction/validation_plan.md",
                     "markdown",
-                    "Placeholder design for correlation, bias, and fold structure metrics.",
+                    "Design and execution summary for correlation, bias, and fold structure metrics.",
                 ),
                 _artifact(
-                    "metric_table_placeholder",
+                    "metric_table",
                     "results/prediction/metrics.tsv",
                     "tsv",
-                    "Placeholder table schema for accuracy, bias, and subgroup metrics.",
+                    "Table for accuracy, bias, and subgroup metrics.",
+                ),
+                _artifact(
+                    "heritability_report",
+                    "results/prediction/heritability/heritability.hsq",
+                    "txt",
+                    "Heritability estimation output from GCTA.",
+                    required=False,
                 ),
             ],
         },
@@ -557,11 +606,11 @@ def _genomic_prediction_blueprint() -> PipelineBlueprint:
             "id": "prediction_report",
             "title": "Prediction Report",
             "kind": "report",
-            "objective": "Bundle model notes, evaluation placeholders, and interpretation caveats.",
-            "required_inputs": ["prediction_table_placeholder", "metric_table_placeholder"],
+            "objective": "Bundle model notes, evaluation outputs, and interpretation caveats.",
+            "required_inputs": ["prediction_table", "metric_table"],
             "optional_inputs": [],
             "checks": [
-                "Do not convert placeholder metrics into scientific claims or breeding decisions.",
+                "Do not convert single-run metrics into scientific claims or breeding decisions.",
             ],
             "outputs": [
                 _artifact(
@@ -576,7 +625,7 @@ def _genomic_prediction_blueprint() -> PipelineBlueprint:
     outputs = [artifact for stage in stages for artifact in stage["outputs"]]
     return PipelineBlueprint(
         name="genomic_prediction",
-        summary="Quantitative genetics workflow planning for genomic prediction and breeding-value reporting.",
+        summary="Quantitative genetics workflow for genomic prediction and breeding-value reporting.",
         focus=PIPELINE_FOCUS["genomic_prediction"],
         input_requirements=[
             {
@@ -601,7 +650,7 @@ def _genomic_prediction_blueprint() -> PipelineBlueprint:
                 "role": "pedigree_table",
                 "accepted_types": [InputDataType.PEDIGREE_TABLE.value, InputDataType.TEXT_TABLE.value],
                 "required": False,
-                "description": "Optional pedigree used for ssGBLUP-style placeholder routes.",
+                "description": "Optional pedigree used for ssGBLUP-style routes.",
             },
         ],
         stages=stages,
@@ -627,8 +676,8 @@ def _genomic_prediction_blueprint() -> PipelineBlueprint:
             "Interpretation caveats",
         ],
         interpretation_notes=[
-            "Placeholder metric tables are schemas only and must not be reported as true predictive performance.",
-            "The MVP layer must not recommend breeding decisions or culling actions from placeholder outputs.",
+            "Metrics should be treated as model diagnostics, not standalone breeding decisions.",
+            "The v1 layer must not recommend breeding decisions or culling actions from single-run outputs.",
         ],
         ready_for_gate="design_ready",
     )

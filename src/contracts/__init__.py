@@ -23,7 +23,14 @@ from contracts.execution import (
     TaskPlan,
 )
 from contracts.tasks import ResourceEstimate, UserRequest
-from contracts.validation import ValidationIssue, ValidationReport
+from contracts.validation import (
+    ConsistencyCheck,
+    ConsistencyStatus,
+    NormalizedInputEntry,
+    ValidationIssue,
+    ValidationReport,
+    ValidationSeverity,
+)
 
 __all__ = [
     "BreakerState",
@@ -46,6 +53,10 @@ __all__ = [
     "TaskDomain",
     "TaskPlan",
     "UserRequest",
+    "ConsistencyCheck",
+    "ConsistencyStatus",
+    "NormalizedInputEntry",
     "ValidationIssue",
     "ValidationReport",
+    "ValidationSeverity",
 ]

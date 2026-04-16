@@ -65,7 +65,21 @@ def test_execution_contracts_expose_tracking_and_submission_fields() -> None:
 
     assert "run_context" in TaskPlan.model_fields
     assert "pipeline_spec" in TaskPlan.model_fields
+    assert "blueprint_key" in PipelineSpec.model_fields
+    assert "analysis_targets" in PipelineSpec.model_fields
+    assert "stage_contract" in PipelineSpec.model_fields
+    assert "artifact_contract" in PipelineSpec.model_fields
     assert "job_handle" in SubmissionPreview.model_fields
+    assert "wrapper_preview" in SubmissionPreview.model_fields
+    assert "poll_strategy" in SubmissionPreview.model_fields
+    assert "failure_recovery" in SubmissionPreview.model_fields
+    assert "cluster_execution_enabled" in SubmissionPreview.model_fields
+    assert "artifact_index" in ExecutionArtifacts.model_fields
+    assert "figure_paths" in ExecutionArtifacts.model_fields
+    assert "log_paths" in ExecutionArtifacts.model_fields
+    assert "report_summary" in ExecutionArtifacts.model_fields
+    assert "audit_record_path" in ExecutionArtifacts.model_fields
+    assert "memory_handoff_summary" in ExecutionArtifacts.model_fields
     assert "run_context" in JobHandle.model_fields
     assert plan.header.ready_for_gate == GateStatus.DESIGN_PASS
     assert plan.run_context.task_id == "task-contracts-001"

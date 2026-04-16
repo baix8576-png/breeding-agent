@@ -1,13 +1,13 @@
 # grm_builder
 
-Placeholder directory for relationship matrix and kinship builder scripts.
+Execution wrapper directory for GRM and kinship analyses in v1.
 
-Planned contents:
-- `manifest.example.yaml`: placeholder contract for GRM builders and matrix QC.
-- `run_grm_builder.sh`: future relationship-matrix launcher.
-- `build_grm.sh`: matrix construction wrapper placeholder.
-- `convert_matrix_format.sh`: matrix export helper placeholder.
-- `check_grm_matrix.sh`: matrix QC helper placeholder.
+Main entrypoint:
+- `run_grm_builder.sh`
+
+Supported toolchain:
+- `plink2`: relationship matrix (`--make-rel square`) generation.
+- `gcta64`: binary GRM generation for downstream quantitative-genetics tools.
 
 Expected inputs:
 - genotype-bearing dataset: VCF or PLINK trio
@@ -21,4 +21,4 @@ Expected outputs:
 - `results/grm/README.md`
 
 Notes:
-- This layer only defines artifact contracts and stage boundaries.
+- Wrapper can run with `plink2`, `gcta64`, or both; outputs are indexed for downstream model stages.

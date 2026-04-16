@@ -13,6 +13,7 @@ class SchedulerPaths(BaseModel):
 
     working_directory: str
     script_path: str
+    wrapper_path: str
     stdout_path: str
     stderr_path: str
 
@@ -54,11 +55,14 @@ class SubmissionPlan(BaseModel):
     command: list[str] = Field(default_factory=list)
     command_preview: str
     script_preview: str
+    wrapper_preview: str
     submit_command: list[str] = Field(default_factory=list)
     job_handle: JobHandle
     warnings: list[str] = Field(default_factory=list)
     compatibility_notes: list[str] = Field(default_factory=list)
     polling_hint: str | None = None
+    poll_strategy: list[str] = Field(default_factory=list)
+    failure_recovery: list[str] = Field(default_factory=list)
 
 
 class PollExplanation(BaseModel):

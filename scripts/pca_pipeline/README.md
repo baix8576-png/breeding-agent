@@ -1,25 +1,29 @@
 # pca_pipeline
 
-Placeholder directory for PCA and population-structure shell templates.
+Execution wrapper directory for population genetics analyses in v1.
 
-Planned contents:
-- `manifest.example.yaml`: placeholder contract for LD pruning and PCA wrappers.
-- `run_pca_pipeline.sh`: future PCA pipeline launcher.
-- `ld_prune.sh`: marker-pruning wrapper placeholder.
-- `export_pca_outputs.sh`: eigenvec/eigenval export helper placeholder.
-- `assemble_structure_report.sh`: structure summary helper placeholder.
+Main entrypoint:
+- `run_pca_pipeline.sh`
+
+Supported toolchain:
+- `plink2`: LD pruning, PCA, LD decay, ROH.
+- `vcftools`: Fst, pi, Tajima's D (when VCF and required group files are provided).
 
 Expected inputs:
 - genotype-bearing dataset: VCF or PLINK trio
 - optional covariate table
+- optional population sample lists (`--population-a`, `--population-b`) for Fst
 
 Expected outputs:
 - `results/structure/pruning_manifest.json`
 - `results/structure/pca/eigenvec.tsv`
 - `results/structure/pca/eigenval.tsv`
+- `results/structure/ld/ld_decay.ld.gz` (optional)
+- `results/structure/roh/roh.hom` (optional)
+- `results/structure/popstats/*` (optional, depends on vcftools inputs)
 - `results/structure/figures/README.md`
 - `reports/structure_summary.md`
 - `reports/stratification_risk.md`
 
 Notes:
-- Cluster labeling and ancestry interpretation are intentionally out of scope.
+- Population labeling and biological interpretation remain expert-review tasks.
