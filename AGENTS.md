@@ -32,7 +32,7 @@
 
 ## 根目录规范（强制）
 - 版本化源目录仅允许：`.codex/`、`.agents/`、`src/`、`scripts/`、`references/`、`tests/`、`docs/`（可选）。
-- 根目录保留文件仅允许：`AGENTS.md`、`README.md`、`pyproject.toml`、`.env.example`、`.gitignore`（若后续加入）。
+- 根目录保留文件仅允许：`AGENTS.md`、`README.md`、`pyproject.toml`、`setup.cfg`、`.env.example`、`.gitignore`（若后续加入）。
 - 运行期/缓存生成物允许存在：`.venv/`、`.pytest_cache/`、`pytest-cache-files-*`、`__pycache__/`、`*.egg-info/`、`.tmp/`、`logs/`。
 - 运行期/缓存生成物不视为架构违规，但应加入忽略规则或作为本地产物清理，不得承载正式源码与规范文档。
 - 新增任意顶层目录，或将模块跨顶层目录迁移，必须先由 `orchestrator` 发起并经 `architect` 复核后执行；未过 gate 不得落盘。
@@ -101,14 +101,14 @@
 10. 原始实体数据（VCF/BAM/FASTQ/FASTA）不得进入仓库版本目录。
 
 ## 项目目标占位区
-- `业务目标（TODO）`：在此填写当前阶段的核心业务目标、成功标准与交付时间。
-- `版本范围（TODO）`：在此填写 v1 / v1.5 / v2 的功能边界与非目标。
-- `优先级（TODO）`：在此填写本迭代必须完成、可延期、明确不做的事项。
-- `验收标准（TODO）`：在此填写功能验收、性能验收、安全验收与文档验收标准。
+- `业务目标（TODO）`：完成 geneagent V1 的可用闭环，让用户可在 Windows PowerShell + 本地开发环境完成“自然语言请求 -> 任务分流 -> 输入校验 -> 蓝图选择 -> dry-run/submit -> 调度轮询 -> 结果产物/审计/记忆回写”的最小可用流程；V1 业务重点是动物生信与育种场景中的 `qc / pca / grm / genomic_prediction` 四条主链，以及非生信请求的轻量回答支路。成功标准是：主链可稳定生成可执行脚本与调度命令，关键输入有结构化校验，结果可追溯，非生信请求不会误入集群执行。
+- `版本范围（TODO）`：V1 只覆盖工程骨架、入口层、契约层、蓝图层、调度层、安全门、审计与记忆闭环，以及 `qc / pca / grm / genomic_prediction` 四类标准生信蓝图和 `bioinformatics / system / knowledge` 三类顶层分流；V1.5 仅扩展更强的报告、更多工具 manifest、PBS 兼容细节与更完善的知识检索；V2 再考虑插件化工具生态、更完整的记忆系统、Web UI 与更广泛的多组学/扩展分析模板。V1 明确不做的内容包括：全功能 Web 产品、完整插件市场、超出当前蓝图集合的广义算法库、原始大数据入库、以及平行目录式版本分叉。
+- `优先级（TODO）`：必须完成的是输入契约、蓝图路由、真实调度闭环、结果索引与审计落盘、非生信轻量支路、最小测试矩阵和 README/AGENTS 对齐；可延期的是 Web UI、PBS 深度适配、更多分析模板、自动化报告增强与知识库扩容；明确不做的是新建平行源码目录、把核心逻辑留在 `scripts/`、在 V1 内引入未验证的复杂多组学链路、以及将原始实体数据提交进仓库。
+- `验收标准（TODO）`：功能验收要求 `pytest -q` 全绿，`python -m compileall src tests` 通过，CLI/API 至少覆盖 `plan / dry-run / submit / poll` 与非生信回答支路，`qc / pca / grm / genomic_prediction` 四条主链都能输出结构化计划、脚本与产物索引；性能验收要求在本地开发环境完成最小样例的 dry-run 与 submit 路径，不出现目录越界、错误分流或重复生成调度脚本；安全验收要求原始实体数据不出本地、所有高风险动作触发人工确认、审计记录包含输入摘要/提交命令/job id/日志路径；文档验收要求 README、AGENTS 与当前目录结构一致，且新的目录规范和 V1 范围在文档中可直接定位。
 
 ## 目录路由规则
 - `AGENTS.md` 与 `.codex/config.toml`：由 `orchestrator` 统筹，`architect` 复核结构一致性。
-- `pyproject.toml`、`.env.example`：由 `orchestrator` 统筹，`architect` 复核工程结构一致性。
+- `pyproject.toml`、`setup.cfg`、`.env.example`：由 `orchestrator` 统筹，`architect` 复核工程结构一致性。
 - `.codex/agents/*`：角色定义由 `orchestrator` 管理，职责边界由 `architect` 复核。
 - `.agents/skills/prd-planning/*`：仅 `orchestrator` 维护。
 - `.agents/skills/architecture-review/*`：仅 `architect` 维护。
