@@ -1,4 +1,4 @@
-"""Dependency wiring for the first runnable GeneAgent skeleton."""
+"""Dependency wiring for the GeneAgent V1 runtime."""
 
 from __future__ import annotations
 

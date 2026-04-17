@@ -13,7 +13,7 @@ class UserRequest(BaseModel):
 
 
 class ResourceEstimate(BaseModel):
-    """Conservative resource placeholder used before real estimation is implemented."""
+    """Conservative resource baseline used before profile-driven estimation is available."""
 
     cpus: int = 4
     memory_gb: int = 16

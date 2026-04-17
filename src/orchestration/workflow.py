@@ -206,7 +206,7 @@ class WorkflowComposer:
                 title="Local-first RAG",
                 owner="llm_orchestrator",
                 objective=(
-                    "Retrieve references/*, local SOP, and templates first; use external placeholder retrieval only when"
+                    "Retrieve references/*, local SOP, and templates first; use external fallback retrieval only when"
                     f" local coverage is insufficient (mode={retrieval.retrieval_mode}, coverage={retrieval.coverage})."
                 ),
                 inputs=["normalized_request", "scope_statement", "input_bundle"],
@@ -330,7 +330,7 @@ class WorkflowComposer:
                 title="Local Retrieval",
                 owner="llm_orchestrator",
                 objective=(
-                    "Use local references and SOP first; allow external placeholder retrieval only when local"
+                    "Use local references and SOP first; allow external fallback retrieval only when local"
                     f" coverage is insufficient (mode={retrieval.retrieval_mode}, coverage={retrieval.coverage})."
                 ),
                 inputs=["normalized_request", "task_id", "run_id"],

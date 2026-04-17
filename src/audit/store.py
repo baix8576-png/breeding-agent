@@ -1,4 +1,4 @@
-"""Audit store placeholders for traceability."""
+"""Audit stores for traceability and reproducibility."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Tool registry placeholders."""
+"""Tool registry exports."""
 
 from tools.registry import ToolManifest, ToolRegistry
 

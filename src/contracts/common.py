@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 
 class TaskDomain(str, Enum):
-    """Top-level task classes understood by the skeleton orchestrator."""
+    """Top-level task classes understood by the orchestrator."""
 
     BIOINFORMATICS = "bioinformatics"
     KNOWLEDGE = "knowledge"

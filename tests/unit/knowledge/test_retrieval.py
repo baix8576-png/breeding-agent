@@ -45,9 +45,9 @@ def test_knowledge_resolver_uses_fallback_for_low_coverage_query() -> None:
 
     assert bundle.coverage == "low"
     assert bundle.fallback_used is True
-    assert bundle.retrieval_mode == "local_plus_external_placeholder"
+    assert bundle.retrieval_mode == "local_plus_external_fallback"
     assert len(bundle.external_hits) >= 1
-    assert "fallback=external_placeholder" in bundle.rationale
+    assert "fallback=external_fallback" in bundle.rationale
 
 
 def test_knowledge_resolver_uses_reference_assets_before_fallback() -> None:

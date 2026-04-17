@@ -1,4 +1,4 @@
-# Audit Module (Placeholder)
+# Audit Module
 
 This module owns trace records for reproducibility and safety review.
 
@@ -7,7 +7,7 @@ This module owns trace records for reproducibility and safety review.
 - Store audit events in memory for local development.
 - Return immutable snapshots of the current event list.
 
-## Out of scope in the skeleton phase
+## Out of scope in V1
 - Persistent audit storage.
 - Signed audit trails and tamper detection.
 - Export pipelines for compliance systems.

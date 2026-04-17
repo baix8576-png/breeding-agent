@@ -1,4 +1,4 @@
-"""Shared data contracts used across the GeneAgent skeleton."""
+"""Shared data contracts used across GeneAgent V1."""
 
 from contracts.common import (
     BreakerState,

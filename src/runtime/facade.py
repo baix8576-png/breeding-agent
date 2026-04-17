@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath, PureWindowsPath
+import json
+from pathlib import Path, PurePosixPath, PureWindowsPath
 import shlex
+import shutil
+import subprocess
 from uuid import uuid4
 
 from audit.store import AuditEvent, FileAuditStore
@@ -223,23 +226,38 @@ class ApplicationFacade:
                 task_id=run_context.task_id,
                 run_id=run_context.run_id,
             )
+        submit_command_text = shlex.join(submission_plan.submit_command)
+        predicted_audit_record_path = self._predict_audit_record_path(
+            run_context=run_context,
+            working_directory=submission_plan.paths.working_directory,
+        )
         artifact_index, report_summary = self._build_bio_artifact_index(
             plan=plan,
             working_directory=submission_plan.paths.working_directory,
             log_paths=[submission_plan.paths.stdout_path, submission_plan.paths.stderr_path],
+            run_context=run_context,
+            job_handle=job_handle,
+            submission_command=submit_command_text,
+            scheduler_script_path=submission_plan.paths.script_path,
+            wrapper_path=submission_plan.paths.wrapper_path,
+            audit_path=predicted_audit_record_path,
         )
         audit_record_path = self._append_execution_audit(
             run_context=run_context,
             mode=mode,
             request_text=request_text,
             planning_summary=plan.summary,
-            submission_command=shlex.join(submission_plan.submit_command),
+            submission_command=submit_command_text,
             job_id=job_handle.job_id,
             log_paths=[submission_plan.paths.stdout_path, submission_plan.paths.stderr_path],
             manual_confirmation_records=safety_review.human_confirmation_conditions,
             artifact_index=artifact_index,
             report_summary=report_summary,
         )
+        if audit_record_path:
+            artifact_index["results"] = self._stable_unique(
+                [*artifact_index.get("results", []), audit_record_path]
+            )
         run_record = self._memory_coordinator.record_execution_closure(
             task_id=run_context.task_id,
             run_id=run_context.run_id,
@@ -247,7 +265,7 @@ class ApplicationFacade:
             domain=plan.domain,
             input_summary=request_text,
             planning_summary=plan.summary,
-            submission_command=shlex.join(submission_plan.submit_command),
+            submission_command=submit_command_text,
             job_id=job_handle.job_id,
             log_paths=[submission_plan.paths.stdout_path, submission_plan.paths.stderr_path],
             manual_confirmation_records=safety_review.human_confirmation_conditions,
@@ -434,6 +452,56 @@ class ApplicationFacade:
         plan: TaskPlan,
         working_directory: str,
         log_paths: list[str],
+        run_context: RunContext,
+        job_handle: JobHandle,
+        submission_command: str,
+        scheduler_script_path: str,
+        wrapper_path: str,
+        audit_path: str | None,
+    ) -> tuple[dict[str, list[str]], str]:
+        pipeline_name = plan.pipeline_spec.name if plan.pipeline_spec is not None else "qc_pipeline"
+        fallback_index, fallback_summary = self._build_blueprint_artifact_index(
+            plan=plan,
+            working_directory=working_directory,
+            log_paths=log_paths,
+        )
+        report_payload = self._run_report_generator_artifact_index(
+            pipeline_name=pipeline_name,
+            working_directory=working_directory,
+            run_context=run_context,
+            job_handle=job_handle,
+            submission_command=submission_command,
+            scheduler_script_path=scheduler_script_path,
+            wrapper_path=wrapper_path,
+            log_paths=log_paths,
+            audit_path=audit_path,
+        )
+        if report_payload is None:
+            return fallback_index, fallback_summary
+        report_index = self._classify_report_generator_artifacts(
+            working_directory=working_directory,
+            payload=report_payload,
+        )
+
+        artifact_index = {
+            "results": self._stable_unique([*fallback_index["results"], *report_index["results"]]),
+            "figures": self._stable_unique([*fallback_index["figures"], *report_index["figures"]]),
+            "logs": [path for path in log_paths if path],
+            "reports": self._stable_unique([*fallback_index["reports"], *report_index["reports"]]),
+        }
+        report_summary = self._build_report_generator_summary(
+            payload=report_payload,
+            pipeline_name=pipeline_name,
+            artifact_index=artifact_index,
+        )
+        return artifact_index, report_summary
+
+    def _build_blueprint_artifact_index(
+        self,
+        *,
+        plan: TaskPlan,
+        working_directory: str,
+        log_paths: list[str],
     ) -> tuple[dict[str, list[str]], str]:
         pipeline_name = plan.pipeline_spec.name if plan.pipeline_spec is not None else "qc_pipeline"
         blueprint = build_blueprint(pipeline_name)
@@ -465,6 +533,300 @@ class ApplicationFacade:
             f"{len(artifact_index['logs'])} logs, {len(reports)} reports indexed."
         )
         return artifact_index, report_summary
+
+    def _run_report_generator_artifact_index(
+        self,
+        *,
+        pipeline_name: str,
+        working_directory: str,
+        run_context: RunContext,
+        job_handle: JobHandle,
+        submission_command: str,
+        scheduler_script_path: str,
+        wrapper_path: str,
+        log_paths: list[str],
+        audit_path: str | None,
+    ) -> dict[str, object] | None:
+        script_path = Path(__file__).resolve().parents[2] / "scripts" / "report_generator" / "run_report_generator.sh"
+        if not script_path.exists():
+            return None
+
+        bash = shutil.which("bash")
+        if bash is None:
+            return None
+
+        work_path = Path(working_directory)
+        if not work_path.is_dir():
+            return None
+
+        results_root = self._join_work_path(working_directory, "results")
+        if not Path(results_root).is_dir():
+            return None
+
+        index_path = self._join_work_path(working_directory, "results/report_index.json")
+        summary_output = self._join_work_path(working_directory, "reports/summary_report.md")
+        traceability_dir = self._join_work_path(working_directory, "results/traceability")
+        command = [
+            bash,
+            "--noprofile",
+            "--norc",
+            script_path.as_posix(),
+            "--workdir",
+            working_directory,
+            "--results-root",
+            results_root,
+            "--summary-output",
+            summary_output,
+            "--traceability-dir",
+            traceability_dir,
+            "--pipeline",
+            pipeline_name,
+            "--task-id",
+            run_context.task_id,
+            "--run-id",
+            run_context.run_id,
+            "--job-id",
+            job_handle.job_id,
+            "--job-state",
+            job_handle.state.value,
+            "--submit-command",
+            submission_command,
+            "--scheduler-script",
+            scheduler_script_path,
+            "--wrapper",
+            wrapper_path,
+            "--stdout-path",
+            log_paths[0] if len(log_paths) > 0 else "",
+            "--stderr-path",
+            log_paths[1] if len(log_paths) > 1 else "",
+            "--force",
+        ]
+        if run_context.session_id:
+            command.extend(["--session-id", run_context.session_id])
+        if audit_path:
+            command.extend(["--audit-path", audit_path])
+        for log_path in log_paths:
+            if log_path:
+                command.extend(["--log-path", log_path])
+        try:
+            completed = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=max(10, self._settings.scheduler_command_timeout_seconds),
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return None
+        if completed.returncode != 0:
+            return None
+
+        index_file = Path(index_path)
+        if not index_file.is_file():
+            return None
+
+        try:
+            payload = json.loads(index_file.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return None
+        if not isinstance(payload, dict):
+            return None
+        return payload
+
+    def _classify_report_generator_artifacts(
+        self,
+        *,
+        working_directory: str,
+        payload: dict[str, object],
+    ) -> dict[str, list[str]]:
+        results: list[str] = []
+        figures: list[str] = []
+        reports: list[str] = []
+        collections = payload.get("collections")
+        if isinstance(collections, dict):
+            results.extend(self._resolve_collection_paths(working_directory=working_directory, values=collections.get("results")))
+            figures.extend(self._resolve_collection_paths(working_directory=working_directory, values=collections.get("figures")))
+            reports.extend(self._resolve_collection_paths(working_directory=working_directory, values=collections.get("reports")))
+
+        by_kind = payload.get("by_kind")
+        if isinstance(by_kind, dict):
+            results.extend(self._resolve_collection_paths(working_directory=working_directory, values=by_kind.get("results")))
+            figures.extend(self._resolve_collection_paths(working_directory=working_directory, values=by_kind.get("figures")))
+            reports.extend(self._resolve_collection_paths(working_directory=working_directory, values=by_kind.get("reports")))
+            traceability_paths = self._resolve_collection_paths(
+                working_directory=working_directory,
+                values=by_kind.get("traceability"),
+            )
+            for path in traceability_paths:
+                if path.lower().endswith((".md", ".markdown")):
+                    reports.append(path)
+                else:
+                    results.append(path)
+
+        raw_artifacts = payload.get("artifacts", [])
+        if isinstance(raw_artifacts, list):
+            for item in raw_artifacts:
+                if not isinstance(item, dict):
+                    continue
+                raw_path = str(item.get("path", "")).strip()
+                if not raw_path:
+                    continue
+                resolved_path = self._resolve_artifact_path(
+                    working_directory=working_directory,
+                    path=raw_path,
+                )
+                kind = str(item.get("kind", "")).strip().lower()
+                lowered_path = raw_path.replace("\\", "/").lower()
+                suffix = Path(raw_path).suffix.lower()
+                if kind in {"figure", "figures"} or "/figures/" in lowered_path or suffix in {".png", ".svg", ".jpg", ".jpeg", ".pdf"}:
+                    figures.append(resolved_path)
+                elif kind in {"report", "reports"} or lowered_path.startswith("reports/") or "report" in lowered_path or suffix in {".md", ".markdown"}:
+                    reports.append(resolved_path)
+                elif kind in {"traceability"} and suffix in {".md", ".markdown"}:
+                    reports.append(resolved_path)
+                else:
+                    results.append(resolved_path)
+
+        traceability = payload.get("traceability")
+        if isinstance(traceability, dict):
+            links = traceability.get("links", [])
+            if isinstance(links, list):
+                for link in links:
+                    if not isinstance(link, dict):
+                        continue
+                    raw_path = str(link.get("path", "")).strip()
+                    if not raw_path:
+                        continue
+                    resolved_path = self._resolve_artifact_path(
+                        working_directory=working_directory,
+                        path=raw_path,
+                    )
+                    suffix = Path(raw_path).suffix.lower()
+                    if suffix in {".md", ".markdown"}:
+                        reports.append(resolved_path)
+                    elif suffix in {".json", ".jsonl"}:
+                        results.append(resolved_path)
+        return {
+            "results": self._stable_unique(results),
+            "figures": self._stable_unique(figures),
+            "reports": self._stable_unique(reports),
+        }
+
+    def _resolve_collection_paths(
+        self,
+        *,
+        working_directory: str,
+        values: object,
+    ) -> list[str]:
+        if not isinstance(values, list):
+            return []
+        resolved: list[str] = []
+        for item in values:
+            raw_path = str(item).strip()
+            if not raw_path:
+                continue
+            resolved.append(
+                self._resolve_artifact_path(
+                    working_directory=working_directory,
+                    path=raw_path,
+                )
+            )
+        return resolved
+
+    def _build_report_generator_summary(
+        self,
+        *,
+        payload: dict[str, object],
+        pipeline_name: str,
+        artifact_index: dict[str, list[str]],
+    ) -> str:
+        base = (
+            f"{pipeline_name} report_generator integrated "
+            f"{len(artifact_index['results']) + len(artifact_index['figures']) + len(artifact_index['reports'])} indexed artifacts; "
+            f"{len(artifact_index['results'])} results, {len(artifact_index['figures'])} figures, "
+            f"{len(artifact_index['logs'])} logs, {len(artifact_index['reports'])} reports."
+        )
+        details: list[str] = []
+
+        summary = payload.get("summary")
+        if isinstance(summary, dict):
+            one_line = str(summary.get("one_line", "")).strip()
+            if one_line:
+                details.append(f"index={one_line}")
+
+        selected_blueprint = payload.get("selected_blueprint_summary")
+        if isinstance(selected_blueprint, dict):
+            blueprint_name = str(selected_blueprint.get("name", "")).strip()
+            coverage = selected_blueprint.get("coverage", {})
+            if blueprint_name:
+                details.append(f"blueprint={blueprint_name}")
+            if isinstance(coverage, dict):
+                present = coverage.get("present_markers", 0)
+                required = coverage.get("required_markers", 0)
+                details.append(f"coverage={present}/{required}")
+
+        diagnostics = payload.get("diagnostics")
+        if isinstance(diagnostics, dict):
+            diagnostic_status = str(diagnostics.get("status", "")).strip()
+            diagnostic_summary = str(diagnostics.get("summary", "")).strip()
+            if diagnostic_status:
+                if diagnostic_summary:
+                    details.append(f"diagnostics={diagnostic_status}:{diagnostic_summary}")
+                else:
+                    details.append(f"diagnostics={diagnostic_status}")
+
+        traceability = payload.get("traceability")
+        if isinstance(traceability, dict):
+            links = traceability.get("links", [])
+            if isinstance(links, list):
+                labels: list[str] = []
+                for link in links:
+                    if not isinstance(link, dict):
+                        continue
+                    label = str(link.get("rel", "")).strip()
+                    if label:
+                        labels.append(label)
+                if labels:
+                    details.append(f"traceability={','.join(self._stable_unique(labels)[:4])}")
+
+        if details:
+            return f"{base} {'; '.join(details)}."
+        return base
+
+    def _resolve_artifact_path(
+        self,
+        *,
+        working_directory: str,
+        path: str,
+    ) -> str:
+        normalized = path.replace("\\", "/").strip()
+        if not normalized:
+            return normalized
+        if normalized.startswith("/") or (len(normalized) >= 2 and normalized[1] == ":"):
+            return normalized
+        return self._join_work_path(working_directory, normalized)
+
+    @staticmethod
+    def _stable_unique(items: list[str]) -> list[str]:
+        ordered: list[str] = []
+        seen: set[str] = set()
+        for item in items:
+            if not item or item in seen:
+                continue
+            seen.add(item)
+            ordered.append(item)
+        return ordered
+
+    def _predict_audit_record_path(
+        self,
+        *,
+        run_context: RunContext,
+        working_directory: str,
+    ) -> str:
+        return self._join_work_path(
+            working_directory,
+            f".geneagent/audit/{run_context.task_id}/{run_context.run_id}.jsonl",
+        )
 
     def _append_execution_audit(
         self,

@@ -1,8 +1,9 @@
-"""Typer-based CLI entrypoint for the GeneAgent skeleton."""
+"""Typer-based CLI entrypoint for GeneAgent V1 workflows."""
 
 from __future__ import annotations
 
 import json
+import shutil
 
 import typer
 from rich.console import Console
@@ -11,7 +12,7 @@ from scheduler.base import SchedulerExecutionError
 from contracts.api import RequestIdentity
 from runtime.bootstrap import create_application_context
 
-app = typer.Typer(help="GeneAgent CLI skeleton for local genetics workflow orchestration.")
+app = typer.Typer(help="GeneAgent CLI for local genetics workflow orchestration.")
 console = Console()
 
 
@@ -171,17 +172,38 @@ def poll_explain(job_id: str) -> None:
 
 @app.command("doctor")
 def doctor() -> None:
-    """Display the current runtime skeleton configuration."""
+    """Display current runtime configuration and scheduler readiness."""
 
     context = create_application_context()
+    scheduler_commands = _scheduler_command_set(context.settings.scheduler_type.value)
+    command_paths = {command: shutil.which(command) for command in ["bash", *scheduler_commands]}
+    missing_commands = [name for name, resolved in command_paths.items() if resolved is None]
+    real_submit_ready = (
+        context.settings.scheduler_real_execution_enabled and all(command_paths[name] for name in scheduler_commands)
+    )
+    recommendation = (
+        "real submit/poll ready"
+        if real_submit_ready
+        else "use dry-run/submit-preview locally, or run real submit/poll on scheduler host"
+    )
     console.print(
         {
             "app_name": context.settings.app_name,
             "scheduler_type": context.settings.scheduler_type.value,
             "dry_run_default": context.settings.dry_run_default,
+            "scheduler_real_execution_enabled": context.settings.scheduler_real_execution_enabled,
             "work_root": context.settings.work_root,
+            "command_paths": command_paths,
+            "missing_commands": missing_commands,
+            "recommendation": recommendation,
         }
     )
+
+
+def _scheduler_command_set(scheduler: str) -> list[str]:
+    if scheduler.lower() == "pbs":
+        return ["qsub", "qstat"]
+    return ["sbatch", "squeue", "sacct"]
 
 
 def main() -> None:

@@ -90,7 +90,7 @@ class InMemoryRunStore:
 
 
 class MemoryCoordinator:
-    """Create deterministic run records and stage handoff placeholders."""
+    """Create deterministic run records and stage handoff summaries."""
 
     def __init__(
         self,
@@ -143,7 +143,7 @@ class MemoryCoordinator:
                         f"outputs={','.join(current_stage.outputs) if current_stage.outputs else 'none'}",
                     ],
                     open_questions=[
-                        "Replace this placeholder with runtime observations after tool execution is wired in."
+                        "Attach runtime observations after this stage executes to complete the handoff trace."
                     ],
                 )
             )

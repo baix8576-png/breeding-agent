@@ -1,4 +1,4 @@
-"""Tool registry and manifest skeleton."""
+"""Tool registry and manifest catalog for GeneAgent V1."""
 
 from __future__ import annotations
 
@@ -65,7 +65,7 @@ class ToolRegistry:
                 ),
                 ToolManifest(
                     name="external_context_fallback",
-                    description="Attach external placeholder guidance only when local context coverage is insufficient.",
+                    description="Attach external fallback guidance only when local context coverage is insufficient.",
                     inputs=["query", "task_domain", "sanitized_request"],
                     outputs=["external_context_hits"],
                     preconditions=["local retrieval coverage below threshold"],
@@ -137,7 +137,7 @@ class ToolRegistry:
                 ),
                 ToolManifest(
                     name="memory_handoff_builder",
-                    description="Persist stage handoff placeholders for later execution-time enrichment.",
+                    description="Persist stage handoff records for execution-time traceability and enrichment.",
                     inputs=["workflow_stage_map", "retrieval_context", "tool_selection"],
                     outputs=["memory_handoff"],
                     preconditions=["workflow stages ready"],

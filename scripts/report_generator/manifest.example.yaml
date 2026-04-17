@@ -1,9 +1,19 @@
-version: v1
+version: v1.5
 tool_family: report_generator
 workdir: D:/geneagent
 inputs:
   report_index: results/report_index.json
   traceability_manifest: results/traceability/traceability.json
+  pipeline_name: pca_pipeline
+  task_id: task-001
+  run_id: run-001
+  session_id: session-001
+  job_id: "12345"
+  submit_command: sbatch D:/geneagent/work/.geneagent/scheduler/geneagent-job.sbatch.sh
+  scheduler_script: D:/geneagent/work/.geneagent/scheduler/geneagent-job.sbatch.sh
+  wrapper_script: D:/geneagent/work/.geneagent/scheduler/geneagent-job.wrapper.sh
+  stdout_log: D:/geneagent/work/logs/geneagent-job.slurm.stdout.log
+  stderr_log: D:/geneagent/work/logs/geneagent-job.slurm.stderr.log
   figure_roots:
     - results/structure/figures
     - results/prediction/figures

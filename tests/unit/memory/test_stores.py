@@ -75,7 +75,7 @@ def test_memory_coordinator_records_execution_closure_for_run_and_session() -> N
         session_id="session-memory-closure-001",
         domain=TaskDomain.BIOINFORMATICS,
         input_summary="Prepare genomic prediction submission preview.",
-        planning_summary="Bioinformatics workflow skeleton ready.",
+        planning_summary="Bioinformatics workflow ready.",
         submission_command="sbatch /cluster/work/demo/.geneagent/scheduler/geneagent-job.sbatch.sh",
         job_id="PLAN-SLURM-task-memory-closure-001-run-memory-closure-001-GENEAGENT-JOB",
         log_paths=["/cluster/work/demo/logs/stdout.log", "/cluster/work/demo/logs/stderr.log"],

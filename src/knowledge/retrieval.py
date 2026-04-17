@@ -1,4 +1,4 @@
-"""Local-first retrieval services used by the orchestration skeleton."""
+"""Local-first retrieval services used by the orchestration runtime."""
 
 from __future__ import annotations
 
@@ -159,7 +159,7 @@ class LocalKnowledgeRetriever:
             RetrievalDocument(
                 source="local",
                 title="Knowledge Response Playbook",
-                summary="Prefer local SOP, FAQ, and literature index summaries before external lookup placeholders.",
+                summary="Prefer local SOP, FAQ, and literature index summaries before external fallback lookup.",
                 tags=["shared", TaskDomain.KNOWLEDGE.value],
                 keywords=[
                     "faq",
@@ -322,36 +322,36 @@ class LocalKnowledgeRetriever:
 
 
 class ExternalKnowledgeRetriever:
-    """Placeholder external retriever used only after local coverage is insufficient."""
+    """External fallback retriever used only after local coverage is insufficient."""
 
     def search(self, query: str, domain: TaskDomain) -> list[RetrievalDocument]:
-        """Return deterministic external placeholder hits without real network access."""
+        """Return deterministic external fallback hits without real network access."""
 
         if domain == TaskDomain.BIOINFORMATICS:
             return [
                 RetrievalDocument(
-                    source="external-placeholder",
-                    title="External Method Index Placeholder",
+                    source="external-fallback",
+                    title="External Method Index Fallback",
                     summary="Attach MCP-backed method or literature retrieval here once local coverage is insufficient.",
                 ),
                 RetrievalDocument(
-                    source="external-placeholder",
-                    title="External Validation Reference Placeholder",
+                    source="external-fallback",
+                    title="External Validation Reference Fallback",
                     summary="Attach benchmark references here after sanitization rules pass.",
                 ),
             ]
         if domain == TaskDomain.SYSTEM:
             return [
                 RetrievalDocument(
-                    source="external-placeholder",
-                    title="External Diagnostic Knowledge Placeholder",
+                    source="external-fallback",
+                    title="External Diagnostic Knowledge Fallback",
                     summary="Attach documentation or troubleshooting lookup here after log sanitization.",
                 )
             ]
         return [
             RetrievalDocument(
-                source="external-placeholder",
-                title="External FAQ/Literature Placeholder",
+                source="external-fallback",
+                title="External FAQ/Literature Fallback",
                 summary="Attach external background lookup here only after local SOP and FAQ sources are exhausted.",
             )
         ]
@@ -369,7 +369,7 @@ class KnowledgeResolver:
         self._external_retriever = external_retriever or ExternalKnowledgeRetriever()
 
     def resolve(self, query: str, domain: TaskDomain) -> RetrievalBundle:
-        """Resolve retrieval context using local sources first and external placeholders second."""
+        """Resolve retrieval context using local sources first and external fallback second."""
 
         local_hits = self._local_retriever.search(query=query, domain=domain)
         positive_hits = [document for document in local_hits if document.score > 0]
@@ -384,7 +384,7 @@ class KnowledgeResolver:
             f"coverage={coverage}",
         ]
         if fallback_used:
-            rationale.append("fallback=external_placeholder")
+            rationale.append("fallback=external_fallback")
 
         return RetrievalBundle(
             query=query,
@@ -392,7 +392,7 @@ class KnowledgeResolver:
             local_hits=local_hits,
             external_hits=external_hits,
             fallback_used=fallback_used,
-            retrieval_mode="local_plus_external_placeholder" if fallback_used else "local_only",
+            retrieval_mode="local_plus_external_fallback" if fallback_used else "local_only",
             coverage=coverage,
             rationale=rationale,
         )

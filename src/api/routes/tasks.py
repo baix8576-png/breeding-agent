@@ -1,4 +1,4 @@
-"""Task planning endpoints for the first project skeleton."""
+"""Task planning and execution endpoints for GeneAgent V1."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 @router.post("/draft-plan")
 def draft_plan(payload: DraftPlanRequest) -> dict[str, object]:
-    """Return the orchestration skeleton output for a user request."""
+    """Return structured orchestration output for a user request."""
 
     context = create_application_context()
     plan_result = context.facade.draft_plan(

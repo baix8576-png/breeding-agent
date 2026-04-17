@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import subprocess
 
+import pytest
+
 from contracts.tasks import ResourceEstimate
 from scheduler.pbs import PbsSchedulerAdapter
 from scheduler.poller import JobPoller
+from scheduler.base import SchedulerExecutionError
 from scheduler.slurm import SlurmSchedulerAdapter
 
 
@@ -134,5 +137,38 @@ def test_pbs_real_submit_and_poll_parse_job_state(tmp_path) -> None:
 
     assert handle.job_id == "4123.server"
     assert state.value == "completed"
+
+
+def test_default_command_runner_uses_windows_cmd_fallback(monkeypatch) -> None:
+    adapter = SlurmSchedulerAdapter()
+    invocations: list[list[str]] = []
+
+    def fake_run(command: list[str], **_kwargs) -> subprocess.CompletedProcess[str]:
+        invocations.append(command)
+        if command[0] == "sbatch":
+            raise FileNotFoundError("sbatch missing in PATH")
+        return subprocess.CompletedProcess(command, 0, stdout="Submitted batch job 1001\n", stderr="")
+
+    monkeypatch.setattr(adapter, "_is_windows_runtime", lambda: True)
+    monkeypatch.setattr("scheduler.base.shutil.which", lambda name: r"C:\shim\sbatch.cmd" if name == "sbatch.cmd" else None)
+    monkeypatch.setattr("scheduler.base.subprocess.run", fake_run)
+
+    result = adapter._default_command_runner(["sbatch", "demo.sbatch.sh"], cwd=None, timeout_seconds=3)
+
+    assert result.returncode == 0
+    assert invocations[0][0] == "sbatch"
+    assert invocations[1][0].lower().endswith("sbatch.cmd")
+
+
+def test_run_command_error_message_includes_missing_executable_name() -> None:
+    def missing_runner(_command: list[str], _cwd: str | None, _timeout: int) -> subprocess.CompletedProcess[str]:
+        raise FileNotFoundError("not found")
+
+    adapter = SlurmSchedulerAdapter(command_runner=missing_runner)
+
+    with pytest.raises(SchedulerExecutionError) as raised:
+        adapter._run_command(command=["sbatch", "demo.sbatch.sh"], cwd=None, timeout_seconds=2)
+
+    assert "sbatch" in str(raised.value)
 
 

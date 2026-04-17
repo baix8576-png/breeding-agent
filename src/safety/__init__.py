@@ -1,4 +1,4 @@
-"""Safety, redaction, and circuit breaker placeholders."""
+"""Safety, redaction, and circuit breaker exports."""
 
 from safety.circuit_breaker import CircuitBreaker, CircuitBreakerEvent, CircuitBreakerSnapshot
 from safety.gates import (

@@ -11,7 +11,7 @@ from contracts.common import SchedulerKind
 
 
 class Settings(BaseSettings):
-    """Centralized settings object for the project skeleton."""
+    """Centralized runtime settings for GeneAgent V1."""
 
     app_name: str = "GeneAgent"
     app_env: str = "dev"

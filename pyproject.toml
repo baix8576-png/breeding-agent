@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "geneagent"
 version = "0.1.0"
-description = "Local AI assistant skeleton for population genetics and quantitative genetics workflows on Linux clusters."
+description = "Local AI assistant for population genetics and quantitative genetics workflows on Linux clusters."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

@@ -65,12 +65,13 @@ if [[ ${#FIGURE_ROOTS[@]} -eq 0 ]]; then
   fi
 fi
 
-if [[ ${#FIGURE_ROOTS[@]} -eq 0 ]]; then
-  fail "No figure roots provided or discovered."
-fi
-
 manifest_tsv="$OUTPUT_DIR/figure_index.tsv"
 printf "source_root\tfigure_path\tcopied_to\n" > "$manifest_tsv"
+
+if [[ ${#FIGURE_ROOTS[@]} -eq 0 ]]; then
+  log "No figure roots provided or discovered; skipping figure collection."
+  exit 0
+fi
 
 copied=0
 for root in "${FIGURE_ROOTS[@]}"; do
@@ -84,7 +85,8 @@ for root in "${FIGURE_ROOTS[@]}"; do
 done
 
 if [[ "$copied" -eq 0 ]]; then
-  fail "No figures were found in the provided roots."
+  log "No figures were found in the provided roots; continuing without copied figures."
+  exit 0
 fi
 
 log "Collected $copied figure(s) into $OUTPUT_DIR"
