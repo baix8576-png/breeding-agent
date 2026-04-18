@@ -29,12 +29,18 @@ class SchedulerExecutionError(RuntimeError):
         stdout: str = "",
         stderr: str = "",
         attempts: int = 0,
+        error_code: str | None = None,
+        retryable: bool | None = None,
+        phase: str | None = None,
     ) -> None:
         super().__init__(message)
         self.command = command or []
         self.stdout = stdout
         self.stderr = stderr
         self.attempts = attempts
+        self.error_code = error_code
+        self.retryable = retryable
+        self.phase = phase
 
 
 class BaseSchedulerAdapter(ABC):
@@ -209,12 +215,10 @@ class BaseSchedulerAdapter(ABC):
                     timeout_seconds=self._command_timeout_seconds,
                 )
                 if result.returncode != 0:
-                    raise SchedulerExecutionError(
-                        "Scheduler submit command returned non-zero exit code.",
+                    raise self._build_submit_returncode_error(
                         command=plan.submit_command,
-                        stdout=result.stdout,
-                        stderr=result.stderr,
-                        attempts=attempt,
+                        result=result,
+                        attempt=attempt,
                     )
                 job_id = self._parse_submit_output(
                     stdout=result.stdout,
@@ -235,7 +239,7 @@ class BaseSchedulerAdapter(ABC):
                 )
             except SchedulerExecutionError as error:
                 errors.append(error)
-                if attempt >= self._retry_max_attempts:
+                if attempt >= self._retry_max_attempts or not self._is_retryable_submit_error(error):
                     break
                 backoff = self._retry_backoff_seconds[min(attempt - 1, len(self._retry_backoff_seconds) - 1)]
                 time.sleep(max(0, backoff))
@@ -247,6 +251,9 @@ class BaseSchedulerAdapter(ABC):
             stdout=last.stdout,
             stderr=last.stderr,
             attempts=len(errors),
+            error_code=last.error_code,
+            retryable=last.retryable,
+            phase=last.phase,
         )
 
     def poll(self, job_id: str) -> JobState:
@@ -514,6 +521,33 @@ class BaseSchedulerAdapter(ABC):
             return "awaiting_submission_gate"
         return "scheduler_plan_ready"
 
+    def _build_submit_returncode_error(
+        self,
+        *,
+        command: list[str],
+        result: subprocess.CompletedProcess[str],
+        attempt: int,
+    ) -> SchedulerExecutionError:
+        """Build a scheduler-specific submit failure error for non-zero return code."""
+
+        return SchedulerExecutionError(
+            "Scheduler submit command returned non-zero exit code.",
+            command=command,
+            stdout=result.stdout,
+            stderr=result.stderr,
+            attempts=attempt,
+            error_code="SUBMIT_FAILED",
+            retryable=True,
+            phase="submit",
+        )
+
+    def _is_retryable_submit_error(self, error: SchedulerExecutionError) -> bool:
+        """Return whether a submit error should trigger automatic retry."""
+
+        if error.retryable is not None:
+            return error.retryable
+        return True
+
     def _normalize_walltime(self, walltime: str) -> str:
         """Normalize a scheduler walltime string into HH:MM:SS."""
 
@@ -579,6 +613,9 @@ class BaseSchedulerAdapter(ABC):
                     "Use dry-run/submit-preview on local Windows, or run real submit/poll on a host with scheduler CLI."
                 ),
                 command=command,
+                error_code="COMMAND_NOT_FOUND",
+                retryable=False,
+                phase="command",
             ) from error
         except subprocess.TimeoutExpired as error:
             raise SchedulerExecutionError(
@@ -586,11 +623,17 @@ class BaseSchedulerAdapter(ABC):
                 command=command,
                 stdout=(error.stdout or "") if isinstance(error.stdout, str) else "",
                 stderr=(error.stderr or "") if isinstance(error.stderr, str) else "",
+                error_code="TIMEOUT",
+                retryable=True,
+                phase="command",
             ) from error
         except OSError as error:
             raise SchedulerExecutionError(
                 f"Scheduler command execution failed: {error}",
                 command=command,
+                error_code="OS_ERROR",
+                retryable=True,
+                phase="command",
             ) from error
 
     def _default_command_runner(
