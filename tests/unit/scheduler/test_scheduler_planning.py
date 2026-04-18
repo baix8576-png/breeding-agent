@@ -139,6 +139,154 @@ def test_pbs_real_submit_and_poll_parse_job_state(tmp_path) -> None:
     assert state.value == "completed"
 
 
+def test_pbs_real_submit_retries_transient_error_then_succeeds(tmp_path) -> None:
+    submit_attempts = 0
+
+    def command_runner(command: list[str], cwd: str | None, timeout: int) -> subprocess.CompletedProcess[str]:
+        nonlocal submit_attempts
+        _ = (cwd, timeout)
+        if command[0] == "qsub":
+            submit_attempts += 1
+            if submit_attempts == 1:
+                return subprocess.CompletedProcess(command, 1, stdout="", stderr="cannot connect to server")
+            return subprocess.CompletedProcess(command, 0, stdout="5123.server\n", stderr="")
+        raise AssertionError(f"Unexpected command: {command}")
+
+    adapter = PbsSchedulerAdapter(
+        real_execution_enabled=True,
+        retry_max_attempts=2,
+        retry_backoff_seconds=[0],
+        command_runner=command_runner,
+    )
+
+    handle = adapter.submit(
+        working_directory=str(tmp_path),
+        resources=ResourceEstimate(cpus=2, memory_gb=4, walltime="00:30:00"),
+        task_id="task-pbs-retry-001",
+        run_id="run-pbs-retry-001",
+    )
+
+    assert submit_attempts == 2
+    assert handle.job_id == "5123.server"
+    assert handle.state.value == "queued"
+
+
+def test_pbs_real_submit_permission_denied_is_not_retried(tmp_path) -> None:
+    submit_attempts = 0
+
+    def command_runner(command: list[str], cwd: str | None, timeout: int) -> subprocess.CompletedProcess[str]:
+        nonlocal submit_attempts
+        _ = (cwd, timeout)
+        if command[0] == "qsub":
+            submit_attempts += 1
+            return subprocess.CompletedProcess(command, 1, stdout="", stderr="qsub: Unauthorized Request")
+        raise AssertionError(f"Unexpected command: {command}")
+
+    adapter = PbsSchedulerAdapter(
+        real_execution_enabled=True,
+        retry_max_attempts=3,
+        retry_backoff_seconds=[0],
+        command_runner=command_runner,
+    )
+
+    with pytest.raises(SchedulerExecutionError) as raised:
+        adapter.submit(
+            working_directory=str(tmp_path),
+            resources=ResourceEstimate(cpus=2, memory_gb=4, walltime="00:30:00"),
+            task_id="task-pbs-denied-001",
+            run_id="run-pbs-denied-001",
+        )
+
+    assert submit_attempts == 1
+    assert raised.value.command[0] == "qsub"
+    assert raised.value.error_code == "SUBMIT_PERMISSION_DENIED"
+    assert raised.value.attempts == 1
+
+
+def test_pbs_real_poll_uses_qstat_f_then_xf_fallback() -> None:
+    commands: list[list[str]] = []
+
+    def command_runner(command: list[str], cwd: str | None, timeout: int) -> subprocess.CompletedProcess[str]:
+        _ = (cwd, timeout)
+        commands.append(command)
+        if command[:2] == ["qstat", "-f"]:
+            return subprocess.CompletedProcess(command, 153, stdout="", stderr="qstat: Unknown Job Id 4123.server")
+        if command[:2] == ["qstat", "-xf"]:
+            return subprocess.CompletedProcess(
+                command,
+                0,
+                stdout="Job Id: 4123.server\n    job_state = F\n    Exit_status = 0\n",
+                stderr="",
+            )
+        raise AssertionError(f"Unexpected command: {command}")
+
+    adapter = PbsSchedulerAdapter(real_execution_enabled=True, command_runner=command_runner)
+    state = adapter.poll("4123.server")
+
+    assert state.value == "completed"
+    assert commands[0][:2] == ["qstat", "-f"]
+    assert commands[1][:2] == ["qstat", "-xf"]
+
+
+def test_pbs_real_poll_non_unknown_job_error_returns_unknown() -> None:
+    commands: list[list[str]] = []
+
+    def command_runner(command: list[str], cwd: str | None, timeout: int) -> subprocess.CompletedProcess[str]:
+        _ = (cwd, timeout)
+        commands.append(command)
+        if command[:2] == ["qstat", "-f"]:
+            return subprocess.CompletedProcess(command, 1, stdout="", stderr="qstat: permission denied")
+        raise AssertionError(f"Unexpected command: {command}")
+
+    adapter = PbsSchedulerAdapter(real_execution_enabled=True, command_runner=command_runner)
+    state = adapter.poll("4123.server")
+
+    assert state.value == "unknown"
+    assert commands == [["qstat", "-f", "4123.server"]]
+
+
+@pytest.mark.parametrize(
+    ("token", "output", "expected_state"),
+    [
+        ("Q", "job_state = Q\n", "queued"),
+        ("R", "job_state = R\n", "running"),
+        ("F", "job_state = F\nExit_status = 0\n", "completed"),
+        ("F", "job_state = F\nExit_status = 1\n", "failed"),
+        ("F", "job_state = F\n", "unknown"),
+        ("X", "job_state = X\n", "failed"),
+        ("Z", "job_state = Z\n", "unknown"),
+    ],
+)
+def test_pbs_state_parsing_maps_tokens_and_exit_status(token: str, output: str, expected_state: str) -> None:
+    adapter = PbsSchedulerAdapter()
+    assert adapter._state_from_pbs_token(token, output).value == expected_state
+
+
+def test_pbs_submission_plan_recovery_text_is_consistent_with_slurm() -> None:
+    resources = ResourceEstimate(cpus=4, memory_gb=8, walltime="01:00:00")
+    pbs_plan = PbsSchedulerAdapter().build_submission_plan(
+        command=["echo", "pbs"],
+        working_directory="/cluster/work/demo",
+        resources=resources,
+        task_id="task-pbs-plan-001",
+        run_id="run-pbs-plan-001",
+    )
+    slurm_plan = SlurmSchedulerAdapter().build_submission_plan(
+        command=["echo", "slurm"],
+        working_directory="/cluster/work/demo",
+        resources=resources,
+        task_id="task-slurm-plan-001",
+        run_id="run-slurm-plan-001",
+    )
+
+    assert pbs_plan.polling_hint is not None
+    assert "qstat -f" in pbs_plan.polling_hint
+    assert any("auto retry strategy" in line for line in pbs_plan.failure_recovery)
+    assert any("require manual approval before requeue" in line for line in pbs_plan.failure_recovery)
+    assert any("auto retry strategy" in line for line in slurm_plan.failure_recovery)
+    assert any("require manual approval before requeue" in line for line in slurm_plan.failure_recovery)
+
+
 def test_default_command_runner_uses_windows_cmd_fallback(monkeypatch) -> None:
     adapter = SlurmSchedulerAdapter()
     invocations: list[list[str]] = []
