@@ -24,6 +24,10 @@ class RetrievalDocument(BaseModel):
     tags: list[str] = Field(default_factory=list)
     keywords: list[str] = Field(default_factory=list)
     score: int = 0
+    matched_tags: list[str] = Field(default_factory=list)
+    matched_keywords: list[str] = Field(default_factory=list)
+    hit_reasons: list[str] = Field(default_factory=list)
+    confidence: float = 0.0
 
 
 class RetrievalBundle(BaseModel):
@@ -33,6 +37,9 @@ class RetrievalBundle(BaseModel):
     domain: TaskDomain
     local_hits: list[RetrievalDocument] = Field(default_factory=list)
     external_hits: list[RetrievalDocument] = Field(default_factory=list)
+    fallback_requested: bool = False
+    fallback_gate_decision: str = "not_requested"
+    fallback_gate_reason: str = "coverage_high"
     fallback_used: bool = False
     retrieval_mode: str = "local_only"
     coverage: str = "low"
@@ -271,24 +278,112 @@ class LocalKnowledgeRetriever:
                     tokens.extend(token.lower() for token in _TOKEN_PATTERN.findall(item))
         return list(dict.fromkeys(tokens))
 
-    def _score_document(self, query: str, document: RetrievalDocument) -> int:
+    @staticmethod
+    def _query_tokens(query: str) -> list[str]:
+        return [token.lower() for token in _TOKEN_PATTERN.findall(query.lower())]
+
+    @staticmethod
+    def _build_hit_reasons(
+        *,
+        title_hits: set[str],
+        summary_hits: set[str],
+        path_hits: set[str],
+        matched_keywords: set[str],
+        matched_tags: set[str],
+    ) -> list[str]:
+        reasons: list[str] = []
+        if matched_keywords:
+            reasons.append(f"keyword_match:{','.join(sorted(matched_keywords)[:8])}")
+        if matched_tags:
+            reasons.append(f"tag_match:{','.join(sorted(matched_tags)[:8])}")
+        if title_hits:
+            reasons.append(f"title_overlap:{','.join(sorted(title_hits)[:8])}")
+        if summary_hits:
+            reasons.append(f"summary_overlap:{','.join(sorted(summary_hits)[:8])}")
+        if path_hits:
+            reasons.append(f"path_overlap:{','.join(sorted(path_hits)[:8])}")
+        if not reasons:
+            reasons.append("no_direct_token_match")
+        return reasons
+
+    @staticmethod
+    def _confidence_from_score(
+        *,
+        score: int,
+        token_count: int,
+        matched_keywords: set[str],
+        matched_tags: set[str],
+        title_hits: set[str],
+    ) -> float:
+        if score <= 0:
+            return 0.0
+        expected_max = max(token_count, 1) * 10
+        confidence = score / expected_max
+        if matched_keywords:
+            confidence += 0.08
+        if matched_tags:
+            confidence += 0.05
+        if title_hits:
+            confidence += 0.07
+        return round(min(1.0, confidence), 3)
+
+    def _evaluate_document(self, query: str, document: RetrievalDocument) -> dict[str, object]:
         normalized = query.lower()
         score = 0
-        query_tokens = _TOKEN_PATTERN.findall(normalized)
+        query_tokens = self._query_tokens(normalized)
+        title_lower = document.title.lower()
+        summary_lower = document.summary.lower()
+        path_lower = document.path.lower()
+        keyword_tokens = [keyword.lower() for keyword in document.keywords]
+        tag_tokens = [tag.lower() for tag in document.tags]
+        matched_keywords: set[str] = set()
+        matched_tags: set[str] = set()
+        title_hits: set[str] = set()
+        summary_hits: set[str] = set()
+        path_hits: set[str] = set()
         for token in query_tokens:
-            if token in document.title.lower():
+            if token in title_lower:
                 score += 3
-            if token in document.summary.lower():
+                title_hits.add(token)
+            if token in summary_lower:
                 score += 2
-            if token in document.path.lower():
+                summary_hits.add(token)
+            if token in path_lower:
                 score += 2
-            if token in document.keywords:
+                path_hits.add(token)
+            if token in keyword_tokens:
                 score += 2
-            elif any(token == keyword or token in keyword for keyword in document.keywords):
+                matched_keywords.add(token)
+            elif any(token == keyword or token in keyword for keyword in keyword_tokens):
                 score += 1
-            if token in document.tags:
+                matched_keywords.add(token)
+            if token in tag_tokens:
                 score += 1
-        return score
+                matched_tags.add(token)
+        hit_reasons = self._build_hit_reasons(
+            title_hits=title_hits,
+            summary_hits=summary_hits,
+            path_hits=path_hits,
+            matched_keywords=matched_keywords,
+            matched_tags=matched_tags,
+        )
+        confidence = self._confidence_from_score(
+            score=score,
+            token_count=len(query_tokens),
+            matched_keywords=matched_keywords,
+            matched_tags=matched_tags,
+            title_hits=title_hits,
+        )
+        return {
+            "score": score,
+            "matched_tags": sorted(matched_tags),
+            "matched_keywords": sorted(matched_keywords),
+            "hit_reasons": hit_reasons,
+            "confidence": confidence,
+        }
+
+    def _score_document(self, query: str, document: RetrievalDocument) -> int:
+        return int(self._evaluate_document(query=query, document=document)["score"])
 
     def search(
         self,
@@ -302,8 +397,8 @@ class LocalKnowledgeRetriever:
         for document in self._catalog:
             if domain.value not in document.tags and "shared" not in document.tags:
                 continue
-            score = self._score_document(query=query, document=document)
-            matches.append(document.model_copy(update={"score": score}))
+            evaluation = self._evaluate_document(query=query, document=document)
+            matches.append(document.model_copy(update=evaluation))
 
         matches.sort(key=lambda item: (-item.score, item.title))
         top_hits = matches[:limit]
@@ -317,6 +412,10 @@ class LocalKnowledgeRetriever:
                 summary=f"Starter local guidance for planning query: {query}",
                 tags=["shared", domain.value],
                 score=0,
+                matched_tags=[domain.value],
+                matched_keywords=self._query_tokens(query)[:6],
+                hit_reasons=["fallback_local_primer", "local_catalog_no_positive_hits"],
+                confidence=0.0,
             )
         ]
 
@@ -357,6 +456,24 @@ class ExternalKnowledgeRetriever:
         ]
 
 
+class ExternalFallbackGate:
+    """Gate external fallback so local-first retrieval remains the default behavior."""
+
+    def __init__(self, *, enabled: bool = True) -> None:
+        self._enabled = enabled
+
+    def evaluate(
+        self,
+        *,
+        query: str,
+        domain: TaskDomain,
+        coverage: str,
+        local_hits: list[RetrievalDocument],
+    ) -> str:
+        del query, domain, coverage, local_hits
+        return "allowed" if self._enabled else "blocked"
+
+
 class KnowledgeResolver:
     """Coordinate local-first retrieval with deterministic fallback behavior."""
 
@@ -364,9 +481,55 @@ class KnowledgeResolver:
         self,
         local_retriever: LocalKnowledgeRetriever | None = None,
         external_retriever: ExternalKnowledgeRetriever | None = None,
+        fallback_gate: ExternalFallbackGate | None = None,
+        external_fallback_enabled: bool = True,
     ) -> None:
         self._local_retriever = local_retriever or LocalKnowledgeRetriever()
         self._external_retriever = external_retriever or ExternalKnowledgeRetriever()
+        self._external_fallback_enabled = external_fallback_enabled
+        self._fallback_gate = fallback_gate or ExternalFallbackGate(enabled=external_fallback_enabled)
+
+    @staticmethod
+    def _is_external_fallback_requested(coverage: str) -> bool:
+        return coverage != "high"
+
+    def _decide_external_fallback(
+        self,
+        *,
+        query: str,
+        fallback_requested: bool,
+        local_hits: list[RetrievalDocument],
+        coverage: str,
+        domain: TaskDomain,
+    ) -> tuple[str, str]:
+        if not fallback_requested:
+            return ("not_requested", "coverage_high")
+        if not self._external_fallback_enabled:
+            return ("blocked", "external_fallback_disabled")
+        decision = self._fallback_gate.evaluate(
+            query=query,
+            domain=domain,
+            coverage=coverage,
+            local_hits=local_hits,
+        )
+        if decision == "allowed":
+            return ("allowed", "gate_allowed")
+        if decision == "blocked":
+            return ("blocked", "gate_blocked")
+        return ("blocked", f"invalid_gate_decision:{decision}")
+
+    def _execute_external_fallback(
+        self,
+        *,
+        query: str,
+        domain: TaskDomain,
+        fallback_requested: bool,
+        fallback_gate_decision: str,
+    ) -> tuple[bool, list[RetrievalDocument]]:
+        if not fallback_requested or fallback_gate_decision != "allowed":
+            return (False, [])
+        external_hits = self._external_retriever.search(query=query, domain=domain)
+        return (True, external_hits)
 
     def resolve(self, query: str, domain: TaskDomain) -> RetrievalBundle:
         """Resolve retrieval context using local sources first and external fallback second."""
@@ -375,22 +538,42 @@ class KnowledgeResolver:
         positive_hits = [document for document in local_hits if document.score > 0]
         top_score = max((document.score for document in positive_hits), default=0)
         coverage = "high" if len(positive_hits) >= 2 or top_score >= 5 else "partial" if len(positive_hits) == 1 else "low"
-        fallback_used = coverage != "high"
-        external_hits = self._external_retriever.search(query=query, domain=domain) if fallback_used else []
+        fallback_requested = self._is_external_fallback_requested(coverage)
+        fallback_gate_decision, fallback_gate_reason = self._decide_external_fallback(
+            query=query,
+            fallback_requested=fallback_requested,
+            local_hits=local_hits,
+            coverage=coverage,
+            domain=domain,
+        )
+        fallback_used, external_hits = self._execute_external_fallback(
+            query=query,
+            domain=domain,
+            fallback_requested=fallback_requested,
+            fallback_gate_decision=fallback_gate_decision,
+        )
         rationale = [
             f"local_hits={len(local_hits)}",
             f"positive_local_hits={len(positive_hits)}",
             f"top_local_score={top_score}",
             f"coverage={coverage}",
+            f"fallback_requested={str(fallback_requested).lower()}",
+            f"fallback_gate_decision={fallback_gate_decision}",
+            f"fallback_gate_reason={fallback_gate_reason}",
         ]
         if fallback_used:
             rationale.append("fallback=external_fallback")
+        elif fallback_requested:
+            rationale.append("fallback=blocked_by_gate")
 
         return RetrievalBundle(
             query=query,
             domain=domain,
             local_hits=local_hits,
             external_hits=external_hits,
+            fallback_requested=fallback_requested,
+            fallback_gate_decision=fallback_gate_decision,
+            fallback_gate_reason=fallback_gate_reason,
             fallback_used=fallback_used,
             retrieval_mode="local_plus_external_fallback" if fallback_used else "local_only",
             coverage=coverage,
