@@ -7,6 +7,7 @@ from pathlib import Path
 
 from audit.store import FileAuditStore
 from contracts.common import SchedulerKind
+from knowledge.retrieval import KnowledgeResolver
 from memory.stores import MemoryCoordinator
 from orchestration.service import OrchestratorService
 from pipeline.validators import InputValidator
@@ -46,10 +47,15 @@ def create_application_context(settings: Settings | None = None) -> ApplicationC
     memory_coordinator = MemoryCoordinator()
     audit_store = FileAuditStore(fallback_root=str(Path.cwd() / ".tmp" / "audit"))
     resource_estimator = ConservativeResourceEstimator(default_partition=None)
+    knowledge_resolver = KnowledgeResolver(
+        external_fallback_enabled=settings.knowledge_external_fallback_enabled,
+        external_fallback_policy=settings.knowledge_external_fallback_policy,
+    )
     orchestrator = OrchestratorService(
         resource_estimator=resource_estimator,
         safety_gate=safety_gate,
         circuit_breaker=circuit_breaker,
+        knowledge_resolver=knowledge_resolver,
         memory_coordinator=memory_coordinator,
     )
     facade = ApplicationFacade(

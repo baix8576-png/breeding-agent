@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from pathlib import Path
 
 from pydantic import BaseModel, Field
@@ -12,6 +13,334 @@ from contracts.common import TaskDomain
 _TOKEN_PATTERN = re.compile(r"[A-Za-z0-9_]+|[\u4e00-\u9fff]+")
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _REFERENCES_ROOT = _PROJECT_ROOT / "references"
+_ERROR_INTENT_TOKENS = (
+    "error",
+    "failed",
+    "failure",
+    "cannot",
+    "can't",
+    "not found",
+    "no such file",
+    "permission denied",
+    "timed out",
+    "timeout",
+    "oom",
+    "killed",
+    "traceback",
+    "\u62a5\u9519",
+    "\u9519\u8bef",
+    "\u5931\u8d25",
+    "\u65e0\u6cd5",
+    "\u627e\u4e0d\u5230",
+    "\u8d85\u65f6",
+)
+_SEVERITY_RANK = {
+    "critical": 4,
+    "high": 3,
+    "medium": 2,
+    "low": 1,
+}
+
+
+@dataclass(frozen=True)
+class _DiagnosticPattern:
+    pattern_id: str
+    tool: str
+    error_category: str
+    severity: str
+    regex_signals: tuple[str, ...]
+    tool_aliases: tuple[str, ...]
+    suggested_actions: tuple[str, ...]
+    reference_hints: tuple[str, ...] = ()
+
+
+_DIAGNOSTIC_PATTERNS: tuple[_DiagnosticPattern, ...] = (
+    _DiagnosticPattern(
+        pattern_id="slurm.command_not_found",
+        tool="slurm",
+        error_category="command_not_found",
+        severity="high",
+        regex_signals=(
+            r"(sbatch|squeue|sacct)\s*:\s*command not found",
+            r"\u627e\u4e0d\u5230.*(sbatch|squeue|sacct)",
+            r"slurm.*not found",
+        ),
+        tool_aliases=("slurm", "sbatch", "squeue", "sacct"),
+        suggested_actions=(
+            "Run `which sbatch squeue sacct` to confirm scheduler binaries are on PATH.",
+            "Load scheduler runtime in login shell (for example `module load slurm`).",
+            "Re-submit with an explicit command check: `bash -lc 'which sbatch && sbatch <job_script.sh>'`.",
+        ),
+        reference_hints=("scheduler", "slurm"),
+    ),
+    _DiagnosticPattern(
+        pattern_id="slurm.invalid_partition",
+        tool="slurm",
+        error_category="queue_invalid",
+        severity="high",
+        regex_signals=(
+            r"invalid partition",
+            r"partition .* does not exist",
+            r"invalid qos",
+        ),
+        tool_aliases=("slurm", "sbatch", "partition", "qos"),
+        suggested_actions=(
+            "Inspect available queues with `sinfo -s` (and QOS if enabled).",
+            "Update job script to a valid queue, for example `#SBATCH -p <valid_partition>`.",
+            "Dry-run submit command once: `sbatch --test-only <job_script.sh>`.",
+        ),
+        reference_hints=("scheduler", "partition", "queue"),
+    ),
+    _DiagnosticPattern(
+        pattern_id="slurm.resource_oom",
+        tool="slurm",
+        error_category="resource_memory",
+        severity="critical",
+        regex_signals=(
+            r"oom-kill",
+            r"out of memory",
+            r"exceeded memory limit",
+            r"maxrss",
+        ),
+        tool_aliases=("slurm", "sbatch", "sacct"),
+        suggested_actions=(
+            "Profile the failed job with `sacct -j <job_id> --format=JobID,State,ReqMem,MaxRSS,Elapsed`.",
+            "Increase memory request in script, for example `#SBATCH --mem=32G`.",
+            "Reduce parallel pressure (threads/chunks) and rerun by chromosome or batch.",
+        ),
+        reference_hints=("scheduler", "resource", "memory"),
+    ),
+    _DiagnosticPattern(
+        pattern_id="pbs.command_not_found",
+        tool="pbs",
+        error_category="command_not_found",
+        severity="high",
+        regex_signals=(
+            r"(qsub|qstat)\s*:\s*command not found",
+            r"\u627e\u4e0d\u5230.*(qsub|qstat)",
+            r"pbs.*not found",
+        ),
+        tool_aliases=("pbs", "qsub", "qstat"),
+        suggested_actions=(
+            "Run `which qsub qstat` to verify PBS client installation.",
+            "Load cluster module/environment for PBS (for example `module load pbs`).",
+            "Re-run submit with a minimal script: `qsub <job_script.pbs>`.",
+        ),
+        reference_hints=("scheduler", "pbs"),
+    ),
+    _DiagnosticPattern(
+        pattern_id="pbs.resource_invalid",
+        tool="pbs",
+        error_category="resource_request_invalid",
+        severity="high",
+        regex_signals=(
+            r"unknown resource",
+            r"illegal attribute or resource value",
+            r"job exceeds queue resource limits",
+        ),
+        tool_aliases=("pbs", "qsub", "walltime", "select"),
+        suggested_actions=(
+            "Inspect queue limits with `qstat -Qf` and read `resources_max.*` fields.",
+            "Submit with explicit resources, for example `qsub -l select=1:ncpus=8:mem=32gb -l walltime=12:00:00 <job_script.pbs>`.",
+            "Align requested queue/resources in scheduler config with actual queue policy.",
+        ),
+        reference_hints=("scheduler", "pbs", "resource"),
+    ),
+    _DiagnosticPattern(
+        pattern_id="plink2.input_missing",
+        tool="plink2",
+        error_category="input_missing",
+        severity="high",
+        regex_signals=(
+            r"plink2.*(failed to open|cannot open|no such file)",
+            r"error:.*(--bfile|--vcf).*not found",
+            r"failed to open .*\.bed",
+        ),
+        tool_aliases=("plink2", "plink", "--bfile", "--vcf"),
+        suggested_actions=(
+            "Check genotype prefix files: `ls -lh <prefix>.bed <prefix>.bim <prefix>.fam`.",
+            "If source is VCF, regenerate PLINK set: `plink2 --vcf <input.vcf.gz> --make-bed --out <prefix>`.",
+            "Use absolute paths in wrapper/script and rerun from project workdir.",
+        ),
+        reference_hints=("input_specs", "plink", "qc"),
+    ),
+    _DiagnosticPattern(
+        pattern_id="plink2.chromosome_format",
+        tool="plink2",
+        error_category="format_chromosome",
+        severity="medium",
+        regex_signals=(
+            r"nonstandard chromosome",
+            r"invalid chromosome code",
+            r"--allow-extra-chr",
+        ),
+        tool_aliases=("plink2", "plink", "chromosome"),
+        suggested_actions=(
+            "Allow non-human chr names when needed: `plink2 --vcf <input.vcf.gz> --allow-extra-chr --make-bed --out <prefix>`.",
+            "Normalize contig names before conversion (match species naming convention).",
+            "Re-check input specification file for accepted chromosome labels.",
+        ),
+        reference_hints=("input_specs", "plink", "structure_analysis"),
+    ),
+    _DiagnosticPattern(
+        pattern_id="bcftools.index_missing",
+        tool="bcftools",
+        error_category="index_missing",
+        severity="high",
+        regex_signals=(
+            r"bcftools.*(could not load index|index.*not found)",
+            r"failed to open .*\.csi",
+            r"\[e::hts_open_format\]",
+        ),
+        tool_aliases=("bcftools", "tabix", "csi", "tbi"),
+        suggested_actions=(
+            "Compress and index VCF: `bgzip -f <input.vcf> && tabix -f -p vcf <input.vcf.gz>`.",
+            "Rebuild index explicitly: `bcftools index -f <input.vcf.gz>`.",
+            "Validate readable header: `bcftools view -h <input.vcf.gz> | head`.",
+        ),
+        reference_hints=("input_specs", "qc", "vcf"),
+    ),
+    _DiagnosticPattern(
+        pattern_id="bcftools.vcf_format",
+        tool="bcftools",
+        error_category="vcf_format_invalid",
+        severity="high",
+        regex_signals=(
+            r"bcftools.*(invalid|malformed).*vcf",
+            r"contig.*not defined in the header",
+            r"incorrect number of fields",
+        ),
+        tool_aliases=("bcftools", "vcf"),
+        suggested_actions=(
+            "Inspect and save current header: `bcftools view -h <input.vcf.gz> > header.txt`.",
+            "Fix contig header using reference index: `bcftools reheader -f <ref.fa.fai> -o <fixed.vcf.gz> <input.vcf.gz>`.",
+            "Normalize multi-allelic representation: `bcftools norm -m-any -Oz -o <normalized.vcf.gz> <fixed.vcf.gz>`.",
+        ),
+        reference_hints=("input_specs", "qc", "vcf"),
+    ),
+    _DiagnosticPattern(
+        pattern_id="vcftools.input_open_failed",
+        tool="vcftools",
+        error_category="input_open_failed",
+        severity="high",
+        regex_signals=(
+            r"vcftools.*(could not open|error).*vcf",
+            r"can't determine file type",
+            r"failed to open vcf file",
+        ),
+        tool_aliases=("vcftools", "vcf", "--gzvcf"),
+        suggested_actions=(
+            "Ensure compressed VCF input: `bgzip -f <input.vcf> && tabix -f -p vcf <input.vcf.gz>`.",
+            "Use gz input flag explicitly: `vcftools --gzvcf <input.vcf.gz> --out <out_prefix> <options>`.",
+            "Check path/permission inside job shell with `pwd` and `ls -lh <input.vcf.gz>`.",
+        ),
+        reference_hints=("input_specs", "qc", "vcf"),
+    ),
+    _DiagnosticPattern(
+        pattern_id="gcta.grm_missing",
+        tool="gcta",
+        error_category="grm_or_plink_missing",
+        severity="high",
+        regex_signals=(
+            r"gcta.*(cannot open|failed to open).*(grm|bed|bim|fam)",
+            r"grm.*not found",
+        ),
+        tool_aliases=("gcta", "gcta64", "grm"),
+        suggested_actions=(
+            "Verify genotype prefix exists: `ls -lh <prefix>.bed <prefix>.bim <prefix>.fam`.",
+            "Build GRM first: `gcta64 --bfile <prefix> --make-grm --out <grm_prefix>`.",
+            "Then run model stage: `gcta64 --grm <grm_prefix> --reml --pheno <phenotype.tsv> --out <reml_out>`.",
+        ),
+        reference_hints=("genomic_prediction", "modeling_guides", "grm"),
+    ),
+    _DiagnosticPattern(
+        pattern_id="gcta.id_mismatch",
+        tool="gcta",
+        error_category="sample_id_mismatch",
+        severity="critical",
+        regex_signals=(
+            r"gcta.*(individual id|id mismatch|no individual found)",
+            r"phenotype.*not found in",
+            r"sample.*not found",
+        ),
+        tool_aliases=("gcta", "gcta64", "phenotype", "covariate"),
+        suggested_actions=(
+            "Preview IDs in phenotype/covariate: `cut -f1-2 <phenotype.tsv> | head` and `cut -f1-2 <covariate.tsv> | head`.",
+            "Intersect sample IDs and rebuild aligned genotype set before modeling.",
+            "Re-run with consistent FID/IID keys across PLINK, phenotype, and covariate files.",
+        ),
+        reference_hints=("input_specs", "genomic_prediction", "modeling_guides"),
+    ),
+)
+
+_GENERIC_TOOL_RECOVERY: dict[str, dict[str, object]] = {
+    "slurm": {
+        "aliases": ("slurm", "sbatch", "squeue", "sacct"),
+        "error_category": "generic_scheduler_error",
+        "severity": "medium",
+        "suggested_actions": (
+            "Capture recent scheduler state: `squeue -j <job_id> -o '%i %T %r %M %D %C %m'`.",
+            "Inspect failure log from submit script and run `sacct -j <job_id> --format=JobID,State,ExitCode,Elapsed`.",
+            "Re-run dry-run generation and compare resource/partition values before re-submit.",
+        ),
+        "reference_hints": ("scheduler", "slurm"),
+    },
+    "pbs": {
+        "aliases": ("pbs", "qsub", "qstat"),
+        "error_category": "generic_scheduler_error",
+        "severity": "medium",
+        "suggested_actions": (
+            "Inspect queue and job status: `qstat -f <job_id>` and `qstat -Qf`.",
+            "Check stderr/stdout paths in PBS script and verify requested resources match queue policy.",
+            "Re-submit after `qsub <job_script.pbs>` dry check in login shell.",
+        ),
+        "reference_hints": ("scheduler", "pbs"),
+    },
+    "plink2": {
+        "aliases": ("plink2", "plink"),
+        "error_category": "generic_tool_error",
+        "severity": "medium",
+        "suggested_actions": (
+            "Run `plink2 --version` and confirm executable in PATH (`which plink2`).",
+            "Validate core input bundle exists (`.bed/.bim/.fam` or `.vcf.gz`) before rerun.",
+            "Re-run the exact command with `--out <debug_prefix>` and inspect generated `.log` first.",
+        ),
+        "reference_hints": ("input_specs", "qc", "plink"),
+    },
+    "bcftools": {
+        "aliases": ("bcftools",),
+        "error_category": "generic_tool_error",
+        "severity": "medium",
+        "suggested_actions": (
+            "Run `bcftools --version` and validate command availability.",
+            "Check input readability with `bcftools view -h <input.vcf.gz> | head`.",
+            "If command fails in pipeline, execute the same command in isolation on a small region.",
+        ),
+        "reference_hints": ("input_specs", "qc", "vcf"),
+    },
+    "vcftools": {
+        "aliases": ("vcftools",),
+        "error_category": "generic_tool_error",
+        "severity": "medium",
+        "suggested_actions": (
+            "Run `vcftools --version` and verify binary path.",
+            "Confirm compressed/indexed input (`.vcf.gz` + `.tbi/.csi`) before command execution.",
+            "Replay failing command with minimal options to isolate parameter-side failures.",
+        ),
+        "reference_hints": ("input_specs", "qc", "vcf"),
+    },
+    "gcta": {
+        "aliases": ("gcta", "gcta64"),
+        "error_category": "generic_tool_error",
+        "severity": "medium",
+        "suggested_actions": (
+            "Run `gcta64 --version` (or `gcta --version`) and verify executable path.",
+            "Validate required upstream outputs exist (PLINK set and GRM prefix) before model run.",
+            "Re-run failing stage standalone and inspect `.log` plus phenotype/covariate headers.",
+        ),
+        "reference_hints": ("genomic_prediction", "modeling_guides", "grm"),
+    },
+}
 
 
 class RetrievalDocument(BaseModel):
@@ -30,6 +359,18 @@ class RetrievalDocument(BaseModel):
     confidence: float = 0.0
 
 
+class DiagnosticSuggestion(BaseModel):
+    """Structured, actionable diagnosis for common scheduler/tool failures."""
+
+    pattern_id: str
+    tool: str
+    error_category: str
+    severity: str
+    matched_signals: list[str] = Field(default_factory=list)
+    suggested_actions: list[str] = Field(default_factory=list)
+    reference_sources: list[str] = Field(default_factory=list)
+
+
 class RetrievalBundle(BaseModel):
     """Stable retrieval output consumed by workflow planning."""
 
@@ -44,6 +385,7 @@ class RetrievalBundle(BaseModel):
     retrieval_mode: str = "local_only"
     coverage: str = "low"
     rationale: list[str] = Field(default_factory=list)
+    diagnostic_suggestions: list[DiagnosticSuggestion] = Field(default_factory=list)
 
     @property
     def source_labels(self) -> list[str]:
@@ -459,8 +801,22 @@ class ExternalKnowledgeRetriever:
 class ExternalFallbackGate:
     """Gate external fallback so local-first retrieval remains the default behavior."""
 
-    def __init__(self, *, enabled: bool = True) -> None:
+    _VALID_POLICIES = {"always", "knowledge_only", "diagnostic_only"}
+
+    def __init__(self, *, enabled: bool = True, policy: str = "knowledge_only") -> None:
         self._enabled = enabled
+        normalized_policy = policy.strip().lower() if policy else "knowledge_only"
+        if normalized_policy not in self._VALID_POLICIES:
+            normalized_policy = "knowledge_only"
+        self._policy = normalized_policy
+
+    @property
+    def policy(self) -> str:
+        return self._policy
+
+    @staticmethod
+    def _normalize_text(text: str) -> str:
+        return " ".join(text.lower().split())
 
     def evaluate(
         self,
@@ -469,9 +825,23 @@ class ExternalFallbackGate:
         domain: TaskDomain,
         coverage: str,
         local_hits: list[RetrievalDocument],
-    ) -> str:
-        del query, domain, coverage, local_hits
-        return "allowed" if self._enabled else "blocked"
+    ) -> tuple[str, str]:
+        del coverage, local_hits
+        if not self._enabled:
+            return ("blocked", "external_fallback_disabled")
+        if self._policy == "always":
+            return ("allowed", "policy_always")
+        if self._policy == "knowledge_only":
+            if domain in {TaskDomain.KNOWLEDGE, TaskDomain.SYSTEM}:
+                return ("allowed", "policy_knowledge_only")
+            return ("blocked", "policy_knowledge_only_blocks_domain")
+        if self._policy == "diagnostic_only":
+            normalized_query = self._normalize_text(query)
+            has_error_intent = any(token in normalized_query for token in _ERROR_INTENT_TOKENS)
+            if domain == TaskDomain.SYSTEM and has_error_intent:
+                return ("allowed", "policy_diagnostic_only")
+            return ("blocked", "policy_diagnostic_only_requires_system_error_intent")
+        return ("blocked", f"invalid_policy:{self._policy}")
 
 
 class KnowledgeResolver:
@@ -483,11 +853,196 @@ class KnowledgeResolver:
         external_retriever: ExternalKnowledgeRetriever | None = None,
         fallback_gate: ExternalFallbackGate | None = None,
         external_fallback_enabled: bool = True,
+        external_fallback_policy: str = "knowledge_only",
     ) -> None:
         self._local_retriever = local_retriever or LocalKnowledgeRetriever()
         self._external_retriever = external_retriever or ExternalKnowledgeRetriever()
         self._external_fallback_enabled = external_fallback_enabled
-        self._fallback_gate = fallback_gate or ExternalFallbackGate(enabled=external_fallback_enabled)
+        self._external_fallback_policy = external_fallback_policy
+        self._fallback_gate = fallback_gate or ExternalFallbackGate(
+            enabled=external_fallback_enabled,
+            policy=external_fallback_policy,
+        )
+
+    @staticmethod
+    def _normalize_text(text: str) -> str:
+        return " ".join(text.lower().split())
+
+    @staticmethod
+    def _has_error_intent(query: str) -> bool:
+        normalized = KnowledgeResolver._normalize_text(query)
+        return any(token in normalized for token in _ERROR_INTENT_TOKENS)
+
+    @staticmethod
+    def _document_blob(document: RetrievalDocument) -> str:
+        return " ".join(
+            [
+                document.title,
+                document.summary,
+                document.path,
+                " ".join(document.tags),
+                " ".join(document.keywords),
+            ]
+        ).lower()
+
+    @staticmethod
+    def _reference_source_label(document: RetrievalDocument) -> str:
+        if document.path:
+            return f"{document.title} ({document.path})"
+        return document.title
+
+    @staticmethod
+    def _unique_preserve_order(values: list[str], limit: int = 3) -> list[str]:
+        unique: list[str] = []
+        seen: set[str] = set()
+        for value in values:
+            normalized = value.strip()
+            if not normalized or normalized in seen:
+                continue
+            seen.add(normalized)
+            unique.append(normalized)
+            if len(unique) >= limit:
+                break
+        return unique
+
+    @staticmethod
+    def _match_pattern_signals(query: str, pattern: _DiagnosticPattern) -> list[str]:
+        matches: list[str] = []
+        for signal in pattern.regex_signals:
+            for match in re.finditer(signal, query, flags=re.IGNORECASE):
+                snippet = match.group(0).strip()
+                if snippet:
+                    matches.append(snippet)
+        return KnowledgeResolver._unique_preserve_order(matches, limit=6)
+
+    @staticmethod
+    def _tool_mentioned(query: str, tool_aliases: tuple[str, ...]) -> bool:
+        return any(alias.lower() in query for alias in tool_aliases)
+
+    def _collect_reference_sources(
+        self,
+        *,
+        pattern: _DiagnosticPattern,
+        domain: TaskDomain,
+        query: str,
+        local_hits: list[RetrievalDocument],
+    ) -> list[str]:
+        hints = tuple(
+            dict.fromkeys(
+                (
+                    pattern.tool.lower(),
+                    *pattern.tool_aliases,
+                    *pattern.reference_hints,
+                )
+            )
+        )
+
+        def collect(documents: list[RetrievalDocument]) -> list[str]:
+            prioritized: list[str] = []
+            fallback: list[str] = []
+            for document in documents:
+                if document.source != "reference":
+                    continue
+                label = self._reference_source_label(document)
+                fallback.append(label)
+                blob = self._document_blob(document)
+                if any(hint.lower() in blob for hint in hints):
+                    prioritized.append(label)
+            if prioritized:
+                return self._unique_preserve_order(prioritized, limit=3)
+            return self._unique_preserve_order(fallback, limit=3)
+
+        local_refs = collect(local_hits)
+        if local_refs:
+            return local_refs
+
+        probe_hits = self._local_retriever.search(
+            query=f"{query} {pattern.tool} troubleshooting",
+            domain=domain,
+            limit=5,
+        )
+        return collect(probe_hits)
+
+    def _build_diagnostic_suggestions(
+        self,
+        *,
+        query: str,
+        domain: TaskDomain,
+        local_hits: list[RetrievalDocument],
+    ) -> list[DiagnosticSuggestion]:
+        normalized_query = self._normalize_text(query)
+        if not normalized_query:
+            return []
+
+        suggestions: list[DiagnosticSuggestion] = []
+        for pattern in _DIAGNOSTIC_PATTERNS:
+            matched_signals = self._match_pattern_signals(normalized_query, pattern)
+            if not matched_signals:
+                continue
+            reference_sources = self._collect_reference_sources(
+                pattern=pattern,
+                domain=domain,
+                query=normalized_query,
+                local_hits=local_hits,
+            )
+            suggestions.append(
+                DiagnosticSuggestion(
+                    pattern_id=pattern.pattern_id,
+                    tool=pattern.tool,
+                    error_category=pattern.error_category,
+                    severity=pattern.severity,
+                    matched_signals=matched_signals,
+                    suggested_actions=list(pattern.suggested_actions),
+                    reference_sources=reference_sources,
+                )
+            )
+
+        has_error_intent = self._has_error_intent(normalized_query)
+        if has_error_intent:
+            known_tools = {suggestion.tool for suggestion in suggestions}
+            for tool, config in _GENERIC_TOOL_RECOVERY.items():
+                if tool in known_tools:
+                    continue
+                aliases = tuple(str(alias).lower() for alias in config["aliases"])
+                if not self._tool_mentioned(normalized_query, aliases):
+                    continue
+                reference_hints = tuple(str(hint) for hint in config["reference_hints"])
+                generic_pattern = _DiagnosticPattern(
+                    pattern_id=f"{tool}.generic_error",
+                    tool=tool,
+                    error_category=str(config["error_category"]),
+                    severity=str(config["severity"]),
+                    regex_signals=(),
+                    tool_aliases=aliases,
+                    suggested_actions=tuple(str(action) for action in config["suggested_actions"]),
+                    reference_hints=reference_hints,
+                )
+                reference_sources = self._collect_reference_sources(
+                    pattern=generic_pattern,
+                    domain=domain,
+                    query=normalized_query,
+                    local_hits=local_hits,
+                )
+                suggestions.append(
+                    DiagnosticSuggestion(
+                        pattern_id=f"{tool}.generic_error",
+                        tool=tool,
+                        error_category=str(config["error_category"]),
+                        severity=str(config["severity"]),
+                        matched_signals=[f"{tool}:error_intent"],
+                        suggested_actions=[str(action) for action in config["suggested_actions"]],
+                        reference_sources=reference_sources,
+                    )
+                )
+
+        suggestions.sort(
+            key=lambda item: (
+                -_SEVERITY_RANK.get(item.severity, 0),
+                item.tool,
+                item.pattern_id,
+            )
+        )
+        return suggestions[:8]
 
     @staticmethod
     def _is_external_fallback_requested(coverage: str) -> bool:
@@ -506,16 +1061,23 @@ class KnowledgeResolver:
             return ("not_requested", "coverage_high")
         if not self._external_fallback_enabled:
             return ("blocked", "external_fallback_disabled")
-        decision = self._fallback_gate.evaluate(
+        gate_response = self._fallback_gate.evaluate(
             query=query,
             domain=domain,
             coverage=coverage,
             local_hits=local_hits,
         )
+        if isinstance(gate_response, tuple):
+            decision_raw, reason_raw = gate_response
+            decision = str(decision_raw).strip().lower()
+            reason = str(reason_raw).strip() or "gate_blocked"
+        else:
+            decision = str(gate_response).strip().lower()
+            reason = "gate_allowed" if decision == "allowed" else "gate_blocked"
         if decision == "allowed":
-            return ("allowed", "gate_allowed")
+            return ("allowed", reason if reason != "gate_blocked" else "gate_allowed")
         if decision == "blocked":
-            return ("blocked", "gate_blocked")
+            return ("blocked", reason if reason != "gate_allowed" else "gate_blocked")
         return ("blocked", f"invalid_gate_decision:{decision}")
 
     def _execute_external_fallback(
@@ -535,6 +1097,11 @@ class KnowledgeResolver:
         """Resolve retrieval context using local sources first and external fallback second."""
 
         local_hits = self._local_retriever.search(query=query, domain=domain)
+        diagnostic_suggestions = self._build_diagnostic_suggestions(
+            query=query,
+            domain=domain,
+            local_hits=local_hits,
+        )
         positive_hits = [document for document in local_hits if document.score > 0]
         top_score = max((document.score for document in positive_hits), default=0)
         coverage = "high" if len(positive_hits) >= 2 or top_score >= 5 else "partial" if len(positive_hits) == 1 else "low"
@@ -560,7 +1127,12 @@ class KnowledgeResolver:
             f"fallback_requested={str(fallback_requested).lower()}",
             f"fallback_gate_decision={fallback_gate_decision}",
             f"fallback_gate_reason={fallback_gate_reason}",
+            f"fallback_policy={self._external_fallback_policy}",
+            f"diagnostic_suggestions={len(diagnostic_suggestions)}",
         ]
+        if diagnostic_suggestions:
+            diagnostic_tools = ",".join(sorted({item.tool for item in diagnostic_suggestions}))
+            rationale.append(f"diagnostic_tools={diagnostic_tools}")
         if fallback_used:
             rationale.append("fallback=external_fallback")
         elif fallback_requested:
@@ -578,4 +1150,5 @@ class KnowledgeResolver:
             retrieval_mode="local_plus_external_fallback" if fallback_used else "local_only",
             coverage=coverage,
             rationale=rationale,
+            diagnostic_suggestions=diagnostic_suggestions,
         )

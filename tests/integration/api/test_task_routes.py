@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from api.app import create_app
+from runtime.settings import get_settings
 
 
 def test_tasks_draft_plan_route_preserves_identity_and_pipeline_spec() -> None:
@@ -280,6 +281,141 @@ def test_tasks_review_action_route_returns_structured_gate() -> None:
     assert review["ready_for_gate"] == "awaiting_confirmation"
     assert review["decision"] == "require_confirmation"
     assert review["risk_level"] == "manual_approval"
+
+
+def test_tasks_report_route_returns_report_preview_payload() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/tasks/report",
+        json={
+            "request_text": "Generate report preview for sheep PCA outputs",
+            "requested_outputs": ["structure_summary_report", "pca_coordinates"],
+            "identity": {
+                "task_id": "task-api-report-001",
+                "run_id": "run-api-report-001",
+                "working_directory": "/cluster/work/sheep",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    report = response.json()["report"]
+    assert report["run_context"]["task_id"] == "task-api-report-001"
+    assert report["run_context"]["run_id"] == "run-api-report-001"
+    assert report["cluster_execution_enabled"] is False
+    assert isinstance(report["selected_blueprint"], str)
+    assert isinstance(report["report_sections"], list)
+    assert isinstance(report["expected_artifacts"], dict)
+    assert "reports" in report["expected_artifacts"]
+
+
+def test_tasks_diagnostic_route_non_bio_branch_clearly_skips_cluster() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/tasks/diagnostic",
+        json={
+            "request_text": "Summarize local SOP troubleshooting checklist for report quality",
+            "identity": {
+                "task_id": "task-api-diagnostic-knowledge-001",
+                "run_id": "run-api-diagnostic-knowledge-001",
+                "working_directory": "/cluster/work/sheep",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    diagnostic = response.json()["diagnostic"]
+    assert diagnostic["run_context"]["task_id"] == "task-api-diagnostic-knowledge-001"
+    assert diagnostic["cluster_execution_enabled"] is False
+    assert isinstance(diagnostic["fallback"], dict)
+    assert diagnostic["fallback"]["gate_decision"] in {"allowed", "blocked", "not_requested"}
+    assert "non_bio_cluster_policy" in diagnostic
+    assert "does not enter cluster execution" in diagnostic["non_bio_cluster_policy"]
+
+
+def test_tasks_diagnostic_route_low_coverage_keeps_knowledge_fallback_path() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/tasks/diagnostic",
+        json={
+            "request_text": "xqzv-404-zzzz",
+            "identity": {
+                "task_id": "task-api-diagnostic-fallback-001",
+                "run_id": "run-api-diagnostic-fallback-001",
+                "working_directory": "/cluster/work/sheep",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    diagnostic = response.json()["diagnostic"]
+    assert diagnostic["domain"] == "knowledge"
+    assert diagnostic["fallback_requested"] is True
+    assert diagnostic["fallback"]["requested"] is True
+    assert diagnostic["fallback"]["gate_decision"] in {"allowed", "blocked"}
+    assert diagnostic["fallback"]["gate_decision"] != "not_requested"
+    assert isinstance(diagnostic["fallback"]["used"], bool)
+    assert diagnostic["cluster_execution_enabled"] is False
+
+
+def test_tasks_diagnostic_route_supports_disabling_external_fallback_by_env(monkeypatch) -> None:
+    monkeypatch.setenv("GENEAGENT_KNOWLEDGE_EXTERNAL_FALLBACK_ENABLED", "false")
+    get_settings.cache_clear()
+    try:
+        client = TestClient(create_app())
+
+        response = client.post(
+            "/tasks/diagnostic",
+            json={
+                "request_text": "xqzv-404-zzzz",
+                "identity": {
+                    "task_id": "task-api-diagnostic-fallback-disabled-001",
+                    "run_id": "run-api-diagnostic-fallback-disabled-001",
+                    "working_directory": "/cluster/work/sheep",
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        diagnostic = response.json()["diagnostic"]
+        assert diagnostic["domain"] == "knowledge"
+        assert diagnostic["fallback_requested"] is True
+        assert diagnostic["fallback"]["requested"] is True
+        assert diagnostic["fallback"]["gate_decision"] == "blocked"
+        assert diagnostic["fallback"]["gate_reason"] == "external_fallback_disabled"
+        assert diagnostic["fallback"]["used"] is False
+    finally:
+        get_settings.cache_clear()
+
+
+def test_tasks_dry_run_route_under_pbs_config_uses_pbs_script_and_poll_hint(monkeypatch) -> None:
+    monkeypatch.setenv("GENEAGENT_SCHEDULER_TYPE", "pbs")
+    get_settings.cache_clear()
+    try:
+        client = TestClient(create_app())
+
+        response = client.post(
+            "/tasks/dry-run",
+            json={
+                "request_text": "Dry-run PCA on sheep VCF with PBS scheduler",
+                "identity": {
+                    "task_id": "task-api-dry-pbs-001",
+                    "run_id": "run-api-dry-pbs-001",
+                    "working_directory": "/cluster/work/sheep",
+                },
+            },
+        )
+        assert response.status_code == 200
+        submission = response.json()["submission"]
+        assert submission["cluster_execution_enabled"] is True
+        assert submission["job_handle"]["scheduler"] == "pbs"
+        assert submission["scheduler_script_path"].endswith(".pbs.sh")
+        assert submission["polling_hint"].startswith("qstat -f ")
+    finally:
+        get_settings.cache_clear()
 
 
 def test_tasks_validate_inputs_route_reports_missing_dataset() -> None:

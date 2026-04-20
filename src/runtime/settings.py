@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     work_root: str = "/cluster/work/geneagent"
     log_root: str = "/cluster/work/geneagent/logs"
     knowledge_base_root: str = "/cluster/work/geneagent/knowledge"
+    knowledge_external_fallback_enabled: bool = True
+    knowledge_external_fallback_policy: str = "knowledge_only"
     max_cpu: int = 64
     max_mem_gb: int = 256
     dry_run_default: bool = True

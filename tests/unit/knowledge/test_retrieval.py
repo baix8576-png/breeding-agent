@@ -54,6 +54,24 @@ class _FixedFallbackGate:
         return self.decision
 
 
+def _extract_action_commands(summary: str) -> dict[str, str]:
+    action_commands: dict[str, str] = {}
+    for chunk in summary.split(" | "):
+        if not chunk.startswith("action_id="):
+            continue
+        action, separator, command = chunk.partition(";command=")
+        if not separator:
+            continue
+        action_commands[action.replace("action_id=", "", 1).strip()] = command.strip()
+    return action_commands
+
+
+def _local_retriever_with_catalog(catalog: list[RetrievalDocument]) -> LocalKnowledgeRetriever:
+    retriever = LocalKnowledgeRetriever()
+    retriever._catalog = catalog
+    return retriever
+
+
 def test_knowledge_resolver_stays_local_for_high_coverage_query() -> None:
     resolver = KnowledgeResolver()
 
@@ -109,6 +127,153 @@ def test_local_retriever_emits_match_quality_fields() -> None:
         assert top_hit.matched_keywords or top_hit.matched_tags
 
 
+def test_local_retriever_scheduler_errors_return_structured_actionable_guidance() -> None:
+    scheduler_diagnostic = RetrievalDocument(
+        source="reference",
+        path="references/system/scheduler-error-recipes.md",
+        title="Scheduler Error Recipes",
+        summary=(
+            "action_id=check_scheduler_cli;command=command -v sbatch || command -v qsub | "
+            "action_id=check_submit_acl;command=id && groups | "
+            "action_id=check_job_visibility;command=squeue -j <job_id> || qstat <job_id>"
+        ),
+        tags=["reference", "shared", TaskDomain.SYSTEM.value, "diagnostic", "scheduler"],
+        keywords=[
+            "sbatch",
+            "qsub",
+            "permission",
+            "denied",
+            "command",
+            "not",
+            "found",
+            "job",
+            "missing",
+            "squeue",
+            "sacct",
+            "qstat",
+        ],
+    )
+    generic_system_note = RetrievalDocument(
+        source="local",
+        title="General System Guidance",
+        summary="Use standard runtime checks for service health and environment drift.",
+        tags=["shared", TaskDomain.SYSTEM.value],
+        keywords=["system", "health", "runtime"],
+    )
+    retriever = _local_retriever_with_catalog([scheduler_diagnostic, generic_system_note])
+
+    hits = retriever.search(
+        query="sbatch command not found qsub permission denied job not found",
+        domain=TaskDomain.SYSTEM,
+        limit=2,
+    )
+
+    assert hits
+    top_hit = hits[0]
+    assert top_hit.path == "references/system/scheduler-error-recipes.md"
+    assert top_hit.score > 0
+    assert {"sbatch", "qsub", "permission", "job"}.issubset(set(top_hit.matched_keywords))
+    assert any(reason.startswith("keyword_match:") for reason in top_hit.hit_reasons)
+
+    command_map = _extract_action_commands(top_hit.summary)
+    assert {"check_scheduler_cli", "check_submit_acl", "check_job_visibility"}.issubset(
+        set(command_map.keys())
+    )
+    assert command_map["check_scheduler_cli"] == "command -v sbatch || command -v qsub"
+    assert command_map["check_job_visibility"] == "squeue -j <job_id> || qstat <job_id>"
+
+
+def test_local_retriever_bio_tool_errors_return_command_level_guidance() -> None:
+    tool_diagnostic = RetrievalDocument(
+        source="reference",
+        path="references/bioinformatics/tool-error-recipes.md",
+        title="Bioinformatics Tool Error Recipes",
+        summary=(
+            "action_id=plink2_input;command=plink2 --bfile <prefix> --make-bed --out <out_prefix> | "
+            "action_id=bcftools_index;command=bcftools index -f <input.vcf.gz> | "
+            "action_id=vcftools_input;command=vcftools --gzvcf <input.vcf.gz> --out <out_prefix> | "
+            "action_id=gcta_input;command=gcta64 --bfile <prefix> --make-grm --out <out_prefix>"
+        ),
+        tags=["reference", "shared", TaskDomain.BIOINFORMATICS.value, "diagnostic", "tool_error"],
+        keywords=[
+            "plink2",
+            "bcftools",
+            "vcftools",
+            "gcta",
+            "input",
+            "index",
+            "failed",
+            "missing",
+            "cannot",
+            "open",
+        ],
+    )
+    generic_bio_note = RetrievalDocument(
+        source="local",
+        title="Bioinformatics Workflow Primer",
+        summary="Start from input validation, then run qc and structure analysis in sequence.",
+        tags=["shared", TaskDomain.BIOINFORMATICS.value],
+        keywords=["workflow", "validation", "qc", "pca"],
+    )
+    retriever = _local_retriever_with_catalog([tool_diagnostic, generic_bio_note])
+
+    hits = retriever.search(
+        query="plink2 failed input bcftools index missing vcftools cannot open gcta input",
+        domain=TaskDomain.BIOINFORMATICS,
+        limit=2,
+    )
+
+    assert hits
+    top_hit = hits[0]
+    assert top_hit.path == "references/bioinformatics/tool-error-recipes.md"
+    assert top_hit.score > 0
+    assert {"plink2", "bcftools", "vcftools", "gcta", "index", "input"}.issubset(
+        set(top_hit.matched_keywords)
+    )
+    assert any(reason.startswith("keyword_match:") for reason in top_hit.hit_reasons)
+
+    command_map = _extract_action_commands(top_hit.summary)
+    assert {"plink2_input", "bcftools_index", "vcftools_input", "gcta_input"}.issubset(
+        set(command_map.keys())
+    )
+    assert command_map["plink2_input"].startswith("plink2 --bfile")
+    assert command_map["bcftools_index"] == "bcftools index -f <input.vcf.gz>"
+    assert command_map["gcta_input"].startswith("gcta64 --bfile")
+
+
+def test_local_retriever_non_error_query_does_not_raise_diagnostic_false_positive() -> None:
+    diagnostic_doc = RetrievalDocument(
+        source="reference",
+        path="references/bioinformatics/tool-error-recipes.md",
+        title="Bioinformatics Tool Error Recipes",
+        summary=(
+            "action_id=plink2_input;command=plink2 --bfile <prefix> --make-bed --out <out_prefix>"
+        ),
+        tags=["reference", "shared", TaskDomain.BIOINFORMATICS.value, "diagnostic", "tool_error"],
+        keywords=["plink2", "bcftools", "vcftools", "gcta", "error", "index", "input"],
+    )
+    normal_doc = RetrievalDocument(
+        source="reference",
+        path="references/modeling_guides/genomic-prediction-overview.md",
+        title="Genomic Prediction Overview",
+        summary="Plan genomic prediction with validation folds and trait-level metrics.",
+        tags=["reference", "shared", TaskDomain.BIOINFORMATICS.value],
+        keywords=["genomic", "prediction", "validation", "metrics", "workflow"],
+    )
+    retriever = _local_retriever_with_catalog([diagnostic_doc, normal_doc])
+
+    hits = retriever.search(
+        query="genomic prediction validation workflow design",
+        domain=TaskDomain.BIOINFORMATICS,
+        limit=3,
+    )
+    positive_hits = [hit for hit in hits if hit.score > 0]
+
+    assert positive_hits
+    assert all("diagnostic" not in hit.tags for hit in positive_hits)
+    assert all(not _extract_action_commands(hit.summary) for hit in positive_hits)
+
+
 def test_knowledge_resolver_uses_fallback_for_low_coverage_query() -> None:
     resolver = KnowledgeResolver()
 
@@ -122,6 +287,132 @@ def test_knowledge_resolver_uses_fallback_for_low_coverage_query() -> None:
     assert bundle.retrieval_mode == "local_plus_external_fallback"
     assert len(bundle.external_hits) >= 1
     assert "fallback=external_fallback" in bundle.rationale
+
+
+def test_knowledge_resolver_knowledge_only_policy_blocks_bio_domain_external_fallback() -> None:
+    local_retriever = _StaticLocalRetriever(hits=[])
+    external_retriever = _CountingExternalRetriever()
+    resolver = KnowledgeResolver(
+        local_retriever=local_retriever,
+        external_retriever=external_retriever,
+        external_fallback_policy="knowledge_only",
+    )
+
+    bundle = resolver.resolve(query="xqzv-404-bio", domain=TaskDomain.BIOINFORMATICS)
+
+    assert bundle.fallback_requested is True
+    assert bundle.fallback_gate_decision == "blocked"
+    assert bundle.fallback_gate_reason == "policy_knowledge_only_blocks_domain"
+    assert bundle.fallback_used is False
+    assert bundle.retrieval_mode == "local_only"
+    assert bundle.external_hits == []
+    assert external_retriever.calls == []
+
+
+def test_knowledge_resolver_diagnostic_only_policy_requires_system_error_intent() -> None:
+    local_retriever = _StaticLocalRetriever(hits=[])
+    external_retriever = _CountingExternalRetriever()
+    resolver = KnowledgeResolver(
+        local_retriever=local_retriever,
+        external_retriever=external_retriever,
+        external_fallback_policy="diagnostic_only",
+    )
+
+    blocked_bundle = resolver.resolve(
+        query="summarize local references",
+        domain=TaskDomain.SYSTEM,
+    )
+    assert blocked_bundle.fallback_requested is True
+    assert blocked_bundle.fallback_gate_decision == "blocked"
+    assert blocked_bundle.fallback_gate_reason == "policy_diagnostic_only_requires_system_error_intent"
+    assert blocked_bundle.fallback_used is False
+    assert external_retriever.calls == []
+
+    allowed_bundle = resolver.resolve(
+        query="qsub command not found and scheduler failed",
+        domain=TaskDomain.SYSTEM,
+    )
+    assert allowed_bundle.fallback_requested is True
+    assert allowed_bundle.fallback_gate_decision == "allowed"
+    assert allowed_bundle.fallback_gate_reason == "policy_diagnostic_only"
+    assert allowed_bundle.fallback_used is True
+    assert external_retriever.calls
+
+
+def test_knowledge_resolver_disables_external_fallback_by_policy() -> None:
+    local_retriever = _StaticLocalRetriever(
+        hits=[
+            RetrievalDocument(
+                source="local",
+                title="Partial local hit",
+                summary="partial",
+                tags=["shared", TaskDomain.KNOWLEDGE.value],
+                keywords=["partial"],
+                score=1,
+            )
+        ]
+    )
+    external_retriever = _CountingExternalRetriever()
+    resolver = KnowledgeResolver(
+        local_retriever=local_retriever,
+        external_retriever=external_retriever,
+        external_fallback_enabled=False,
+    )
+
+    bundle = resolver.resolve(query="insufficient local coverage", domain=TaskDomain.KNOWLEDGE)
+
+    assert bundle.fallback_requested is True
+    assert bundle.fallback_gate_decision == "blocked"
+    assert bundle.fallback_gate_reason == "external_fallback_disabled"
+    assert bundle.fallback_used is False
+    assert bundle.external_hits == []
+    assert external_retriever.calls == []
+    assert "fallback=blocked_by_gate" in bundle.rationale
+
+
+def test_knowledge_resolver_emits_scheduler_diagnostic_suggestions() -> None:
+    resolver = KnowledgeResolver()
+
+    bundle = resolver.resolve(
+        query="sbatch: command not found when submitting job to slurm",
+        domain=TaskDomain.SYSTEM,
+    )
+
+    assert bundle.diagnostic_suggestions
+    suggestion = next(
+        item for item in bundle.diagnostic_suggestions if item.pattern_id == "slurm.command_not_found"
+    )
+    assert suggestion.tool == "slurm"
+    assert suggestion.error_category == "command_not_found"
+    assert any("which sbatch squeue sacct" in action for action in suggestion.suggested_actions)
+    assert any("references/evaluation/diagnostics/scheduler_error_patterns.md" in source for source in suggestion.reference_sources)
+
+
+def test_knowledge_resolver_emits_bio_tool_diagnostic_suggestions() -> None:
+    resolver = KnowledgeResolver()
+
+    bundle = resolver.resolve(
+        query="bcftools could not load index for input.vcf.gz and failed to open .csi",
+        domain=TaskDomain.BIOINFORMATICS,
+    )
+
+    assert bundle.diagnostic_suggestions
+    suggestion = next(item for item in bundle.diagnostic_suggestions if item.tool == "bcftools")
+    assert suggestion.pattern_id == "bcftools.index_missing"
+    assert suggestion.error_category == "index_missing"
+    assert any("bcftools index -f <input.vcf.gz>" in action for action in suggestion.suggested_actions)
+    assert any("references/evaluation/diagnostics/bio_tool_error_patterns.md" in source for source in suggestion.reference_sources)
+
+
+def test_knowledge_resolver_non_error_query_keeps_diagnostics_empty() -> None:
+    resolver = KnowledgeResolver()
+
+    bundle = resolver.resolve(
+        query="summarize genomic prediction report template and validation workflow",
+        domain=TaskDomain.BIOINFORMATICS,
+    )
+
+    assert bundle.diagnostic_suggestions == []
 
 
 def test_knowledge_resolver_fallback_gate_allows_external_branch() -> None:
