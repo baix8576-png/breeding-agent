@@ -9,6 +9,8 @@ import shutil
 import subprocess
 from uuid import uuid4
 
+from pydantic import BaseModel, Field
+
 from audit.store import AuditEvent, FileAuditStore
 from contracts.api import RequestIdentity
 from contracts.common import GateDecision, JobState, TaskDomain
@@ -24,6 +26,37 @@ from scheduler.base import BaseSchedulerAdapter
 from scheduler.models import PollExplanation
 from scheduler.poller import JobPoller
 from runtime.settings import Settings
+
+
+class ReportPreview(BaseModel):
+    """Report preview payload for CLI/API report endpoints."""
+
+    run_context: RunContext
+    domain: str
+    workflow_name: str
+    selected_blueprint: str
+    report_sections: list[str] = Field(default_factory=list)
+    expected_artifacts: dict[str, list[str]] = Field(default_factory=dict)
+    cluster_execution_enabled: bool = False
+    non_bio_cluster_policy: str | None = None
+
+
+class DiagnosticPreview(BaseModel):
+    """Diagnostic preview payload for CLI/API diagnostic endpoints."""
+
+    run_context: RunContext
+    domain: str
+    retrieval_mode: str
+    coverage: str
+    fallback_requested: bool = False
+    fallback_gate_decision: str = "not_requested"
+    fallback_gate_reason: str = "coverage_high"
+    fallback_used: bool = False
+    fallback: dict[str, object] = Field(default_factory=dict)
+    diagnostic_suggestions: list[dict[str, object]] = Field(default_factory=list)
+    sources: list[dict[str, object]] = Field(default_factory=list)
+    cluster_execution_enabled: bool = False
+    non_bio_cluster_policy: str | None = None
 
 
 class ApplicationFacade:
@@ -74,6 +107,104 @@ class ApplicationFacade:
         """Validate local input paths before a workflow is drafted or submitted."""
 
         return self._input_validator.validate(inputs)
+
+    def build_report_preview(
+        self,
+        *,
+        request_text: str = "Prepare report preview",
+        identity: RequestIdentity | None = None,
+        requested_outputs: list[str] | None = None,
+    ) -> ReportPreview:
+        """Build report-facing preview fields without scheduler submission."""
+
+        run_context = self._resolve_run_context(identity=identity)
+        plan = self._orchestrator.draft_plan(
+            UserRequest(
+                text=request_text,
+                working_directory=run_context.working_directory,
+                requested_outputs=requested_outputs or [],
+            ),
+            run_context=run_context,
+        )
+        selected_blueprint = (
+            plan.pipeline_spec.name
+            if plan.pipeline_spec is not None
+            else f"{plan.domain.value}_lightweight"
+        )
+        working_directory = run_context.working_directory or self._settings.work_root
+        non_bio_cluster_policy = (
+            "non-bio lightweight branch does not enter cluster execution; "
+            "use intake->local retrieval->answer blueprint only."
+            if plan.domain != TaskDomain.BIOINFORMATICS
+            else None
+        )
+        return ReportPreview(
+            run_context=run_context,
+            domain=plan.domain.value,
+            workflow_name=plan.workflow_name,
+            selected_blueprint=selected_blueprint,
+            report_sections=self._resolve_report_sections_for_preview(plan=plan),
+            expected_artifacts=self._resolve_expected_artifacts_for_preview(
+                plan=plan,
+                working_directory=working_directory,
+            ),
+            cluster_execution_enabled=False,
+            non_bio_cluster_policy=non_bio_cluster_policy,
+        )
+
+    def build_diagnostic_preview(
+        self,
+        *,
+        request_text: str = "Inspect retrieval diagnostics",
+        identity: RequestIdentity | None = None,
+    ) -> DiagnosticPreview:
+        """Build retrieval diagnostics preview without scheduler submission."""
+
+        run_context = self._resolve_run_context(identity=identity)
+        diagnostics = self._orchestrator.inspect_retrieval_diagnostics(
+            UserRequest(
+                text=request_text,
+                working_directory=run_context.working_directory,
+            ),
+            run_context=run_context,
+        )
+        domain = str(diagnostics.get("domain", TaskDomain.KNOWLEDGE.value))
+        fallback_requested = bool(diagnostics.get("fallback_requested", False))
+        fallback_gate_decision = str(diagnostics.get("fallback_gate_decision", "not_requested"))
+        fallback_gate_reason = str(diagnostics.get("fallback_gate_reason", "coverage_high"))
+        fallback_used = bool(diagnostics.get("fallback_used", False))
+        raw_run_context = diagnostics.get("run_context")
+        if isinstance(raw_run_context, RunContext):
+            diagnostic_run_context = raw_run_context
+        elif isinstance(raw_run_context, dict):
+            diagnostic_run_context = RunContext.model_validate(raw_run_context)
+        else:
+            diagnostic_run_context = run_context
+        non_bio_cluster_policy = (
+            "non-bio request is restricted to lightweight branch and does not enter cluster execution."
+            if domain != TaskDomain.BIOINFORMATICS.value
+            else None
+        )
+        return DiagnosticPreview(
+            run_context=diagnostic_run_context,
+            domain=domain,
+            retrieval_mode=str(diagnostics.get("retrieval_mode", "local_only")),
+            coverage=str(diagnostics.get("coverage", "low")),
+            fallback_requested=fallback_requested,
+            fallback_gate_decision=fallback_gate_decision,
+            fallback_gate_reason=fallback_gate_reason,
+            fallback_used=fallback_used,
+            fallback={
+                "requested": fallback_requested,
+                "gate_decision": fallback_gate_decision,
+                "gate_reason": fallback_gate_reason,
+                "used": fallback_used,
+            },
+            diagnostic_suggestions=list(diagnostics.get("diagnostic_suggestions", [])),
+            sources=list(diagnostics.get("sources", [])),
+            cluster_execution_enabled=False,
+            non_bio_cluster_policy=non_bio_cluster_policy,
+        )
 
     def review_action(
         self,
@@ -231,7 +362,7 @@ class ApplicationFacade:
             run_context=run_context,
             working_directory=submission_plan.paths.working_directory,
         )
-        artifact_index, report_summary = self._build_bio_artifact_index(
+        artifact_index, report_summary, report_generator_status, report_generator_message = self._build_bio_artifact_index(
             plan=plan,
             working_directory=submission_plan.paths.working_directory,
             log_paths=[submission_plan.paths.stdout_path, submission_plan.paths.stderr_path],
@@ -302,6 +433,8 @@ class ApplicationFacade:
                 report_paths=artifact_index.get("reports", []),
                 artifact_index=artifact_index,
                 report_summary=report_summary,
+                report_generator_status=report_generator_status,
+                report_generator_message=report_generator_message,
                 audit_record_path=audit_record_path,
                 memory_handoff_summary=run_record.handoffs[-1].summary if run_record.handoffs else None,
             ),
@@ -392,6 +525,8 @@ class ApplicationFacade:
                 report_paths=artifact_index["reports"],
                 artifact_index=artifact_index,
                 report_summary=report_summary,
+                report_generator_status="skipped_non_bio",
+                report_generator_message="non-bio lightweight branch does not invoke report_generator",
                 audit_record_path=audit_record_path,
                 memory_handoff_summary=run_record.handoffs[-1].summary if run_record.handoffs else None,
             ),
@@ -458,14 +593,14 @@ class ApplicationFacade:
         scheduler_script_path: str,
         wrapper_path: str,
         audit_path: str | None,
-    ) -> tuple[dict[str, list[str]], str]:
+    ) -> tuple[dict[str, list[str]], str, str, str | None]:
         pipeline_name = plan.pipeline_spec.name if plan.pipeline_spec is not None else "qc_pipeline"
         fallback_index, fallback_summary = self._build_blueprint_artifact_index(
             plan=plan,
             working_directory=working_directory,
             log_paths=log_paths,
         )
-        report_payload = self._run_report_generator_artifact_index(
+        report_status, report_message, report_payload = self._run_report_generator_artifact_index(
             pipeline_name=pipeline_name,
             working_directory=working_directory,
             run_context=run_context,
@@ -477,7 +612,12 @@ class ApplicationFacade:
             audit_path=audit_path,
         )
         if report_payload is None:
-            return fallback_index, fallback_summary
+            fallback_report_summary = self._append_report_generator_status(
+                summary=fallback_summary,
+                status=report_status,
+                message=report_message,
+            )
+            return fallback_index, fallback_report_summary, report_status, report_message
         report_index = self._classify_report_generator_artifacts(
             working_directory=working_directory,
             payload=report_payload,
@@ -494,7 +634,12 @@ class ApplicationFacade:
             pipeline_name=pipeline_name,
             artifact_index=artifact_index,
         )
-        return artifact_index, report_summary
+        report_summary = self._append_report_generator_status(
+            summary=report_summary,
+            status=report_status,
+            message=report_message,
+        )
+        return artifact_index, report_summary, report_status, report_message
 
     def _build_blueprint_artifact_index(
         self,
@@ -546,22 +691,22 @@ class ApplicationFacade:
         wrapper_path: str,
         log_paths: list[str],
         audit_path: str | None,
-    ) -> dict[str, object] | None:
+    ) -> tuple[str, str | None, dict[str, object] | None]:
         script_path = Path(__file__).resolve().parents[2] / "scripts" / "report_generator" / "run_report_generator.sh"
         if not script_path.exists():
-            return None
+            return ("skipped_script_missing", "report_generator_script_missing", None)
 
         bash = shutil.which("bash")
         if bash is None:
-            return None
+            return ("skipped_bash_missing", "bash_not_found", None)
 
         work_path = Path(working_directory)
         if not work_path.is_dir():
-            return None
+            return ("skipped_workdir_missing", "working_directory_not_found", None)
 
         results_root = self._join_work_path(working_directory, "results")
         if not Path(results_root).is_dir():
-            return None
+            return ("skipped_results_root_missing", "results_root_not_found", None)
 
         index_path = self._join_work_path(working_directory, "results/report_index.json")
         summary_output = self._join_work_path(working_directory, "reports/summary_report.md")
@@ -617,21 +762,23 @@ class ApplicationFacade:
                 timeout=max(10, self._settings.scheduler_command_timeout_seconds),
             )
         except (OSError, subprocess.TimeoutExpired):
-            return None
+            return ("failed_invocation", "report_generator_invocation_error", None)
         if completed.returncode != 0:
-            return None
+            failure_message = completed.stderr.strip() or completed.stdout.strip() or "report_generator_nonzero_exit"
+            failure_token = "_".join(failure_message.split()[:8]).lower()
+            return ("failed_nonzero_exit", failure_token[:120] or "report_generator_nonzero_exit", None)
 
         index_file = Path(index_path)
         if not index_file.is_file():
-            return None
+            return ("failed_index_missing", "report_index_missing_after_run", None)
 
         try:
             payload = json.loads(index_file.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
-            return None
+            return ("failed_index_invalid", "report_index_json_invalid", None)
         if not isinstance(payload, dict):
-            return None
-        return payload
+            return ("failed_index_invalid", "report_index_payload_not_object", None)
+        return ("integrated", "report_index_v2_loaded", payload)
 
     def _classify_report_generator_artifacts(
         self,
@@ -793,6 +940,21 @@ class ApplicationFacade:
             return f"{base} {'; '.join(details)}."
         return base
 
+    @staticmethod
+    def _append_report_generator_status(
+        *,
+        summary: str,
+        status: str,
+        message: str | None,
+    ) -> str:
+        stripped = summary.strip()
+        if stripped.endswith("."):
+            stripped = stripped[:-1]
+        suffix = f"report_generator_status={status}"
+        if message:
+            suffix = f"{suffix}; report_generator_message={message}"
+        return f"{stripped}. {suffix}."
+
     def _resolve_artifact_path(
         self,
         *,
@@ -887,6 +1049,77 @@ class ApplicationFacade:
             request_text=request_text,
             working_directory=working_directory,
         )
+
+    def _resolve_report_sections_for_preview(self, *, plan: TaskPlan) -> list[str]:
+        if plan.pipeline_spec is None:
+            return [
+                "Request scope and intent",
+                "Local retrieval context",
+                "Answer blueprint summary",
+                "Safety review note (if needed)",
+            ]
+        try:
+            blueprint = build_blueprint(plan.pipeline_spec.name)
+        except ValueError:
+            return [
+                "Pipeline summary",
+                "Expected artifacts",
+                "Diagnostics and caveats",
+            ]
+        sections = [str(item) for item in blueprint.report_sections if str(item).strip()]
+        if sections:
+            return sections
+        return [
+            "Pipeline summary",
+            "Expected artifacts",
+            "Diagnostics and caveats",
+        ]
+
+    def _resolve_expected_artifacts_for_preview(
+        self,
+        *,
+        plan: TaskPlan,
+        working_directory: str,
+    ) -> dict[str, list[str]]:
+        if plan.pipeline_spec is None:
+            return {
+                "results": [self._join_work_path(working_directory, "results/answer_blueprint.md")],
+                "reports": [self._join_work_path(working_directory, "reports/answer_summary.md")],
+                "figures": [],
+                "logs": [],
+            }
+        try:
+            blueprint = build_blueprint(plan.pipeline_spec.name)
+        except ValueError:
+            return {
+                "results": [self._join_work_path(working_directory, "results/pipeline_outputs.md")],
+                "reports": [self._join_work_path(working_directory, "reports/summary_report.md")],
+                "figures": [],
+                "logs": [],
+            }
+        results: list[str] = []
+        reports: list[str] = []
+        figures: list[str] = []
+        for output in blueprint.outputs:
+            relative_path = str(output.get("relative_path", "")).strip()
+            if not relative_path:
+                continue
+            resolved = self._join_work_path(working_directory, relative_path)
+            lowered_path = relative_path.lower()
+            lowered_format = str(output.get("format", "")).lower()
+            if "figure" in lowered_path or lowered_format in {"png", "svg", "jpg", "jpeg", "pdf"}:
+                figures.append(resolved)
+                continue
+            if lowered_path.startswith("reports/") or "report" in lowered_path or lowered_format == "markdown":
+                reports.append(resolved)
+                continue
+            results.append(resolved)
+        return {
+            "results": self._stable_unique(results),
+            "reports": self._stable_unique(reports),
+            "figures": self._stable_unique(figures),
+            "logs": [],
+        }
 
     def _path_class(self, raw_path: str):
         if raw_path.startswith("/") or ("/" in raw_path and "\\" not in raw_path):

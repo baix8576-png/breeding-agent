@@ -29,6 +29,8 @@ def test_non_bio_dry_run_skips_scheduler_script_generation() -> None:
     assert submission.artifacts is not None
     assert "results" in submission.artifacts.artifact_index
     assert "reports" in submission.artifacts.artifact_index
+    assert submission.artifacts.report_generator_status == "skipped_non_bio"
+    assert submission.artifacts.report_generator_message is not None
     assert submission.artifacts.audit_record_path is not None
     assert submission.artifacts.memory_handoff_summary is not None
 
@@ -64,6 +66,7 @@ def test_bio_submit_preview_exposes_wrapper_poll_and_recovery_fields() -> None:
     assert "logs" in submission.artifacts.artifact_index
     assert len(submission.artifacts.artifact_index["logs"]) == 2
     assert submission.artifacts.report_summary is not None
+    assert submission.artifacts.report_generator_status != "not_invoked"
     assert submission.artifacts.audit_record_path is not None
     assert submission.artifacts.memory_handoff_summary is not None
 
@@ -196,6 +199,8 @@ def test_bio_dry_run_prefers_report_generator_artifacts_when_available(tmp_path,
     assert "report_generator integrated" in submission.artifacts.report_summary
     assert "diagnostics=ok" in submission.artifacts.report_summary
     assert "traceability=scheduler_script,wrapper_script,stdout_log,stderr_log" in submission.artifacts.report_summary
+    assert submission.artifacts.report_generator_status == "integrated"
+    assert submission.artifacts.report_generator_message == "report_index_v2_loaded"
     assert any("summary_report.md" in path for path in submission.artifacts.report_paths)
     assert any("traceability.json" in path for path in submission.artifacts.result_paths)
     assert any(path.replace("\\", "/").endswith("/.geneagent/audit/task-runtime-reportgen-001/run-runtime-reportgen-001.jsonl") for path in submission.artifacts.result_paths)
@@ -278,3 +283,4 @@ def test_bio_dry_run_report_summary_surfaces_failure_diagnostics(tmp_path, monke
     assert submission.artifacts is not None
     assert submission.artifacts.report_summary is not None
     assert "diagnostics=failed" in submission.artifacts.report_summary
+    assert submission.artifacts.report_generator_status == "integrated"

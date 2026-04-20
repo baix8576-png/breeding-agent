@@ -103,6 +103,8 @@ class ExecutionArtifacts(BaseModel):
     report_paths: list[str] = Field(default_factory=list)
     artifact_index: dict[str, list[str]] = Field(default_factory=dict)
     report_summary: str | None = None
+    report_generator_status: str = "not_invoked"
+    report_generator_message: str | None = None
     audit_record_path: str | None = None
     memory_handoff_summary: str | None = None
 
