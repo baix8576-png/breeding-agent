@@ -12,8 +12,13 @@ Subdirectories:
 - `qc_rules/`: placeholder thresholds, anomaly review checklists, and QC decision notes.
 - `structure_analysis/`: PCA interpretation notes, cluster-labeling cautions, and stratification guidance.
 - `modeling_guides/`: genomic prediction route notes and model-family decision templates.
-- `evaluation/`: correlation, bias, cross-validation, and subgroup validation guidance.
+- `evaluation/`: correlation, bias, cross-validation, subgroup validation guidance, and runtime diagnostics playbooks.
 - `report_templates/`: markdown templates for QC, structure, and genomic prediction summaries.
+
+Diagnostics entrypoint:
+- `evaluation/diagnostics/README.md`: stable markdown schema (`diagnostics_v1`) for pattern-based troubleshooting knowledge.
+- `evaluation/diagnostics/scheduler_error_patterns.md`: common SLURM/PBS submit and poll failures with executable remediation steps.
+- `evaluation/diagnostics/bio_tool_error_patterns.md`: common `plink2`/`bcftools`/`vcftools`/`gcta64` failures with executable remediation steps.
 
 Conventions:
 - Keep thresholds and modeling choices explicitly marked as project-specific until validated by SOPs.

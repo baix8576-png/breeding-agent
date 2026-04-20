@@ -33,7 +33,7 @@
 ## 根目录规范（强制）
 - 版本化源目录仅允许：`.codex/`、`.agents/`、`src/`、`scripts/`、`references/`、`tests/`、`docs/`（可选）。
 - 根目录保留文件仅允许：`AGENTS.md`、`README.md`、`pyproject.toml`、`setup.cfg`、`.env.example`、`.gitignore`（若后续加入）。
-- 运行期/缓存生成物允许存在：`.venv/`、`.pytest_cache/`、`pytest-cache-files-*`、`__pycache__/`、`*.egg-info/`、`.tmp/`、`logs/`。
+- 运行期/缓存生成物允许存在：`.venv/`、`.pytest_cache/`、`pytest-cache-files-*`、`__pycache__/`、`*.egg-info/`、`.tmp/`、`logs/`、`.geneagent/`、`results/`、`reports/`。
 - 运行期/缓存生成物不视为架构违规，但应加入忽略规则或作为本地产物清理，不得承载正式源码与规范文档。
 - 新增任意顶层目录，或将模块跨顶层目录迁移，必须先由 `orchestrator` 发起并经 `architect` 复核后执行；未过 gate 不得落盘。
 - `src/`、`scripts/`、`references/`、`tests/` 下的业务目录与文件统一使用 `snake_case`；禁止使用 `misc`、`final`、`new`、`temp`、`tmp_code`、`todo`、`临时` 作为正式目录名。
@@ -53,7 +53,7 @@
    - 在文件化 manifest loader 上线前，manifest 源定义允许先保存在 `src/tools/registry.py`；上线后统一迁移到 `src/tools/manifests/`，禁止散落在其他目录。
 4. `src/scheduler/`：
    - 负责调度适配、资源估算、轮询、作业状态与集群接口。
-   - 首版主用 SLURM，长期保留 PBS 扩展位。
+   - 以 SLURM 为主线，PBS 兼容已落地；`submit / poll / recovery` 语义需保持一致。
    - 禁止将调度逻辑散落到 `scripts/`、`runtime/`、`orchestration/`。
 5. `src/knowledge/`：
    - 负责检索、索引、知识访问、知识解析、知识路由代码。
@@ -68,7 +68,7 @@
    - 负责公共数据结构、接口契约、领域枚举、稳定输入输出模型、公共异常边界。
    - 任何需要跨模块共享且要求稳定的结构优先放这里。
 9. `src/runtime/`：
-   - 负责应用装配、bootstrap、facade、运行期依赖拼装、配置加载入口。
+   - 负责应用装配、facade、运行期依赖拼装、配置加载入口。
    - 不承载领域流程蓝图，不承载业务工具实现。
 10. `src/safety/`：
     - 负责脱敏、门禁、熔断、人工确认规则、高风险动作审查。
@@ -101,10 +101,26 @@
 10. 原始实体数据（VCF/BAM/FASTQ/FASTA）不得进入仓库版本目录。
 
 ## 项目目标与范围
-- `业务目标`：完成 geneagent V1 的可用闭环，让用户可在 Windows PowerShell + 本地开发环境完成“自然语言请求 -> 任务分流 -> 输入校验 -> 蓝图选择 -> dry-run/submit -> 调度轮询 -> 结果产物/审计/记忆回写”的最小可用流程；V1 业务重点是动物生信与育种场景中的 `qc / pca / grm / genomic_prediction` 四条主链，以及非生信请求的轻量回答支路。成功标准是：主链可稳定生成可执行脚本与调度命令，关键输入有结构化校验，结果可追溯，非生信请求不会误入集群执行。
-- `版本范围`：V1 覆盖入口层、契约层、蓝图层、调度层、安全门、审计与记忆闭环，以及 `qc / pca / grm / genomic_prediction` 四类标准生信蓝图和 `bioinformatics / system / knowledge` 三类顶层分流；V1.5 仅扩展更强的报告、更多工具 manifest、PBS 兼容细节与更完善的知识检索；V2 再考虑插件化工具生态、更完整的记忆系统、Web UI 与更广泛的多组学/扩展分析模板。V1 明确不做的内容包括：全功能 Web 产品、完整插件市场、超出当前蓝图集合的广义算法库、原始大数据入库、以及平行目录式版本分叉。
-- `优先级`：必须完成的是输入契约、蓝图路由、真实调度闭环、结果索引与审计落盘、非生信轻量支路、最小测试矩阵和 README/AGENTS 对齐；可延期的是 Web UI、PBS 深度适配、更多分析模板、自动化报告增强与知识库扩容；明确不做的是新建平行源码目录、把核心逻辑留在 `scripts/`、在 V1 内引入未验证的复杂多组学链路、以及将原始实体数据提交进仓库。
-- `验收标准`：功能验收要求 `pytest -q` 全绿，`python -m compileall src tests` 通过，CLI/API 至少覆盖 `plan / dry-run / submit / poll` 与非生信回答支路，`qc / pca / grm / genomic_prediction` 四条主链都能输出结构化计划、脚本与产物索引；性能验收要求在本地开发环境完成最小样例的 dry-run 与 submit 路径，不出现目录越界、错误分流或重复生成调度脚本；安全验收要求原始实体数据不出本地、所有高风险动作触发人工确认、审计记录包含输入摘要/提交命令/job id/日志路径；文档验收要求 README、AGENTS 与当前目录结构一致，且新的目录规范和 V1 范围在文档中可直接定位。
+- `业务目标`：当前阶段聚焦 geneagent `V1.5` 可用闭环，让用户可在 Windows PowerShell + 本地开发环境完成“自然语言请求 -> 任务分流 -> 输入校验 -> 蓝图选择 -> dry-run/submit/poll -> Artifact/Report -> Audit/Memory”的稳定流程；核心仍是动物生信与育种场景中的 `qc / pca / grm / genomic_prediction` 四条主链，以及非生信请求的轻量回答支路。
+- `版本范围`：V1 为已完成基线；V1.5 作为当前行为真相源，覆盖报告增强（含 `report_generator` 与 `report_index`）、工具 manifest 体系化、PBS 与 SLURM 对齐的提交/轮询/恢复语义、知识检索补强（含外部回退门禁）与诊断能力增强；V2 再考虑插件化工具生态、更完整记忆系统、Web UI 与更广泛的多组学模板。V1.5 明确不做的内容包括：全功能 Web 产品、完整插件市场、超出当前蓝图集合的广义算法库、原始大数据入库、以及平行目录式版本分叉。
+- `优先级`：必须持续守住的是输入契约、蓝图路由、真实调度闭环、结果索引/报告/审计落盘、非生信轻量支路“明确不进集群”、最小测试矩阵和 README/AGENTS 对齐；可延期的是 Web UI 与超出四蓝图的扩展算法模板；明确不做的是新建平行源码目录、把核心逻辑留在 `scripts/`、在 V1.5 内引入未验证的复杂多组学链路、以及将原始实体数据提交进仓库。
+- `验收标准`：功能验收要求 `python -m pytest -q` 全绿，`python -m compileall src tests` 通过；CLI 覆盖 `plan / report / diagnostic / dry-run / submit-preview / submit / poll-explain`，API 覆盖 `/tasks/draft-plan /tasks/report /tasks/diagnostic /tasks/dry-run /tasks/submit-preview /tasks/submit /tasks/poll-explain`；bio 主链可走 dry-run/submit/poll，non-bio 请求必须走轻量支路并显式“不进集群（不生成调度脚本、不触发 submit/poll）”；`qc / pca / grm / genomic_prediction` 四条主链都能输出结构化计划、脚本与产物索引（含 `report_index`）。
+
+## V1.5 标准执行链（强制）
+生信主链固定为：
+- Intake：自然语言请求标准化，产出 `task_id / run_id / session_id`
+- Intent + Scope：识别 `bioinformatics / system / knowledge`
+- Input Validation：把原始路径归一化成 `InputBundle`，检查 VCF/PLINK/BAM/表型/协变量/谱系一致性
+- Local-first RAG：优先检索 `references/*`、本地 SOP、模板和历史规范；仅在门禁通过且本地覆盖不足时走外部回退
+- Blueprint Selection：把请求严格绑定到 `qc / pca / grm / genomic_prediction` 之一，输出阶段清单与产物契约
+- Resource + Safety Gate：资源估算、dry-run 预览、人工确认项、熔断条件
+- Execution：生成 Bash wrapper 与 scheduler script，执行提交、轮询、失败恢复
+- Artifact + Report：收集结果、图表、日志，生成报告索引与解释摘要
+- Audit + Memory：保存输入摘要、规划摘要、提交命令、job id、日志路径、人工确认记录
+
+非生信请求固定走轻量支路：
+- `intake -> local retrieval -> answer blueprint -> safety review if needed`
+- 不进入集群，不生成调度脚本，不触发 submit/poll
 
 ## 目录路由规则
 - `AGENTS.md` 与 `.codex/config.toml`：由 `orchestrator` 统筹，`architect` 复核结构一致性。
@@ -143,7 +159,7 @@
 - `tests/*`：优先路由到 `test_eval`。
 
 ## 构建/测试/评审约束
-- 当前阶段按 V1 范围交付可执行主链与轻量支路；新增能力需在既有模块边界内增量实现，并同步补齐测试与安全门校验。
+- 当前阶段按 V1.5 范围交付并持续收敛行为真相源；新增能力需在既有模块边界内增量实现，并同步补齐测试与安全门校验。
 - 任何新增模块必须先有 skill 或 agent 职责归属，再进入实现阶段。
 - 所有变更必须通过“角色内自检 + 跨角色最小复核”。
 - `architect` 检查架构边界与接口一致性。
@@ -151,8 +167,9 @@
 - `test_eval` 检查可测性、回归点与验收标准是否可执行。
 - 当前推荐命令：
 - `Build: python -m compileall src tests`
-- `Lint: TODO（后续接入 ruff）`
-- `Test: pytest`
+- `Lint: 当前未纳入强制门禁；若启用，使用 ruff check src tests`
+- `Test: python -m pytest -q`
+- `Test Matrix: python -m pytest -q tests/unit tests/integration tests/e2e`
 
 ## 安全边界
 - 原始实体数据（VCF/BAM/FASTQ/FASTA）禁止离开本地计算环境。
