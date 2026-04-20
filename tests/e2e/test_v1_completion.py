@@ -6,10 +6,12 @@ import subprocess
 
 import pytest
 
+from contracts.api import RequestIdentity
 from contracts.common import TaskDomain
 from knowledge.retrieval import RetrievalBundle
 from orchestration.router import IntentRouter
 from orchestration.workflow import WorkflowComposer
+from runtime.bootstrap import create_application_context
 from tools.registry import ToolRegistry
 from pipeline import build_blueprint, list_blueprints
 
@@ -87,6 +89,7 @@ def test_non_bio_requests_clearly_skip_cluster_execution() -> None:
     "script_path",
     [
         SCRIPTS / "report_generator" / "run_report_generator.sh",
+        SCRIPTS / "report_generator" / "build_result_index.sh",
     ],
 )
 def test_report_generator_critical_script_exists_and_has_help(script_path: Path) -> None:
@@ -114,3 +117,39 @@ def test_report_generator_critical_script_exists_and_has_help(script_path: Path)
 
     assert result.returncode == 0, result.stderr or result.stdout
     assert "usage" in (result.stdout + result.stderr).lower()
+
+
+@pytest.mark.parametrize(
+    ("request_text", "expected_script_suffix"),
+    [
+        ("Run QC on sheep VCF with call-rate and MAF filters", "scripts/qc_pipeline/run_qc_pipeline.sh"),
+        ("Run PCA structure analysis on sheep VCF", "scripts/pca_pipeline/run_pca_pipeline.sh"),
+        ("Build genomic relationship matrix from genotype panel", "scripts/grm_builder/run_grm_builder.sh"),
+        ("Run genomic prediction using sheep VCF and phenotype for GWAS", "scripts/genomic_prediction/run_genomic_prediction.sh"),
+    ],
+)
+def test_v15_bio_main_chains_emit_artifact_index_report_summary_and_audit_trace(
+    tmp_path: Path,
+    request_text: str,
+    expected_script_suffix: str,
+) -> None:
+    context = create_application_context()
+    task_slug = expected_script_suffix.split("/")[-1].replace(".sh", "")
+
+    submission = context.facade.build_dry_run_submission(
+        request_text=request_text,
+        identity=RequestIdentity(
+            task_id=f"task-e2e-mainchain-{task_slug}",
+            run_id=f"run-e2e-mainchain-{task_slug}",
+            working_directory=str(tmp_path),
+        ),
+    )
+
+    assert submission.cluster_execution_enabled is True
+    assert submission.command
+    assert submission.command[1].replace("\\", "/").endswith(expected_script_suffix)
+    assert submission.artifacts is not None
+    assert isinstance(submission.artifacts.artifact_index, dict)
+    assert set(submission.artifacts.artifact_index).issuperset({"results", "figures", "logs", "reports"})
+    assert submission.artifacts.report_summary is not None
+    assert submission.artifacts.audit_record_path is not None

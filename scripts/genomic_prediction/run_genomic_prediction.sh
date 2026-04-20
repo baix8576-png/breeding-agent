@@ -204,6 +204,10 @@ if has_target "heritability" || has_target "genomic_prediction"; then
   fi
 fi
 
+if [[ "${#executed_steps[@]}" -eq 0 ]]; then
+  fail "No genomic prediction step executed. Ensure requested targets are valid and required tools (plink2/gcta64) are available."
+fi
+
 if [[ -f "$H2_DIR/heritability.indi.blp" ]]; then
   awk 'BEGIN {OFS="\t"; print "fid","iid","gebv"} NR>1 {print $1,$2,$3}' "$H2_DIR/heritability.indi.blp" > "$OUT_DIR/predictions.tsv"
 elif [[ -f "${PLINK_PREFIX}.fam" ]]; then
