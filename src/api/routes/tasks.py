@@ -5,9 +5,11 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from contracts.api import (
+    DiagnosticPreviewRequest,
     DraftPlanRequest,
     DryRunRequest,
     PollExplainRequest,
+    ReportPreviewRequest,
     ReviewActionRequest,
     SubmitRequest,
     SubmitPreviewRequest,
@@ -64,6 +66,31 @@ def review_action(payload: ReviewActionRequest) -> dict[str, object]:
         target_paths=payload.target_paths,
     )
     return {"review": result.model_dump(mode="json")}
+
+
+@router.post("/report")
+def report(payload: ReportPreviewRequest) -> dict[str, object]:
+    """Generate a report-oriented preview payload from a user request."""
+
+    context = create_application_context()
+    report_preview = context.facade.build_report_preview(
+        request_text=payload.request_text,
+        requested_outputs=payload.requested_outputs,
+        identity=payload.identity,
+    )
+    return {"report": report_preview.model_dump(mode="json")}
+
+
+@router.post("/diagnostic")
+def diagnostic(payload: DiagnosticPreviewRequest) -> dict[str, object]:
+    """Generate diagnostic guidance without triggering cluster execution for non-bio intent."""
+
+    context = create_application_context()
+    diagnostic_preview = context.facade.build_diagnostic_preview(
+        request_text=payload.request_text,
+        identity=payload.identity,
+    )
+    return {"diagnostic": diagnostic_preview.model_dump(mode="json")}
 
 
 @router.post("/dry-run")

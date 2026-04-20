@@ -39,6 +39,58 @@ def plan(
     console.print_json(json.dumps(plan_result.model_dump(mode="json")))
 
 
+@app.command("report")
+def report(
+    working_directory: str | None = None,
+    request_text: str = "Prepare report preview",
+    requested_outputs: list[str] | None = typer.Option(
+        None,
+        "--requested-output",
+        help="Requested report outputs; repeat this option for multiple values.",
+    ),
+    task_id: str | None = None,
+    run_id: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    """Generate a report-oriented preview payload without adding runtime business logic here."""
+
+    context = create_application_context()
+    report_preview = context.facade.build_report_preview(
+        request_text=request_text,
+        requested_outputs=requested_outputs or [],
+        identity=RequestIdentity(
+            task_id=task_id,
+            run_id=run_id,
+            session_id=session_id,
+            working_directory=working_directory,
+        ),
+    )
+    console.print_json(json.dumps(report_preview.model_dump(mode="json")))
+
+
+@app.command("diagnostic")
+def diagnostic(
+    working_directory: str | None = None,
+    request_text: str = "Prepare diagnostic preview",
+    task_id: str | None = None,
+    run_id: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    """Generate diagnostic preview guidance while keeping non-bio intent off cluster execution paths."""
+
+    context = create_application_context()
+    diagnostic_preview = context.facade.build_diagnostic_preview(
+        request_text=request_text,
+        identity=RequestIdentity(
+            task_id=task_id,
+            run_id=run_id,
+            session_id=session_id,
+            working_directory=working_directory,
+        ),
+    )
+    console.print_json(json.dumps(diagnostic_preview.model_dump(mode="json")))
+
+
 @app.command("validate-inputs")
 def validate_inputs(paths: list[str]) -> None:
     """Validate local input files before workflow construction."""

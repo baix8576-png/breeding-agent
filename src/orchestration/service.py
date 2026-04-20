@@ -199,6 +199,49 @@ class OrchestratorService:
             "risk_level": decision.risk_level.value,
         }
 
+    def inspect_retrieval_diagnostics(
+        self,
+        request: UserRequest,
+        run_context: RunContext | None = None,
+    ) -> dict[str, object]:
+        """Return structured retrieval diagnostics without entering scheduler flow."""
+
+        classification = self._intent_router.analyze(request.text)
+        resolved_context = self._resolve_run_context(
+            request=request,
+            run_context=run_context,
+            domain_key=classification.domain.value,
+        )
+        retrieval = self._knowledge_resolver.resolve(query=request.text, domain=classification.domain)
+        all_hits = [*retrieval.local_hits, *retrieval.external_hits]
+        sources = [
+            {
+                "source": hit.source,
+                "path": hit.path,
+                "title": hit.title,
+                "score": hit.score,
+                "confidence": hit.confidence,
+                "tags": hit.tags,
+                "matched_tags": hit.matched_tags,
+                "matched_keywords": hit.matched_keywords,
+                "hit_reasons": hit.hit_reasons,
+            }
+            for hit in all_hits
+        ]
+        return {
+            "run_context": resolved_context.model_dump(mode="json"),
+            "domain": classification.domain.value,
+            "retrieval_mode": retrieval.retrieval_mode,
+            "coverage": retrieval.coverage,
+            "fallback_requested": retrieval.fallback_requested,
+            "fallback_gate_decision": retrieval.fallback_gate_decision,
+            "fallback_gate_reason": retrieval.fallback_gate_reason,
+            "fallback_used": retrieval.fallback_used,
+            "diagnostic_suggestions": [item.model_dump(mode="json") for item in retrieval.diagnostic_suggestions],
+            "sources": sources,
+            "rationale": retrieval.rationale,
+        }
+
     def _build_task_id(self, request: UserRequest, domain_key: str) -> str:
         normalized = "|".join(
             [

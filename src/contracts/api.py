@@ -69,6 +69,21 @@ class SubmitRequest(BaseModel):
     identity: RequestIdentity = Field(default_factory=RequestIdentity)
 
 
+class ReportPreviewRequest(BaseModel):
+    """Payload for generating report preview content from a natural-language request."""
+
+    request_text: str = "Prepare report preview"
+    requested_outputs: list[str] = Field(default_factory=list)
+    identity: RequestIdentity = Field(default_factory=RequestIdentity)
+
+
+class DiagnosticPreviewRequest(BaseModel):
+    """Payload for generating diagnostic preview guidance from a natural-language request."""
+
+    request_text: str = "Prepare diagnostic preview"
+    identity: RequestIdentity = Field(default_factory=RequestIdentity)
+
+
 class PollExplainRequest(BaseModel):
     """Payload for explaining a scheduler poll state."""
 
