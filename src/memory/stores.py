@@ -15,6 +15,7 @@ class SessionRecord(BaseModel):
     last_task_id: str | None = None
     active_domain: TaskDomain | None = None
     run_ids: list[str] = Field(default_factory=list)
+    project_ids: list[str] = Field(default_factory=list)
     handoff_summaries: list[str] = Field(default_factory=list)
 
 
@@ -45,6 +46,7 @@ class RunRecord(BaseModel):
 
     run_id: str
     task_id: str
+    project_id: str | None = None
     input_summary: str
     job_ids: list[str] = Field(default_factory=list)
     domain: TaskDomain | None = None
@@ -61,6 +63,57 @@ class RunRecord(BaseModel):
     artifact_index: dict[str, list[str]] = Field(default_factory=dict)
     report_summary: str | None = None
     audit_paths: list[str] = Field(default_factory=list)
+    failure_records: list["FailureRecord"] = Field(default_factory=list)
+    approval_records: list["ApprovalRecord"] = Field(default_factory=list)
+    provenance_records: list["ProvenanceRecord"] = Field(default_factory=list)
+
+
+class FailureRecord(BaseModel):
+    """Failure-level memory for retry and diagnostics."""
+
+    run_id: str
+    stage_id: str
+    error_code: str
+    message: str
+    retryable: bool = False
+    retry_suggestion: str | None = None
+    tool_name: str | None = None
+
+
+class ApprovalRecord(BaseModel):
+    """Manual approval evidence captured during safety gating."""
+
+    run_id: str
+    stage_id: str
+    decision: str
+    reason: str
+    scope: list[str] = Field(default_factory=list)
+    approver: str = "human"
+
+
+class ProvenanceRecord(BaseModel):
+    """Provenance trace linking artifacts, commands, and audit outputs."""
+
+    run_id: str
+    stage_id: str
+    source_type: str
+    source_ref: str
+    artifact_path: str | None = None
+    metadata: dict[str, str] = Field(default_factory=dict)
+
+
+class ProjectRecord(BaseModel):
+    """Project-level long-memory index across sessions and runs."""
+
+    project_id: str
+    run_ids: list[str] = Field(default_factory=list)
+    session_ids: list[str] = Field(default_factory=list)
+    task_ids: list[str] = Field(default_factory=list)
+    domains: list[TaskDomain] = Field(default_factory=list)
+    run_summaries: list[str] = Field(default_factory=list)
+    failure_records: list[FailureRecord] = Field(default_factory=list)
+    approval_records: list[ApprovalRecord] = Field(default_factory=list)
+    provenance_records: list[ProvenanceRecord] = Field(default_factory=list)
 
 
 class InMemorySessionStore:
@@ -89,6 +142,19 @@ class InMemoryRunStore:
         return self._items.get(run_id)
 
 
+class InMemoryProjectStore:
+    """Simple in-process store for project-level context."""
+
+    def __init__(self) -> None:
+        self._items: dict[str, ProjectRecord] = {}
+
+    def save(self, record: ProjectRecord) -> None:
+        self._items[record.project_id] = record
+
+    def get(self, project_id: str) -> ProjectRecord | None:
+        return self._items.get(project_id)
+
+
 class MemoryCoordinator:
     """Create deterministic run records and stage handoff summaries."""
 
@@ -96,9 +162,11 @@ class MemoryCoordinator:
         self,
         session_store: InMemorySessionStore | None = None,
         run_store: InMemoryRunStore | None = None,
+        project_store: InMemoryProjectStore | None = None,
     ) -> None:
         self._session_store = session_store or InMemorySessionStore()
         self._run_store = run_store or InMemoryRunStore()
+        self._project_store = project_store or InMemoryProjectStore()
 
     def plan_run(
         self,
@@ -111,6 +179,7 @@ class MemoryCoordinator:
         available_tools: list[str],
         retrieval_sources: list[str],
         session_id: str | None = None,
+        project_id: str | None = None,
     ) -> RunRecord:
         """Persist a deterministic run plan and return the resulting record."""
 
@@ -148,9 +217,15 @@ class MemoryCoordinator:
                 )
             )
 
+        resolved_project_id = self._resolve_project_id(
+            project_id=project_id,
+            task_id=task_id,
+            session_id=session_id,
+        )
         record = RunRecord(
             run_id=run_id,
             task_id=task_id,
+            project_id=resolved_project_id,
             input_summary=request_text[:160],
             domain=domain,
             request_text=request_text,
@@ -166,9 +241,18 @@ class MemoryCoordinator:
             session_id=session_id,
             task_id=task_id,
             run_id=run_id,
+            project_id=resolved_project_id,
             domain=domain,
             messages=[f"plan_run:{run_id}"],
             handoff_summaries=[handoff.summary for handoff in handoffs],
+        )
+        self._upsert_project(
+            project_id=resolved_project_id,
+            run_id=run_id,
+            session_id=session_id,
+            task_id=task_id,
+            domain=domain,
+            run_summary=record.planning_summary or "",
         )
         return record
 
@@ -178,6 +262,7 @@ class MemoryCoordinator:
         task_id: str,
         run_id: str,
         session_id: str | None,
+        project_id: str | None,
         domain: TaskDomain,
         input_summary: str,
         planning_summary: str,
@@ -196,14 +281,21 @@ class MemoryCoordinator:
             record = RunRecord(
                 run_id=run_id,
                 task_id=task_id,
+                project_id=project_id,
                 input_summary=input_summary[:160],
                 domain=domain,
                 session_id=session_id,
             )
 
+        resolved_project_id = self._resolve_project_id(
+            project_id=project_id or record.project_id,
+            task_id=task_id,
+            session_id=session_id,
+        )
         record.task_id = task_id
         record.domain = domain
         record.session_id = session_id
+        record.project_id = resolved_project_id
         record.input_summary = input_summary[:160]
         record.planning_summary = planning_summary
         self._append_unique(record.job_ids, [job_id])
@@ -214,6 +306,20 @@ class MemoryCoordinator:
         record.report_summary = report_summary
         if audit_path:
             self._append_unique(record.audit_paths, [audit_path])
+        self._append_approval_records(
+            record=record,
+            run_id=run_id,
+            manual_confirmation_records=manual_confirmation_records,
+        )
+        self._append_provenance_records(
+            record=record,
+            run_id=run_id,
+            submission_command=submission_command,
+            job_id=job_id,
+            artifact_index=record.artifact_index,
+            log_paths=record.log_paths,
+            audit_path=audit_path,
+        )
 
         lite_mode = any(snapshot.stage_id.startswith("lite_") for snapshot in record.stage_history)
         if lite_mode:
@@ -272,9 +378,21 @@ class MemoryCoordinator:
             session_id=session_id,
             task_id=task_id,
             run_id=run_id,
+            project_id=resolved_project_id,
             domain=domain,
             messages=[f"execution_closure:{run_id}", report_summary],
             handoff_summaries=[handoff.summary for handoff in closure_handoffs],
+        )
+        self._upsert_project(
+            project_id=resolved_project_id,
+            run_id=run_id,
+            session_id=session_id,
+            task_id=task_id,
+            domain=domain,
+            run_summary=planning_summary,
+            failure_records=record.failure_records,
+            approval_records=record.approval_records,
+            provenance_records=record.provenance_records,
         )
         return record
 
@@ -284,12 +402,55 @@ class MemoryCoordinator:
     def get_session(self, session_id: str) -> SessionRecord | None:
         return self._session_store.get(session_id)
 
+    def get_project(self, project_id: str) -> ProjectRecord | None:
+        return self._project_store.get(project_id)
+
+    def record_failure(
+        self,
+        *,
+        run_id: str,
+        stage_id: str,
+        error_code: str,
+        message: str,
+        retryable: bool,
+        retry_suggestion: str | None = None,
+        tool_name: str | None = None,
+    ) -> None:
+        """Record one execution failure for run/project memory layers."""
+
+        record = self._run_store.get(run_id)
+        if record is None:
+            return
+        failure = FailureRecord(
+            run_id=run_id,
+            stage_id=stage_id,
+            error_code=error_code,
+            message=message,
+            retryable=retryable,
+            retry_suggestion=retry_suggestion,
+            tool_name=tool_name,
+        )
+        if failure not in record.failure_records:
+            record.failure_records.append(failure)
+        self._run_store.save(record)
+        if record.project_id:
+            self._upsert_project(
+                project_id=record.project_id,
+                run_id=record.run_id,
+                session_id=record.session_id,
+                task_id=record.task_id,
+                domain=record.domain,
+                run_summary=record.planning_summary or "",
+                failure_records=record.failure_records,
+            )
+
     def _upsert_session(
         self,
         *,
         session_id: str | None,
         task_id: str,
         run_id: str,
+        project_id: str | None,
         domain: TaskDomain,
         messages: list[str],
         handoff_summaries: list[str],
@@ -300,9 +461,141 @@ class MemoryCoordinator:
         existing.last_task_id = task_id
         existing.active_domain = domain
         self._append_unique(existing.run_ids, [run_id])
+        if project_id:
+            self._append_unique(existing.project_ids, [project_id])
         self._append_unique(existing.messages, [message for message in messages if message])
         self._append_unique(existing.handoff_summaries, [summary for summary in handoff_summaries if summary])
         self._session_store.save(existing)
+
+    def _upsert_project(
+        self,
+        *,
+        project_id: str,
+        run_id: str,
+        session_id: str | None,
+        task_id: str,
+        domain: TaskDomain | None,
+        run_summary: str,
+        failure_records: list[FailureRecord] | None = None,
+        approval_records: list[ApprovalRecord] | None = None,
+        provenance_records: list[ProvenanceRecord] | None = None,
+    ) -> None:
+        existing = self._project_store.get(project_id) or ProjectRecord(project_id=project_id)
+        self._append_unique(existing.run_ids, [run_id])
+        if session_id:
+            self._append_unique(existing.session_ids, [session_id])
+        self._append_unique(existing.task_ids, [task_id])
+        if domain is not None and domain not in existing.domains:
+            existing.domains.append(domain)
+        if run_summary and run_summary not in existing.run_summaries:
+            existing.run_summaries.append(run_summary)
+        if failure_records:
+            for item in failure_records:
+                if item not in existing.failure_records:
+                    existing.failure_records.append(item)
+        if approval_records:
+            for item in approval_records:
+                if item not in existing.approval_records:
+                    existing.approval_records.append(item)
+        if provenance_records:
+            for item in provenance_records:
+                if item not in existing.provenance_records:
+                    existing.provenance_records.append(item)
+        self._project_store.save(existing)
+
+    def _resolve_project_id(
+        self,
+        *,
+        project_id: str | None,
+        task_id: str,
+        session_id: str | None,
+    ) -> str:
+        if project_id:
+            return project_id
+        if session_id:
+            return f"project-{session_id}"
+        return f"project-{task_id}"
+
+    def _append_approval_records(
+        self,
+        *,
+        record: RunRecord,
+        run_id: str,
+        manual_confirmation_records: list[str],
+    ) -> None:
+        for item in manual_confirmation_records:
+            normalized = item.strip()
+            if not normalized:
+                continue
+            approval = ApprovalRecord(
+                run_id=run_id,
+                stage_id="stage_06_resource_and_safety_gate",
+                decision="confirmed",
+                reason=normalized,
+                scope=["scheduler_submit"],
+                approver="human",
+            )
+            if approval not in record.approval_records:
+                record.approval_records.append(approval)
+
+    def _append_provenance_records(
+        self,
+        *,
+        record: RunRecord,
+        run_id: str,
+        submission_command: str,
+        job_id: str,
+        artifact_index: dict[str, list[str]],
+        log_paths: list[str],
+        audit_path: str | None,
+    ) -> None:
+        provenance_candidates: list[ProvenanceRecord] = [
+            ProvenanceRecord(
+                run_id=run_id,
+                stage_id="stage_07_execution",
+                source_type="submission_command",
+                source_ref=submission_command,
+                metadata={"job_id": job_id},
+            ),
+        ]
+        for log_path in log_paths:
+            if not log_path:
+                continue
+            provenance_candidates.append(
+                ProvenanceRecord(
+                    run_id=run_id,
+                    stage_id="stage_07_execution",
+                    source_type="log_path",
+                    source_ref=log_path,
+                    artifact_path=log_path,
+                )
+            )
+        for kind, paths in artifact_index.items():
+            for path in paths:
+                if not path:
+                    continue
+                provenance_candidates.append(
+                    ProvenanceRecord(
+                        run_id=run_id,
+                        stage_id="stage_08_artifact_and_report",
+                        source_type=f"artifact:{kind}",
+                        source_ref=path,
+                        artifact_path=path,
+                    )
+                )
+        if audit_path:
+            provenance_candidates.append(
+                ProvenanceRecord(
+                    run_id=run_id,
+                    stage_id="stage_09_audit_and_memory",
+                    source_type="audit_path",
+                    source_ref=audit_path,
+                    artifact_path=audit_path,
+                )
+            )
+        for item in provenance_candidates:
+            if item not in record.provenance_records:
+                record.provenance_records.append(item)
 
     def _append_unique(self, target: list[str], values: list[str]) -> None:
         for value in values:

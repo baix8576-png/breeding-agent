@@ -47,3 +47,39 @@ def test_safety_gate_blocks_raw_data_delete_requests() -> None:
     assert result.risk_level.value == "high"
     assert any(check.name == "raw_data_boundary" and check.status.value == "fail" for check in result.preflight_checks)
     assert any("Raw genomic data" in reason for reason in result.reasons)
+
+
+def test_safety_gate_blocks_submit_execution_when_stage_guard_is_invalid() -> None:
+    service = SafetyGateService()
+
+    result = service.review(
+        context=SafetyReviewContext(
+            task_id="task-safety-003",
+            run_id="run-safety-003",
+            action_name="submit_execution",
+            stage_id="stage_07_execution",
+            scheduler_dry_run_done=True,
+        )
+    )
+
+    assert result.ready_for_gate.value == "blocked"
+    assert any(check.name == "stage_guard" and check.status.value == "fail" for check in result.preflight_checks)
+
+
+def test_safety_gate_allows_submit_execution_when_stage_guard_is_satisfied() -> None:
+    service = SafetyGateService()
+
+    result = service.review(
+        context=SafetyReviewContext(
+            task_id="task-safety-004",
+            run_id="run-safety-004",
+            action_name="submit_execution",
+            stage_id="stage_06_resource_and_safety_gate",
+            scheduler_dry_run_done=True,
+            cost_estimated=True,
+            rollback_plan_ready=True,
+        )
+    )
+
+    assert any(check.name == "stage_guard" and check.status.value == "pass" for check in result.preflight_checks)
+    assert result.decision.value in {"pass", "require_confirmation"}

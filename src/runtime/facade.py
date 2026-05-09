@@ -14,9 +14,10 @@ from pydantic import BaseModel, Field
 from audit.store import AuditEvent, FileAuditStore
 from contracts.api import RequestIdentity
 from contracts.common import GateDecision, JobState, TaskDomain
+from contracts.envelope import ExecutionIntent, RuntimeRequestEnvelopeV2
 from contracts.execution import ExecutionArtifacts, JobHandle, RunContext, SubmissionPreview, TaskPlan
 from contracts.tasks import UserRequest
-from contracts.validation import ValidationReport
+from contracts.validation import InputBundle, ValidationReport
 from memory.stores import MemoryCoordinator
 from pipeline.execution import build_execution_command
 from pipeline.workflows import build_blueprint
@@ -25,6 +26,7 @@ from safety.gates import SafetyGateResult, SafetyGateService, SafetyReviewContex
 from scheduler.base import BaseSchedulerAdapter
 from scheduler.models import PollExplanation
 from scheduler.poller import JobPoller
+from runtime.state_machine import RuntimeStage, create_stage_trace
 from runtime.settings import Settings
 
 
@@ -51,6 +53,7 @@ class DiagnosticPreview(BaseModel):
     fallback_requested: bool = False
     fallback_gate_decision: str = "not_requested"
     fallback_gate_reason: str = "coverage_high"
+    fallback_gate_audit: dict[str, object] = Field(default_factory=dict)
     fallback_used: bool = False
     fallback: dict[str, object] = Field(default_factory=dict)
     diagnostic_suggestions: list[dict[str, object]] = Field(default_factory=list)
@@ -87,18 +90,44 @@ class ApplicationFacade:
         *,
         identity: RequestIdentity | None = None,
         requested_outputs: list[str] | None = None,
+        input_bundle: InputBundle | None = None,
     ) -> TaskPlan:
         """Build a draft plan from natural-language input."""
 
-        run_context = self._resolve_run_context(identity=identity)
-        return self._orchestrator.draft_plan(
+        envelope = self._build_runtime_envelope(
+            intent=ExecutionIntent.PLAN,
+            request_text=text,
+            identity=identity,
+            requested_outputs=requested_outputs,
+            input_bundle=input_bundle,
+        )
+        run_context = self._resolve_run_context(identity=self._identity_from_envelope(envelope))
+        normalized_bundle, validation_report = self._prepare_input_bundle(envelope.input_bundle)
+        plan = self._orchestrator.draft_plan(
             UserRequest(
-                text=text,
+                text=envelope.request_text,
                 working_directory=run_context.working_directory,
-                requested_outputs=requested_outputs or [],
+                requested_outputs=envelope.requested_outputs,
+                input_bundle=normalized_bundle,
             ),
             run_context=run_context,
         )
+        plan = self._attach_input_bundle_to_plan(
+            plan=plan,
+            input_bundle=normalized_bundle,
+            validation_report=validation_report,
+        )
+        trace = create_stage_trace(task_id=run_context.task_id, run_id=run_context.run_id, domain=plan.domain)
+        if plan.domain == TaskDomain.BIOINFORMATICS:
+            trace.advance(RuntimeStage.STAGE_02_INTENT_AND_SCOPE.value)
+            trace.advance(RuntimeStage.STAGE_03_INPUT_VALIDATION.value)
+            trace.advance(RuntimeStage.STAGE_04_LOCAL_FIRST_RAG.value)
+            trace.advance(RuntimeStage.STAGE_05_BLUEPRINT_SELECTION.value)
+            trace.advance(RuntimeStage.STAGE_06_RESOURCE_AND_SAFETY_GATE.value)
+        else:
+            trace.advance(RuntimeStage.LITE_02_LOCAL_RETRIEVAL.value)
+            trace.advance(RuntimeStage.LITE_03_ANSWER_BLUEPRINT.value)
+        return plan.model_copy(update={"runtime_lifecycle": trace.to_contract()})
 
     def validate_inputs(
         self,
@@ -107,6 +136,63 @@ class ApplicationFacade:
         """Validate local input paths before a workflow is drafted or submitted."""
 
         return self._input_validator.validate(inputs)
+
+    def _prepare_input_bundle(
+        self,
+        input_bundle: InputBundle | None,
+    ) -> tuple[InputBundle | None, ValidationReport | None]:
+        if input_bundle is None:
+            return None, None
+        snapshot = self._input_validator.inspect(input_bundle)
+        return snapshot.bundle, snapshot.to_contract_report()
+
+    def _build_runtime_envelope(
+        self,
+        *,
+        intent: ExecutionIntent,
+        request_text: str,
+        identity: RequestIdentity | None = None,
+        requested_outputs: list[str] | None = None,
+        input_bundle: InputBundle | None = None,
+        command: list[str] | None = None,
+        dry_run_completed: bool = False,
+    ) -> RuntimeRequestEnvelopeV2:
+        return RuntimeRequestEnvelopeV2(
+            intent=intent,
+            request_text=request_text,
+            identity=identity or RequestIdentity(),
+            input_bundle=input_bundle,
+            requested_outputs=requested_outputs or [],
+            command=command,
+            dry_run_completed=dry_run_completed,
+        )
+
+    def _identity_from_envelope(self, envelope: RuntimeRequestEnvelopeV2) -> RequestIdentity:
+        if envelope.working_directory is None:
+            return envelope.identity
+        return envelope.identity.model_copy(update={"working_directory": envelope.working_directory})
+
+    def _attach_input_bundle_to_plan(
+        self,
+        *,
+        plan: TaskPlan,
+        input_bundle: InputBundle | None,
+        validation_report: ValidationReport | None,
+    ) -> TaskPlan:
+        if plan.pipeline_spec is None:
+            return plan.model_copy(update={"input_validation": validation_report})
+        updated_pipeline_spec = plan.pipeline_spec.model_copy(
+            update={
+                "input_bundle": input_bundle,
+                "input_paths": [entry.path for entry in input_bundle.entries] if input_bundle is not None else [],
+            }
+        )
+        return plan.model_copy(
+            update={
+                "pipeline_spec": updated_pipeline_spec,
+                "input_validation": validation_report,
+            }
+        )
 
     def build_report_preview(
         self,
@@ -172,6 +258,7 @@ class ApplicationFacade:
         fallback_requested = bool(diagnostics.get("fallback_requested", False))
         fallback_gate_decision = str(diagnostics.get("fallback_gate_decision", "not_requested"))
         fallback_gate_reason = str(diagnostics.get("fallback_gate_reason", "coverage_high"))
+        fallback_gate_audit = dict(diagnostics.get("fallback_gate_audit", {}))
         fallback_used = bool(diagnostics.get("fallback_used", False))
         raw_run_context = diagnostics.get("run_context")
         if isinstance(raw_run_context, RunContext):
@@ -193,11 +280,13 @@ class ApplicationFacade:
             fallback_requested=fallback_requested,
             fallback_gate_decision=fallback_gate_decision,
             fallback_gate_reason=fallback_gate_reason,
+            fallback_gate_audit=fallback_gate_audit,
             fallback_used=fallback_used,
             fallback={
                 "requested": fallback_requested,
                 "gate_decision": fallback_gate_decision,
                 "gate_reason": fallback_gate_reason,
+                "gate_audit": fallback_gate_audit,
                 "used": fallback_used,
             },
             diagnostic_suggestions=list(diagnostics.get("diagnostic_suggestions", [])),
@@ -233,6 +322,7 @@ class ApplicationFacade:
         command: list[str] | None = None,
         request_text: str = "Prepare a dry-run submission",
         identity: RequestIdentity | None = None,
+        input_bundle: InputBundle | None = None,
     ) -> SubmissionPreview:
         """Generate a scheduler script preview and a synthetic dry-run handle."""
 
@@ -243,6 +333,7 @@ class ApplicationFacade:
             identity=identity,
             dry_run_completed=True,
             execute_submit=False,
+            input_bundle=input_bundle,
         )
 
     def build_submit_preview(
@@ -252,6 +343,7 @@ class ApplicationFacade:
         request_text: str = "Prepare a submit-preview",
         identity: RequestIdentity | None = None,
         dry_run_completed: bool = False,
+        input_bundle: InputBundle | None = None,
     ) -> SubmissionPreview:
         """Build a submit-preview payload without issuing a real scheduler command."""
 
@@ -262,6 +354,7 @@ class ApplicationFacade:
             identity=identity,
             dry_run_completed=dry_run_completed,
             execute_submit=False,
+            input_bundle=input_bundle,
         )
 
     def submit(
@@ -271,6 +364,7 @@ class ApplicationFacade:
         request_text: str = "Submit scheduler job",
         identity: RequestIdentity | None = None,
         dry_run_completed: bool = False,
+        input_bundle: InputBundle | None = None,
     ) -> SubmissionPreview:
         """Submit a real scheduler job after passing the safety gate."""
 
@@ -281,6 +375,7 @@ class ApplicationFacade:
             identity=identity,
             dry_run_completed=dry_run_completed,
             execute_submit=True,
+            input_bundle=input_bundle,
         )
 
     def explain_poll_state(self, job_id: str) -> PollExplanation:
@@ -302,27 +397,64 @@ class ApplicationFacade:
         identity: RequestIdentity | None,
         dry_run_completed: bool,
         execute_submit: bool,
+        input_bundle: InputBundle | None,
     ) -> SubmissionPreview:
         """Shared builder for dry-run, submit-preview, and submit modes."""
 
-        run_context = self._resolve_run_context(identity=identity)
-        plan = self.draft_plan(text=request_text, identity=identity)
+        intent = ExecutionIntent.DRY_RUN
+        if mode == "submit-preview":
+            intent = ExecutionIntent.SUBMIT_PREVIEW
+        elif mode == "submit":
+            intent = ExecutionIntent.SUBMIT
+        envelope = self._build_runtime_envelope(
+            intent=intent,
+            request_text=request_text,
+            identity=identity,
+            command=command,
+            dry_run_completed=dry_run_completed,
+            input_bundle=input_bundle,
+        )
+        normalized_identity = self._identity_from_envelope(envelope)
+        run_context = self._resolve_run_context(identity=normalized_identity)
+        plan = self.draft_plan(text=envelope.request_text, identity=normalized_identity, input_bundle=envelope.input_bundle)
+        validation_report = plan.input_validation
+        runtime_trace = create_stage_trace(task_id=run_context.task_id, run_id=run_context.run_id, domain=plan.domain)
         if plan.domain != TaskDomain.BIOINFORMATICS:
+            runtime_trace.advance(RuntimeStage.LITE_02_LOCAL_RETRIEVAL.value)
+            runtime_trace.advance(RuntimeStage.LITE_03_ANSWER_BLUEPRINT.value)
+            runtime_trace.advance(RuntimeStage.COMPLETED.value)
             return self._build_non_bio_submission_preview(
                 run_context=run_context,
                 mode=mode,
                 request_text=request_text,
                 plan_summary=plan.summary,
                 domain=plan.domain,
+                input_bundle=plan.pipeline_spec.input_bundle if plan.pipeline_spec is not None else None,
+                validation_report=validation_report,
+                runtime_lifecycle=runtime_trace.to_contract(),
             )
-        command = command or self._build_default_bio_command(
+        if execute_submit and validation_report is not None and not validation_report.valid:
+            raise PermissionError(
+                "InputBundle validation failed; resolve blocking input issues before real submit."
+            )
+        command = envelope.command or self._build_default_bio_command(
             plan=plan,
             request_text=request_text,
             working_directory=run_context.working_directory or self._settings.work_root,
         )
+        runtime_trace.advance(RuntimeStage.STAGE_02_INTENT_AND_SCOPE.value)
+        runtime_trace.advance(RuntimeStage.STAGE_03_INPUT_VALIDATION.value)
+        runtime_trace.advance(RuntimeStage.STAGE_04_LOCAL_FIRST_RAG.value)
+        runtime_trace.advance(RuntimeStage.STAGE_05_BLUEPRINT_SELECTION.value)
+        runtime_trace.advance(RuntimeStage.STAGE_06_RESOURCE_AND_SAFETY_GATE.value)
         resources = plan.resource_estimate
         if resources is None:
             raise ValueError("Draft plan did not return a resource estimate.")
+        atomic_tools = (
+            list(plan.pipeline_spec.atomic_algorithms)
+            if plan.pipeline_spec is not None
+            else []
+        )
         submission_plan = self._scheduler.build_submission_plan(
             command=command,
             working_directory=run_context.working_directory or self._settings.work_root,
@@ -330,6 +462,7 @@ class ApplicationFacade:
             mode=mode,
             task_id=run_context.task_id,
             run_id=run_context.run_id,
+            atomic_tools=atomic_tools,
         )
         safety_review = self._build_safety_review_for_scheduler(
             run_context=run_context,
@@ -337,6 +470,7 @@ class ApplicationFacade:
             command=command,
             dry_run_completed=dry_run_completed,
             resources=resources,
+            stage_id=RuntimeStage.STAGE_06_RESOURCE_AND_SAFETY_GATE.value,
             target_paths=[
                 submission_plan.paths.script_path,
                 submission_plan.paths.wrapper_path,
@@ -344,6 +478,12 @@ class ApplicationFacade:
                 submission_plan.paths.stderr_path,
             ],
         )
+        if validation_report is not None and not validation_report.valid:
+            safety_review = self._apply_validation_warnings_to_safety_review(
+                safety_review=safety_review,
+                validation_report=validation_report,
+            )
+        runtime_trace.advance(RuntimeStage.STAGE_07_EXECUTION.value)
         job_handle = submission_plan.job_handle
         if execute_submit:
             if safety_review.decision != GateDecision.PASS:
@@ -356,6 +496,7 @@ class ApplicationFacade:
                 command=command,
                 task_id=run_context.task_id,
                 run_id=run_context.run_id,
+                atomic_tools=atomic_tools,
             )
         submit_command_text = shlex.join(submission_plan.submit_command)
         predicted_audit_record_path = self._predict_audit_record_path(
@@ -373,6 +514,7 @@ class ApplicationFacade:
             wrapper_path=submission_plan.paths.wrapper_path,
             audit_path=predicted_audit_record_path,
         )
+        runtime_trace.advance(RuntimeStage.STAGE_08_ARTIFACT_AND_REPORT.value)
         audit_record_path = self._append_execution_audit(
             run_context=run_context,
             mode=mode,
@@ -384,7 +526,10 @@ class ApplicationFacade:
             manual_confirmation_records=safety_review.human_confirmation_conditions,
             artifact_index=artifact_index,
             report_summary=report_summary,
+            runtime_lifecycle=runtime_trace.to_contract(),
         )
+        runtime_trace.advance(RuntimeStage.STAGE_09_AUDIT_AND_MEMORY.value)
+        runtime_trace.advance(RuntimeStage.COMPLETED.value)
         if audit_record_path:
             artifact_index["results"] = self._stable_unique(
                 [*artifact_index.get("results", []), audit_record_path]
@@ -393,6 +538,7 @@ class ApplicationFacade:
             task_id=run_context.task_id,
             run_id=run_context.run_id,
             session_id=run_context.session_id,
+            project_id=None,
             domain=plan.domain,
             input_summary=request_text,
             planning_summary=plan.summary,
@@ -438,6 +584,9 @@ class ApplicationFacade:
                 audit_record_path=audit_record_path,
                 memory_handoff_summary=run_record.handoffs[-1].summary if run_record.handoffs else None,
             ),
+            input_bundle=plan.pipeline_spec.input_bundle if plan.pipeline_spec is not None else None,
+            input_validation=validation_report,
+            runtime_lifecycle=runtime_trace.to_contract(),
         )
 
     def _build_non_bio_submission_preview(
@@ -448,6 +597,9 @@ class ApplicationFacade:
         request_text: str | None = None,
         plan_summary: str | None = None,
         domain: TaskDomain = TaskDomain.KNOWLEDGE,
+        input_bundle: InputBundle | None = None,
+        validation_report: ValidationReport | None = None,
+        runtime_lifecycle: dict[str, object] | None = None,
     ) -> SubmissionPreview:
         skip_message = (
             "scheduler_skipped: non-bio request uses lightweight "
@@ -473,11 +625,13 @@ class ApplicationFacade:
             manual_confirmation_records=[],
             artifact_index=artifact_index,
             report_summary=report_summary,
+            runtime_lifecycle=runtime_lifecycle,
         )
         run_record = self._memory_coordinator.record_execution_closure(
             task_id=run_context.task_id,
             run_id=run_context.run_id,
             session_id=run_context.session_id,
+            project_id=None,
             domain=domain,
             input_summary=request_text or "non-bio lightweight branch",
             planning_summary=plan_summary or "non-bio lightweight plan",
@@ -530,6 +684,9 @@ class ApplicationFacade:
                 audit_record_path=audit_record_path,
                 memory_handoff_summary=run_record.handoffs[-1].summary if run_record.handoffs else None,
             ),
+            input_bundle=input_bundle,
+            input_validation=validation_report,
+            runtime_lifecycle=runtime_lifecycle,
         )
 
     def _build_safety_review_for_scheduler(
@@ -540,6 +697,7 @@ class ApplicationFacade:
         command: list[str],
         dry_run_completed: bool,
         resources,
+        stage_id: str,
         target_paths: list[str],
     ) -> SafetyGateResult:
         action_name = "dry_run_preview"
@@ -551,6 +709,7 @@ class ApplicationFacade:
             context=SafetyReviewContext(
                 task_id=run_context.task_id,
                 run_id=run_context.run_id,
+                stage_id=stage_id,
                 action_name=action_name,
                 target_paths=target_paths,
                 command_preview=" ".join(command),
@@ -562,6 +721,42 @@ class ApplicationFacade:
                 walltime_hours=self._walltime_to_hours(resources.walltime),
                 job_count=1,
             )
+        )
+
+    def _apply_validation_warnings_to_safety_review(
+        self,
+        *,
+        safety_review: SafetyGateResult,
+        validation_report: ValidationReport,
+    ) -> SafetyGateResult:
+        blocking_messages = [
+            issue.message
+            for issue in validation_report.issues
+            if issue.blocking
+        ]
+        if not blocking_messages:
+            return safety_review
+        return safety_review.model_copy(
+            update={
+                "human_confirmation_conditions": self._stable_unique(
+                    [
+                        *safety_review.human_confirmation_conditions,
+                        "Resolve blocking InputBundle validation issues before real submit.",
+                    ]
+                ),
+                "circuit_break_conditions": self._stable_unique(
+                    [
+                        *safety_review.circuit_break_conditions,
+                        *[f"input_validation:{message}" for message in blocking_messages],
+                    ]
+                ),
+                "rollback_or_remediation": self._stable_unique(
+                    [
+                        *safety_review.rollback_or_remediation,
+                        *validation_report.recommended_next_actions,
+                    ]
+                ),
+            }
         )
 
     def _walltime_to_hours(self, walltime: str) -> int:
@@ -1003,11 +1198,13 @@ class ApplicationFacade:
         manual_confirmation_records: list[str],
         artifact_index: dict[str, list[str]],
         report_summary: str,
+        runtime_lifecycle: dict[str, object] | None = None,
     ) -> str | None:
         event = AuditEvent(
             task_id=run_context.task_id,
             run_id=run_context.run_id,
             event_type="execution_closure",
+            stage_id="stage_09_audit_and_memory",
             summary=f"{mode} execution closure recorded for task/run context.",
             metadata={
                 "input_summary": request_text[:200],
@@ -1018,6 +1215,12 @@ class ApplicationFacade:
                 "manual_confirmation_records": manual_confirmation_records,
                 "artifact_index": artifact_index,
                 "report_summary": report_summary,
+                "runtime_lifecycle": runtime_lifecycle or {},
+            },
+            traceability={
+                "submission_command": submission_command,
+                "job_id": job_id,
+                "log_paths": [path for path in log_paths if path],
             },
         )
         return self._audit_store.append(

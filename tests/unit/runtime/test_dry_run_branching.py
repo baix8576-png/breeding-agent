@@ -33,6 +33,9 @@ def test_non_bio_dry_run_skips_scheduler_script_generation() -> None:
     assert submission.artifacts.report_generator_message is not None
     assert submission.artifacts.audit_record_path is not None
     assert submission.artifacts.memory_handoff_summary is not None
+    assert submission.runtime_lifecycle is not None
+    assert submission.runtime_lifecycle["runtime_path"] == "non_bio_lightweight"
+    assert submission.runtime_lifecycle["current_stage"] == "completed"
 
 
 def test_bio_submit_preview_exposes_wrapper_poll_and_recovery_fields() -> None:
@@ -69,6 +72,8 @@ def test_bio_submit_preview_exposes_wrapper_poll_and_recovery_fields() -> None:
     assert submission.artifacts.report_generator_status != "not_invoked"
     assert submission.artifacts.audit_record_path is not None
     assert submission.artifacts.memory_handoff_summary is not None
+    assert submission.runtime_lifecycle is not None
+    assert submission.runtime_lifecycle["runtime_path"] == "bio_main_chain"
 
 
 def test_poll_explanation_returns_structured_failed_state() -> None:

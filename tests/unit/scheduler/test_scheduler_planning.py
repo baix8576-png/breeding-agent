@@ -320,3 +320,72 @@ def test_run_command_error_message_includes_missing_executable_name() -> None:
     assert "sbatch" in str(raised.value)
 
 
+def test_slurm_real_submit_is_idempotent_for_same_task_and_run(tmp_path) -> None:
+    submit_attempts = 0
+
+    def command_runner(command: list[str], cwd: str | None, timeout: int) -> subprocess.CompletedProcess[str]:
+        nonlocal submit_attempts
+        _ = (cwd, timeout)
+        if command[0] == "sbatch":
+            submit_attempts += 1
+            return subprocess.CompletedProcess(command, 0, stdout="Submitted batch job 900001\n", stderr="")
+        raise AssertionError(f"Unexpected command: {command}")
+
+    adapter = SlurmSchedulerAdapter(
+        real_execution_enabled=True,
+        command_runner=command_runner,
+    )
+
+    first = adapter.submit(
+        working_directory=str(tmp_path),
+        resources=ResourceEstimate(cpus=4, memory_gb=8, walltime="01:00:00"),
+        command=["bash", "scripts/pca_pipeline/run_pca_pipeline.sh"],
+        task_id="task-idempotent-001",
+        run_id="run-idempotent-001",
+    )
+    second = adapter.submit(
+        working_directory=str(tmp_path),
+        resources=ResourceEstimate(cpus=4, memory_gb=8, walltime="01:00:00"),
+        command=["bash", "scripts/pca_pipeline/run_pca_pipeline.sh"],
+        task_id="task-idempotent-001",
+        run_id="run-idempotent-001",
+    )
+
+    assert submit_attempts == 1
+    assert first.job_id == "900001"
+    assert second.job_id == "900001"
+
+
+def test_slurm_real_submit_idempotency_conflict_rejects_different_command(tmp_path) -> None:
+    submit_attempts = 0
+
+    def command_runner(command: list[str], cwd: str | None, timeout: int) -> subprocess.CompletedProcess[str]:
+        nonlocal submit_attempts
+        _ = (cwd, timeout)
+        if command[0] == "sbatch":
+            submit_attempts += 1
+            return subprocess.CompletedProcess(command, 0, stdout="Submitted batch job 900777\n", stderr="")
+        raise AssertionError(f"Unexpected command: {command}")
+
+    adapter = SlurmSchedulerAdapter(real_execution_enabled=True, command_runner=command_runner)
+    adapter.submit(
+        working_directory=str(tmp_path),
+        resources=ResourceEstimate(cpus=4, memory_gb=8, walltime="01:00:00"),
+        command=["bash", "scripts/qc_pipeline/run_qc_pipeline.sh"],
+        task_id="task-idempotent-002",
+        run_id="run-idempotent-002",
+    )
+
+    with pytest.raises(SchedulerExecutionError) as raised:
+        adapter.submit(
+            working_directory=str(tmp_path),
+            resources=ResourceEstimate(cpus=4, memory_gb=8, walltime="01:00:00"),
+            command=["bash", "scripts/pca_pipeline/run_pca_pipeline.sh"],
+            task_id="task-idempotent-002",
+            run_id="run-idempotent-002",
+        )
+
+    assert submit_attempts == 1
+    assert raised.value.error_code == "IDEMPOTENCY_CONFLICT"
+
+

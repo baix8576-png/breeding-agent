@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-import shutil
 import subprocess
 
 import pytest
@@ -92,28 +91,19 @@ def test_non_bio_requests_clearly_skip_cluster_execution() -> None:
         SCRIPTS / "report_generator" / "build_result_index.sh",
     ],
 )
-def test_report_generator_critical_script_exists_and_has_help(script_path: Path) -> None:
+def test_report_generator_critical_script_exists_and_has_help(
+    script_path: Path,
+    bash_executable: str,
+) -> None:
     assert script_path.exists(), f"Missing report-generator entrypoint: {script_path}"
 
-    bash = shutil.which("bash")
-    if bash is None:
-        pytest.skip("bash is not available in the current test environment")
-
     result = subprocess.run(
-        [bash, "--noprofile", "--norc", script_path.as_posix(), "--help"],
+        [bash_executable, "--noprofile", "--norc", script_path.as_posix(), "--help"],
         cwd=ROOT,
         capture_output=True,
         text=True,
         check=False,
     )
-
-    output = f"{result.stdout}{result.stderr}"
-    normalized_output = output.replace("\x00", "")
-    if result.returncode != 0 and (
-        "E_ACCESSDENIED" in normalized_output
-        or "Bash/Service/CreateInstance" in normalized_output
-    ):
-        pytest.skip("bash is present but WSL bash service is unavailable in this Windows session")
 
     assert result.returncode == 0, result.stderr or result.stdout
     assert "usage" in (result.stdout + result.stderr).lower()

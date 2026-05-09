@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from typer.testing import CliRunner
 
@@ -57,6 +58,35 @@ def test_cli_plan_command_covers_non_bio_lightweight_branch() -> None:
     assert payload["pipeline_spec"]["blueprint_key"] is None
 
 
+def test_cli_plan_command_accepts_input_bundle_entries(tmp_path: Path) -> None:
+    vcf_path = tmp_path / "demo.vcf.gz"
+    vcf_path.write_text("##fileformat=VCFv4.2\n", encoding="utf-8")
+
+    result = runner.invoke(
+        app,
+        [
+            "plan",
+            "Run PCA on sheep cohort from explicit input bundle",
+            "--task-id",
+            "task-cli-plan-bundle-001",
+            "--run-id",
+            "run-cli-plan-bundle-001",
+            "--working-directory",
+            "/cluster/work/sheep",
+            "--input-entry",
+            f"vcf={vcf_path}",
+            "--input-species",
+            "sheep",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["pipeline_spec"]["input_bundle"]["species"] == "sheep"
+    assert payload["pipeline_spec"]["input_bundle"]["entries"][0]["role"] == "vcf"
+    assert payload["input_validation"]["valid"] is True
+
+
 def test_cli_report_command_returns_report_preview_payload() -> None:
     result = runner.invoke(
         app,
@@ -110,6 +140,7 @@ def test_cli_diagnostic_command_non_bio_branch_clearly_skips_cluster() -> None:
     assert payload["cluster_execution_enabled"] is False
     assert isinstance(payload["fallback"], dict)
     assert payload["fallback"]["gate_decision"] in {"allowed", "blocked", "not_requested"}
+    assert isinstance(payload["fallback"].get("gate_audit"), dict)
     assert "non_bio_cluster_policy" in payload
     assert "does not enter cluster execution" in payload["non_bio_cluster_policy"]
 
@@ -137,6 +168,8 @@ def test_cli_diagnostic_command_keeps_knowledge_fallback_path_for_low_coverage()
     assert payload["fallback"]["requested"] is True
     assert payload["fallback"]["gate_decision"] in {"allowed", "blocked"}
     assert payload["fallback"]["gate_decision"] != "not_requested"
+    assert isinstance(payload["fallback"]["gate_audit"], dict)
+    assert "data_sensitivity_level" in payload["fallback"]["gate_audit"]
     assert payload["cluster_execution_enabled"] is False
 
 

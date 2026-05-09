@@ -71,6 +71,9 @@ class ToolManifest(BaseModel):
     preconditions: list[str] = Field(default_factory=list)
     resource_requirements: list[str] = Field(default_factory=list)
     error_codes: list[str] = Field(default_factory=list)
+    algorithm_family: str | None = None
+    atomic_resource_profile: AtomicResourceProfile | None = None
+    failure_code_map: list[AtomicFailureCode] = Field(default_factory=list)
     supports_dry_run: bool = True
     stage_scope: list[str]
     domain_scope: list[str]
@@ -99,6 +102,18 @@ class ToolManifest(BaseModel):
     @classmethod
     def _normalize_text_fields(cls, value: str) -> str:
         return value.strip()
+
+    @field_validator("algorithm_family")
+    @classmethod
+    def _validate_algorithm_family(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            return None
+        if not re.fullmatch(r"^[a-z][a-z0-9_]*$", normalized):
+            raise ValueError("algorithm_family must use snake_case")
+        return normalized
 
     @field_validator(
         "inputs",
@@ -135,7 +150,72 @@ class ToolManifest(BaseModel):
             raise ValueError("stage_scope must include at least one stage id")
         if not self.domain_scope:
             raise ValueError("domain_scope must include at least one domain id")
+        if self.failure_code_map:
+            expected = {item.code for item in self.failure_code_map}
+            declared = set(self.error_codes)
+            if expected - declared:
+                missing = ", ".join(sorted(expected - declared))
+                raise ValueError(
+                    "failure_code_map codes must be included in error_codes; missing: "
+                    f"{missing}"
+                )
+        if self.category == "atomic_algorithm":
+            if self.atomic_resource_profile is None:
+                raise ValueError("atomic_algorithm category requires atomic_resource_profile")
+            if not self.failure_code_map:
+                raise ValueError("atomic_algorithm category requires failure_code_map")
+            if not self.algorithm_family:
+                raise ValueError("atomic_algorithm category requires algorithm_family")
         return self
+
+
+class AtomicFailureCode(BaseModel):
+    """Structured failure code metadata for atomic algorithm tools."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    code: str
+    message: str
+    retryable: bool = False
+    retry_suggestion: str = ""
+
+    @field_validator("code", "message", "retry_suggestion")
+    @classmethod
+    def _normalize_non_empty_text(cls, value: str, info) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError(f"{info.field_name} cannot be blank")
+        return normalized
+
+
+class AtomicResourceProfile(BaseModel):
+    """Atomic algorithm resource profile used by scheduler planning."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    cpus: int = Field(ge=1)
+    memory_gb: int = Field(ge=1)
+    walltime: str
+    retry_suggestion: str
+
+    @field_validator("walltime")
+    @classmethod
+    def _validate_walltime(cls, value: str) -> str:
+        normalized = value.strip()
+        if not re.fullmatch(r"\d{2}:\d{2}:\d{2}", normalized):
+            raise ValueError("walltime must use HH:MM:SS")
+        return normalized
+
+    @field_validator("retry_suggestion")
+    @classmethod
+    def _validate_retry_suggestion(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("retry_suggestion cannot be blank")
+        return normalized
+
+
+ToolManifest.model_rebuild()
 
 
 class ToolManifestCatalog(BaseModel):

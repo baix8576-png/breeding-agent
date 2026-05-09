@@ -19,10 +19,15 @@ def test_tool_registry_bootstrap_defaults_is_idempotent() -> None:
     assert first_names == second_names
     assert "input_contract_reader" in first_names
     assert "scheduler_dry_run_preview" in first_names
+    assert "plink2_pca" in first_names
     assert load_result.source in {"file", "builtin"}
     assert second_result.source in {"file", "builtin", "in_memory"}
     assert registry.get("input_contract_reader") is not None
     assert registry.get("input_contract_reader").manifest_version == "1.0.0"
+    plink2_pca = registry.get("plink2_pca")
+    assert plink2_pca is not None
+    assert plink2_pca.category == "atomic_algorithm"
+    assert plink2_pca.atomic_resource_profile is not None
 
 
 def test_tool_registry_list_for_stage_and_domain_filters_manifests() -> None:
@@ -35,6 +40,12 @@ def test_tool_registry_list_for_stage_and_domain_filters_manifests() -> None:
     assert "local_context_search" in names
     assert "external_context_fallback" in names
     assert "genetics_pipeline_blueprint" not in names
+
+    bio_execution_manifests = registry.list_for_stage("stage_07_execution", TaskDomain.BIOINFORMATICS)
+    bio_names = [manifest.name for manifest in bio_execution_manifests]
+    assert "plink2_pca" in bio_names
+    assert "gcta_reml" in bio_names
+    assert "vcftools_weir_fst" in bio_names
 
 
 def test_tool_registry_bootstrap_defaults_fallback_keeps_current_behavior(tmp_path: Path) -> None:

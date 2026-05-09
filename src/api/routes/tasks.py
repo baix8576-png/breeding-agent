@@ -16,6 +16,14 @@ from contracts.api import (
     ValidateInputsRequest,
 )
 from runtime.bootstrap import create_application_context
+from runtime.compat import (
+    envelope_from_diagnostic,
+    envelope_from_draft_plan,
+    envelope_from_dry_run,
+    envelope_from_report,
+    envelope_from_submit,
+    envelope_from_submit_preview,
+)
 from scheduler.base import SchedulerExecutionError
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
@@ -26,10 +34,12 @@ def draft_plan(payload: DraftPlanRequest) -> dict[str, object]:
     """Return structured orchestration output for a user request."""
 
     context = create_application_context()
+    envelope = envelope_from_draft_plan(payload)
     plan_result = context.facade.draft_plan(
-        text=payload.text,
-        identity=payload.identity,
-        requested_outputs=payload.requested_outputs,
+        text=envelope.request_text,
+        identity=envelope.identity,
+        requested_outputs=envelope.requested_outputs,
+        input_bundle=envelope.input_bundle,
     )
     return {"plan": plan_result.model_dump(mode="json")}
 
@@ -73,10 +83,11 @@ def report(payload: ReportPreviewRequest) -> dict[str, object]:
     """Generate a report-oriented preview payload from a user request."""
 
     context = create_application_context()
+    envelope = envelope_from_report(payload)
     report_preview = context.facade.build_report_preview(
-        request_text=payload.request_text,
-        requested_outputs=payload.requested_outputs,
-        identity=payload.identity,
+        request_text=envelope.request_text,
+        requested_outputs=envelope.requested_outputs,
+        identity=envelope.identity,
     )
     return {"report": report_preview.model_dump(mode="json")}
 
@@ -86,9 +97,10 @@ def diagnostic(payload: DiagnosticPreviewRequest) -> dict[str, object]:
     """Generate diagnostic guidance without triggering cluster execution for non-bio intent."""
 
     context = create_application_context()
+    envelope = envelope_from_diagnostic(payload)
     diagnostic_preview = context.facade.build_diagnostic_preview(
-        request_text=payload.request_text,
-        identity=payload.identity,
+        request_text=envelope.request_text,
+        identity=envelope.identity,
     )
     return {"diagnostic": diagnostic_preview.model_dump(mode="json")}
 
@@ -98,10 +110,12 @@ def dry_run(payload: DryRunRequest) -> dict[str, object]:
     """Preview scheduler submission artifacts without real execution."""
 
     context = create_application_context()
+    envelope = envelope_from_dry_run(payload)
     submission = context.facade.build_dry_run_submission(
-        command=payload.command,
-        request_text=payload.request_text,
-        identity=payload.identity,
+        command=envelope.command,
+        request_text=envelope.request_text,
+        identity=envelope.identity,
+        input_bundle=envelope.input_bundle,
     )
     return {"submission": submission.model_dump(mode="json")}
 
@@ -111,11 +125,13 @@ def submit_preview(payload: SubmitPreviewRequest) -> dict[str, object]:
     """Build scheduler submit-preview artifacts without issuing a real submit command."""
 
     context = create_application_context()
+    envelope = envelope_from_submit_preview(payload)
     submission = context.facade.build_submit_preview(
-        command=payload.command,
-        request_text=payload.request_text,
-        identity=payload.identity,
-        dry_run_completed=payload.dry_run_completed,
+        command=envelope.command,
+        request_text=envelope.request_text,
+        identity=envelope.identity,
+        dry_run_completed=envelope.dry_run_completed,
+        input_bundle=envelope.input_bundle,
     )
     return {"submission": submission.model_dump(mode="json")}
 
@@ -125,12 +141,14 @@ def submit(payload: SubmitRequest) -> dict[str, object]:
     """Submit a real scheduler job when the safety gate allows execution."""
 
     context = create_application_context()
+    envelope = envelope_from_submit(payload)
     try:
         submission = context.facade.submit(
-            command=payload.command,
-            request_text=payload.request_text,
-            identity=payload.identity,
-            dry_run_completed=payload.dry_run_completed,
+            command=envelope.command,
+            request_text=envelope.request_text,
+            identity=envelope.identity,
+            dry_run_completed=envelope.dry_run_completed,
+            input_bundle=envelope.input_bundle,
         )
     except PermissionError as error:
         raise HTTPException(status_code=409, detail=str(error)) from error

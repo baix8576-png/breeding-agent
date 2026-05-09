@@ -104,7 +104,14 @@ class IntentRouter:
         """Classify a request and capture deterministic planning hints."""
 
         normalized = request_text.lower()
-        bio_hits = sorted(keyword for keyword in self._bioinformatics_keywords if keyword in normalized)
+        analysis_keyword_hits = sorted(
+            keyword
+            for keyword in self._analysis_targets
+            if keyword in normalized
+        )
+        bio_hits = sorted(
+            set(keyword for keyword in self._bioinformatics_keywords if keyword in normalized).union(analysis_keyword_hits)
+        )
         system_hits = sorted(keyword for keyword in self._system_keywords if keyword in normalized)
         matched_keywords = sorted(set(bio_hits + system_hits))
         analysis_targets = sorted(

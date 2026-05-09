@@ -23,6 +23,28 @@ class ConsistencyStatus(str, Enum):
     FAIL = "fail"
 
 
+class InputBundleEntry(BaseModel):
+    """Stable input entry contract carried from entry points into the pipeline layer."""
+
+    role: str
+    path: str
+    data_type: str | None = None
+    required: bool = True
+    description: str | None = None
+    original_path: str | None = None
+    normalized_path: str | None = None
+
+
+class InputBundle(BaseModel):
+    """Structured bundle of local inputs used by plan/dry-run/submit flows."""
+
+    task_id: str | None = None
+    run_id: str | None = None
+    species: str | None = None
+    cohort_name: str | None = None
+    entries: list[InputBundleEntry] = Field(default_factory=list)
+
+
 class NormalizedInputEntry(BaseModel):
     """Normalized entry rendered after InputBundle path and role normalization."""
 

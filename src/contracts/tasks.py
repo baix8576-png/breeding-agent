@@ -4,12 +4,15 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from contracts.validation import InputBundle
+
 class UserRequest(BaseModel):
     """Normalized request object built from CLI or API input."""
 
     text: str
     working_directory: str | None = None
     requested_outputs: list[str] = Field(default_factory=list)
+    input_bundle: InputBundle | None = None
 
 
 class ResourceEstimate(BaseModel):

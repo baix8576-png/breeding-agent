@@ -10,6 +10,8 @@ from pydantic import BaseModel, Field
 from contracts.validation import (
     ConsistencyCheck,
     ConsistencyStatus,
+    InputBundle,
+    InputBundleEntry,
     NormalizedInputEntry,
     ValidationIssue,
     ValidationReport,
@@ -30,28 +32,6 @@ class InputDataType(str, Enum):
     BAM = "bam"
     FASTA = "fasta"
     TEXT_TABLE = "text_table"
-
-
-class InputBundleEntry(BaseModel):
-    """Single dataset entry passed into the local validator."""
-
-    role: str
-    path: str
-    data_type: InputDataType | None = None
-    required: bool = True
-    description: str | None = None
-    original_path: str | None = None
-    normalized_path: str | None = None
-
-
-class InputBundle(BaseModel):
-    """Grouped dataset description used during local validation."""
-
-    task_id: str | None = None
-    run_id: str | None = None
-    species: str | None = None
-    cohort_name: str | None = None
-    entries: list[InputBundleEntry] = Field(default_factory=list)
 
 
 class PipelineValidationIssue(BaseModel):
@@ -367,17 +347,25 @@ class InputValidator:
     def _normalize_entry(self, *, index: int, entry: InputBundleEntry) -> InputBundleEntry:
         original_path = entry.original_path or entry.path
         normalized_path = self._normalize_path(entry.path)
-        inferred_type = entry.data_type or self._infer_type(Path(normalized_path))
+        inferred_type = self._coerce_input_type(entry.data_type) or self._infer_type(Path(normalized_path))
         role = self._normalize_role(entry.role, inferred_type, index)
         return entry.model_copy(
             update={
                 "role": role,
                 "path": normalized_path,
-                "data_type": inferred_type,
+                "data_type": inferred_type.value if inferred_type is not None else None,
                 "original_path": original_path,
                 "normalized_path": normalized_path,
             }
         )
+
+    def _coerce_input_type(self, raw_type: str | None) -> InputDataType | None:
+        if not raw_type:
+            return None
+        try:
+            return InputDataType(str(raw_type))
+        except ValueError:
+            return None
 
     def _normalize_path(self, raw_path: str) -> str:
         candidate = Path(raw_path).expanduser()

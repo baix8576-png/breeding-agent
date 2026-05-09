@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from contracts.validation import InputBundle
+
 
 class RequestIdentity(BaseModel):
     """Optional caller-supplied identity fields normalized into a RunContext."""
@@ -19,6 +21,7 @@ class DraftPlanRequest(BaseModel):
 
     text: str
     requested_outputs: list[str] = Field(default_factory=list)
+    input_bundle: InputBundle | None = None
     identity: RequestIdentity = Field(default_factory=RequestIdentity)
 
 
@@ -48,6 +51,7 @@ class DryRunRequest(BaseModel):
 
     request_text: str = "Prepare a dry-run submission"
     command: list[str] | None = None
+    input_bundle: InputBundle | None = None
     identity: RequestIdentity = Field(default_factory=RequestIdentity)
 
 
@@ -57,6 +61,7 @@ class SubmitPreviewRequest(BaseModel):
     request_text: str = "Prepare a submit-preview"
     command: list[str] | None = None
     dry_run_completed: bool = False
+    input_bundle: InputBundle | None = None
     identity: RequestIdentity = Field(default_factory=RequestIdentity)
 
 
@@ -66,6 +71,7 @@ class SubmitRequest(BaseModel):
     request_text: str = "Submit scheduler job"
     command: list[str] | None = None
     dry_run_completed: bool = False
+    input_bundle: InputBundle | None = None
     identity: RequestIdentity = Field(default_factory=RequestIdentity)
 
 

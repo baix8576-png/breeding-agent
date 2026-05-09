@@ -12,11 +12,14 @@ from pydantic import BaseModel, Field
 class AuditEvent(BaseModel):
     """Audit record kept for reproducibility and accountability."""
 
+    schema_version: str = "audit_event.v2"
     task_id: str
     run_id: str
     event_type: str
+    stage_id: str | None = None
     summary: str
     metadata: dict[str, object] = Field(default_factory=dict)
+    traceability: dict[str, object] = Field(default_factory=dict)
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
@@ -42,7 +45,7 @@ class FileAuditStore:
         fallback_root: str | None = None,
         memory_store: InMemoryAuditStore | None = None,
     ) -> None:
-        self._fallback_root = fallback_root or str(Path.cwd() / ".tmp" / "audit")
+        self._fallback_root = fallback_root or str(Path.cwd() / "logs" / "audit")
         self._memory_store = memory_store or InMemoryAuditStore()
         self._run_file_map: dict[tuple[str, str], str] = {}
 

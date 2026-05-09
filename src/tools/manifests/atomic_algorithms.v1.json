@@ -1,0 +1,737 @@
+{
+  "schema_version": "1.0.0",
+  "manifests": [
+    {
+      "schema_version": "1.0.0",
+      "manifest_version": "1.0.0",
+      "name": "plink2_missingness",
+      "description": "PLINK2 sample and variant missingness scan for QC thresholds.",
+      "category": "atomic_algorithm",
+      "algorithm_family": "plink2",
+      "inputs": ["plink_prefix", "missingness_threshold"],
+      "outputs": ["sample_missingness_table", "variant_missingness_table"],
+      "preconditions": ["bed/bim/fam available"],
+      "resource_requirements": ["cpus=4", "memory_gb=12", "walltime=01:00:00", "retry=halve_batch_or_raise_mem"],
+      "error_codes": ["INPUT_MISSING", "OUT_OF_MEMORY", "NONZERO_EXIT"],
+      "atomic_resource_profile": {
+        "cpus": 4,
+        "memory_gb": 12,
+        "walltime": "01:00:00",
+        "retry_suggestion": "Reduce chunk size and retry once; then raise memory by +25%."
+      },
+      "failure_code_map": [
+        {
+          "code": "INPUT_MISSING",
+          "message": "Required PLINK input files are missing.",
+          "retryable": false,
+          "retry_suggestion": "Fix bed/bim/fam path contract before resubmission."
+        },
+        {
+          "code": "OUT_OF_MEMORY",
+          "message": "Job exceeded scheduler memory allocation.",
+          "retryable": true,
+          "retry_suggestion": "Increase memory by +25% and rerun after dry-run review."
+        },
+        {
+          "code": "NONZERO_EXIT",
+          "message": "PLINK2 returned non-zero exit status.",
+          "retryable": true,
+          "retry_suggestion": "Inspect stderr and retry once after validating thresholds."
+        }
+      ],
+      "supports_dry_run": true,
+      "stage_scope": ["stage_07_execution"],
+      "domain_scope": ["bioinformatics"]
+    },
+    {
+      "schema_version": "1.0.0",
+      "manifest_version": "1.0.0",
+      "name": "plink2_hwe",
+      "description": "PLINK2 Hardy-Weinberg equilibrium filtering for variant QC.",
+      "category": "atomic_algorithm",
+      "algorithm_family": "plink2",
+      "inputs": ["plink_prefix", "hwe_threshold"],
+      "outputs": ["hwe_filtered_variants"],
+      "preconditions": ["bed/bim/fam available"],
+      "resource_requirements": ["cpus=4", "memory_gb=12", "walltime=01:00:00", "retry=relax_threshold_if_needed"],
+      "error_codes": ["INPUT_MISSING", "OUT_OF_MEMORY", "NONZERO_EXIT"],
+      "atomic_resource_profile": {
+        "cpus": 4,
+        "memory_gb": 12,
+        "walltime": "01:00:00",
+        "retry_suggestion": "Retry once with validated threshold and +25% memory if needed."
+      },
+      "failure_code_map": [
+        {
+          "code": "INPUT_MISSING",
+          "message": "Required PLINK input files are missing.",
+          "retryable": false,
+          "retry_suggestion": "Fix bed/bim/fam path contract before resubmission."
+        },
+        {
+          "code": "OUT_OF_MEMORY",
+          "message": "Job exceeded scheduler memory allocation.",
+          "retryable": true,
+          "retry_suggestion": "Increase memory by +25% and rerun after dry-run review."
+        },
+        {
+          "code": "NONZERO_EXIT",
+          "message": "PLINK2 returned non-zero exit status.",
+          "retryable": true,
+          "retry_suggestion": "Inspect stderr and retry once after validating HWE threshold."
+        }
+      ],
+      "supports_dry_run": true,
+      "stage_scope": ["stage_07_execution"],
+      "domain_scope": ["bioinformatics"]
+    },
+    {
+      "schema_version": "1.0.0",
+      "manifest_version": "1.0.0",
+      "name": "plink2_allele_frequency",
+      "description": "PLINK2 allele-frequency profiling for population summary and QC.",
+      "category": "atomic_algorithm",
+      "algorithm_family": "plink2",
+      "inputs": ["plink_prefix"],
+      "outputs": ["allele_frequency_table"],
+      "preconditions": ["bed/bim/fam available"],
+      "resource_requirements": ["cpus=4", "memory_gb=12", "walltime=01:00:00", "retry=check_input_index"],
+      "error_codes": ["INPUT_MISSING", "OUT_OF_MEMORY", "NONZERO_EXIT"],
+      "atomic_resource_profile": {
+        "cpus": 4,
+        "memory_gb": 12,
+        "walltime": "01:00:00",
+        "retry_suggestion": "Retry once after validating plink prefix and +25% memory if needed."
+      },
+      "failure_code_map": [
+        {
+          "code": "INPUT_MISSING",
+          "message": "Required PLINK input files are missing.",
+          "retryable": false,
+          "retry_suggestion": "Fix bed/bim/fam path contract before resubmission."
+        },
+        {
+          "code": "OUT_OF_MEMORY",
+          "message": "Job exceeded scheduler memory allocation.",
+          "retryable": true,
+          "retry_suggestion": "Increase memory by +25% and rerun after dry-run review."
+        },
+        {
+          "code": "NONZERO_EXIT",
+          "message": "PLINK2 returned non-zero exit status.",
+          "retryable": true,
+          "retry_suggestion": "Inspect stderr and retry once after checking input prefix."
+        }
+      ],
+      "supports_dry_run": true,
+      "stage_scope": ["stage_07_execution"],
+      "domain_scope": ["bioinformatics"]
+    },
+    {
+      "schema_version": "1.0.0",
+      "manifest_version": "1.0.0",
+      "name": "bcftools_stats",
+      "description": "bcftools summary statistics on VCF-level variant collections.",
+      "category": "atomic_algorithm",
+      "algorithm_family": "bcftools",
+      "inputs": ["vcf_path"],
+      "outputs": ["bcftools_stats_report"],
+      "preconditions": ["vcf path available"],
+      "resource_requirements": ["cpus=2", "memory_gb=8", "walltime=00:45:00", "retry=validate_vcf_index"],
+      "error_codes": ["INPUT_MISSING", "IO_ERROR", "NONZERO_EXIT"],
+      "atomic_resource_profile": {
+        "cpus": 2,
+        "memory_gb": 8,
+        "walltime": "00:45:00",
+        "retry_suggestion": "Rebuild VCF index and retry once."
+      },
+      "failure_code_map": [
+        {
+          "code": "INPUT_MISSING",
+          "message": "VCF input path is missing or inaccessible.",
+          "retryable": false,
+          "retry_suggestion": "Fix path and permissions before rerun."
+        },
+        {
+          "code": "IO_ERROR",
+          "message": "I/O failure while reading VCF or index.",
+          "retryable": true,
+          "retry_suggestion": "Retry after checking storage mount and index availability."
+        },
+        {
+          "code": "NONZERO_EXIT",
+          "message": "bcftools returned non-zero exit status.",
+          "retryable": true,
+          "retry_suggestion": "Inspect stderr and retry once with explicit --threads."
+        }
+      ],
+      "supports_dry_run": true,
+      "stage_scope": ["stage_07_execution"],
+      "domain_scope": ["bioinformatics"]
+    },
+    {
+      "schema_version": "1.0.0",
+      "manifest_version": "1.0.0",
+      "name": "plink2_indep_pairwise",
+      "description": "PLINK2 LD-pruning stage for PCA and structure analysis.",
+      "category": "atomic_algorithm",
+      "algorithm_family": "plink2",
+      "inputs": ["plink_prefix", "ld_window", "ld_step", "ld_r2_threshold"],
+      "outputs": ["ld_pruned_variant_list"],
+      "preconditions": ["bed/bim/fam available"],
+      "resource_requirements": ["cpus=8", "memory_gb=24", "walltime=03:00:00", "retry=reduce_ld_window"],
+      "error_codes": ["INPUT_MISSING", "OUT_OF_MEMORY", "NONZERO_EXIT"],
+      "atomic_resource_profile": {
+        "cpus": 8,
+        "memory_gb": 24,
+        "walltime": "03:00:00",
+        "retry_suggestion": "Reduce LD window size or raise memory by +25% and retry."
+      },
+      "failure_code_map": [
+        {
+          "code": "INPUT_MISSING",
+          "message": "Required PLINK input files are missing.",
+          "retryable": false,
+          "retry_suggestion": "Fix bed/bim/fam path contract before resubmission."
+        },
+        {
+          "code": "OUT_OF_MEMORY",
+          "message": "Job exceeded scheduler memory allocation.",
+          "retryable": true,
+          "retry_suggestion": "Increase memory by +25% and rerun after dry-run review."
+        },
+        {
+          "code": "NONZERO_EXIT",
+          "message": "PLINK2 returned non-zero exit status.",
+          "retryable": true,
+          "retry_suggestion": "Inspect stderr and retry once after tuning LD parameters."
+        }
+      ],
+      "supports_dry_run": true,
+      "stage_scope": ["stage_07_execution"],
+      "domain_scope": ["bioinformatics"]
+    },
+    {
+      "schema_version": "1.0.0",
+      "manifest_version": "1.0.0",
+      "name": "plink2_pca",
+      "description": "PLINK2 principal-component analysis on LD-pruned variants.",
+      "category": "atomic_algorithm",
+      "algorithm_family": "plink2",
+      "inputs": ["plink_prefix", "ld_pruned_variant_list", "num_pcs"],
+      "outputs": ["pca_eigenvec", "pca_eigenval"],
+      "preconditions": ["bed/bim/fam available", "LD-pruned list available"],
+      "resource_requirements": ["cpus=12", "memory_gb=48", "walltime=06:00:00", "retry=reduce_pcs_or_raise_mem"],
+      "error_codes": ["INPUT_MISSING", "OUT_OF_MEMORY", "NONZERO_EXIT"],
+      "atomic_resource_profile": {
+        "cpus": 12,
+        "memory_gb": 48,
+        "walltime": "06:00:00",
+        "retry_suggestion": "Retry with +25% memory or fewer PCs when matrix decomposition fails."
+      },
+      "failure_code_map": [
+        {
+          "code": "INPUT_MISSING",
+          "message": "Required PLINK input files are missing.",
+          "retryable": false,
+          "retry_suggestion": "Fix bed/bim/fam path contract before resubmission."
+        },
+        {
+          "code": "OUT_OF_MEMORY",
+          "message": "Job exceeded scheduler memory allocation.",
+          "retryable": true,
+          "retry_suggestion": "Increase memory by +25% and rerun after dry-run review."
+        },
+        {
+          "code": "NONZERO_EXIT",
+          "message": "PLINK2 returned non-zero exit status.",
+          "retryable": true,
+          "retry_suggestion": "Inspect stderr and retry once with reduced PCA dimensionality."
+        }
+      ],
+      "supports_dry_run": true,
+      "stage_scope": ["stage_07_execution"],
+      "domain_scope": ["bioinformatics"]
+    },
+    {
+      "schema_version": "1.0.0",
+      "manifest_version": "1.0.0",
+      "name": "plink2_r2",
+      "description": "PLINK2 pairwise LD (r2) calculation for structure diagnostics.",
+      "category": "atomic_algorithm",
+      "algorithm_family": "plink2",
+      "inputs": ["plink_prefix", "ld_window"],
+      "outputs": ["ld_r2_table"],
+      "preconditions": ["bed/bim/fam available"],
+      "resource_requirements": ["cpus=12", "memory_gb=48", "walltime=06:00:00", "retry=shard_by_chromosome"],
+      "error_codes": ["INPUT_MISSING", "OUT_OF_MEMORY", "NONZERO_EXIT"],
+      "atomic_resource_profile": {
+        "cpus": 12,
+        "memory_gb": 48,
+        "walltime": "06:00:00",
+        "retry_suggestion": "Shard by chromosome and retry with +25% memory."
+      },
+      "failure_code_map": [
+        {
+          "code": "INPUT_MISSING",
+          "message": "Required PLINK input files are missing.",
+          "retryable": false,
+          "retry_suggestion": "Fix bed/bim/fam path contract before resubmission."
+        },
+        {
+          "code": "OUT_OF_MEMORY",
+          "message": "Job exceeded scheduler memory allocation.",
+          "retryable": true,
+          "retry_suggestion": "Increase memory by +25% and rerun in chromosome shards."
+        },
+        {
+          "code": "NONZERO_EXIT",
+          "message": "PLINK2 returned non-zero exit status.",
+          "retryable": true,
+          "retry_suggestion": "Inspect stderr and retry once with tighter LD window."
+        }
+      ],
+      "supports_dry_run": true,
+      "stage_scope": ["stage_07_execution"],
+      "domain_scope": ["bioinformatics"]
+    },
+    {
+      "schema_version": "1.0.0",
+      "manifest_version": "1.0.0",
+      "name": "plink2_homozyg",
+      "description": "PLINK2 runs-of-homozygosity scan for population structure diagnostics.",
+      "category": "atomic_algorithm",
+      "algorithm_family": "plink2",
+      "inputs": ["plink_prefix", "roh_parameters"],
+      "outputs": ["roh_segments"],
+      "preconditions": ["bed/bim/fam available"],
+      "resource_requirements": ["cpus=8", "memory_gb=24", "walltime=04:00:00", "retry=relax_roh_window"],
+      "error_codes": ["INPUT_MISSING", "OUT_OF_MEMORY", "NONZERO_EXIT"],
+      "atomic_resource_profile": {
+        "cpus": 8,
+        "memory_gb": 24,
+        "walltime": "04:00:00",
+        "retry_suggestion": "Relax ROH window parameters or raise memory by +25%."
+      },
+      "failure_code_map": [
+        {
+          "code": "INPUT_MISSING",
+          "message": "Required PLINK input files are missing.",
+          "retryable": false,
+          "retry_suggestion": "Fix bed/bim/fam path contract before resubmission."
+        },
+        {
+          "code": "OUT_OF_MEMORY",
+          "message": "Job exceeded scheduler memory allocation.",
+          "retryable": true,
+          "retry_suggestion": "Increase memory by +25% and rerun after dry-run review."
+        },
+        {
+          "code": "NONZERO_EXIT",
+          "message": "PLINK2 returned non-zero exit status.",
+          "retryable": true,
+          "retry_suggestion": "Inspect stderr and retry once after ROH parameter review."
+        }
+      ],
+      "supports_dry_run": true,
+      "stage_scope": ["stage_07_execution"],
+      "domain_scope": ["bioinformatics"]
+    },
+    {
+      "schema_version": "1.0.0",
+      "manifest_version": "1.0.0",
+      "name": "vcftools_weir_fst",
+      "description": "vcftools Weir-Fst population differentiation analysis.",
+      "category": "atomic_algorithm",
+      "algorithm_family": "vcftools",
+      "inputs": ["vcf_path", "population_panel"],
+      "outputs": ["fst_table"],
+      "preconditions": ["vcf path available", "population assignment available"],
+      "resource_requirements": ["cpus=6", "memory_gb=16", "walltime=02:30:00", "retry=shard_by_population_pair"],
+      "error_codes": ["INPUT_MISSING", "WALLTIME_EXCEEDED", "NONZERO_EXIT"],
+      "atomic_resource_profile": {
+        "cpus": 6,
+        "memory_gb": 16,
+        "walltime": "02:30:00",
+        "retry_suggestion": "Split by population pair or chromosome when walltime is exceeded."
+      },
+      "failure_code_map": [
+        {
+          "code": "INPUT_MISSING",
+          "message": "VCF or population panel is missing.",
+          "retryable": false,
+          "retry_suggestion": "Fix input contract and rerun."
+        },
+        {
+          "code": "WALLTIME_EXCEEDED",
+          "message": "Job exceeded scheduler walltime.",
+          "retryable": true,
+          "retry_suggestion": "Increase walltime by +50% or shard by chromosome."
+        },
+        {
+          "code": "NONZERO_EXIT",
+          "message": "vcftools returned non-zero exit status.",
+          "retryable": true,
+          "retry_suggestion": "Inspect stderr and retry once after sample panel check."
+        }
+      ],
+      "supports_dry_run": true,
+      "stage_scope": ["stage_07_execution"],
+      "domain_scope": ["bioinformatics"]
+    },
+    {
+      "schema_version": "1.0.0",
+      "manifest_version": "1.0.0",
+      "name": "vcftools_window_pi",
+      "description": "vcftools nucleotide diversity (pi) in fixed windows.",
+      "category": "atomic_algorithm",
+      "algorithm_family": "vcftools",
+      "inputs": ["vcf_path", "window_size"],
+      "outputs": ["window_pi_table"],
+      "preconditions": ["vcf path available"],
+      "resource_requirements": ["cpus=6", "memory_gb=16", "walltime=02:30:00", "retry=shard_by_chromosome"],
+      "error_codes": ["INPUT_MISSING", "WALLTIME_EXCEEDED", "NONZERO_EXIT"],
+      "atomic_resource_profile": {
+        "cpus": 6,
+        "memory_gb": 16,
+        "walltime": "02:30:00",
+        "retry_suggestion": "Shard by chromosome or raise walltime by +50%."
+      },
+      "failure_code_map": [
+        {
+          "code": "INPUT_MISSING",
+          "message": "VCF input path is missing or inaccessible.",
+          "retryable": false,
+          "retry_suggestion": "Fix VCF path and rerun."
+        },
+        {
+          "code": "WALLTIME_EXCEEDED",
+          "message": "Job exceeded scheduler walltime.",
+          "retryable": true,
+          "retry_suggestion": "Increase walltime by +50% or split by chromosome."
+        },
+        {
+          "code": "NONZERO_EXIT",
+          "message": "vcftools returned non-zero exit status.",
+          "retryable": true,
+          "retry_suggestion": "Inspect stderr and retry once after checking VCF index."
+        }
+      ],
+      "supports_dry_run": true,
+      "stage_scope": ["stage_07_execution"],
+      "domain_scope": ["bioinformatics"]
+    },
+    {
+      "schema_version": "1.0.0",
+      "manifest_version": "1.0.0",
+      "name": "vcftools_tajima_d",
+      "description": "vcftools Tajima's D scan by analysis window.",
+      "category": "atomic_algorithm",
+      "algorithm_family": "vcftools",
+      "inputs": ["vcf_path", "window_size"],
+      "outputs": ["tajima_d_table"],
+      "preconditions": ["vcf path available"],
+      "resource_requirements": ["cpus=6", "memory_gb=16", "walltime=02:30:00", "retry=shard_by_chromosome"],
+      "error_codes": ["INPUT_MISSING", "WALLTIME_EXCEEDED", "NONZERO_EXIT"],
+      "atomic_resource_profile": {
+        "cpus": 6,
+        "memory_gb": 16,
+        "walltime": "02:30:00",
+        "retry_suggestion": "Shard by chromosome or raise walltime by +50%."
+      },
+      "failure_code_map": [
+        {
+          "code": "INPUT_MISSING",
+          "message": "VCF input path is missing or inaccessible.",
+          "retryable": false,
+          "retry_suggestion": "Fix VCF path and rerun."
+        },
+        {
+          "code": "WALLTIME_EXCEEDED",
+          "message": "Job exceeded scheduler walltime.",
+          "retryable": true,
+          "retry_suggestion": "Increase walltime by +50% or split by chromosome."
+        },
+        {
+          "code": "NONZERO_EXIT",
+          "message": "vcftools returned non-zero exit status.",
+          "retryable": true,
+          "retry_suggestion": "Inspect stderr and retry once after checking VCF index."
+        }
+      ],
+      "supports_dry_run": true,
+      "stage_scope": ["stage_07_execution"],
+      "domain_scope": ["bioinformatics"]
+    },
+    {
+      "schema_version": "1.0.0",
+      "manifest_version": "1.0.0",
+      "name": "plink2_make_rel",
+      "description": "PLINK2 relatedness matrix generation for kinship and GRM preparation.",
+      "category": "atomic_algorithm",
+      "algorithm_family": "plink2",
+      "inputs": ["plink_prefix"],
+      "outputs": ["relatedness_matrix"],
+      "preconditions": ["bed/bim/fam available"],
+      "resource_requirements": ["cpus=8", "memory_gb=24", "walltime=03:30:00", "retry=shard_by_chromosome"],
+      "error_codes": ["INPUT_MISSING", "OUT_OF_MEMORY", "NONZERO_EXIT"],
+      "atomic_resource_profile": {
+        "cpus": 8,
+        "memory_gb": 24,
+        "walltime": "03:30:00",
+        "retry_suggestion": "Shard by chromosome and rerun with +25% memory."
+      },
+      "failure_code_map": [
+        {
+          "code": "INPUT_MISSING",
+          "message": "Required PLINK input files are missing.",
+          "retryable": false,
+          "retry_suggestion": "Fix bed/bim/fam path contract before resubmission."
+        },
+        {
+          "code": "OUT_OF_MEMORY",
+          "message": "Job exceeded scheduler memory allocation.",
+          "retryable": true,
+          "retry_suggestion": "Increase memory by +25% and rerun after dry-run review."
+        },
+        {
+          "code": "NONZERO_EXIT",
+          "message": "PLINK2 returned non-zero exit status.",
+          "retryable": true,
+          "retry_suggestion": "Inspect stderr and retry once after checking marker filters."
+        }
+      ],
+      "supports_dry_run": true,
+      "stage_scope": ["stage_07_execution"],
+      "domain_scope": ["bioinformatics"]
+    },
+    {
+      "schema_version": "1.0.0",
+      "manifest_version": "1.0.0",
+      "name": "gcta_make_grm",
+      "description": "GCTA genomic relationship matrix construction from PLINK inputs.",
+      "category": "atomic_algorithm",
+      "algorithm_family": "gcta",
+      "inputs": ["plink_prefix"],
+      "outputs": ["grm_binary", "grm_id"],
+      "preconditions": ["bed/bim/fam available"],
+      "resource_requirements": ["cpus=16", "memory_gb=64", "walltime=08:00:00", "retry=split_chromosome_batches"],
+      "error_codes": ["INPUT_MISSING", "OUT_OF_MEMORY", "NONZERO_EXIT"],
+      "atomic_resource_profile": {
+        "cpus": 16,
+        "memory_gb": 64,
+        "walltime": "08:00:00",
+        "retry_suggestion": "Split chromosome batches and rerun with +25% memory."
+      },
+      "failure_code_map": [
+        {
+          "code": "INPUT_MISSING",
+          "message": "Required PLINK input files are missing.",
+          "retryable": false,
+          "retry_suggestion": "Fix bed/bim/fam path contract before resubmission."
+        },
+        {
+          "code": "OUT_OF_MEMORY",
+          "message": "Job exceeded scheduler memory allocation.",
+          "retryable": true,
+          "retry_suggestion": "Increase memory by +25% and rerun by chromosome shard."
+        },
+        {
+          "code": "NONZERO_EXIT",
+          "message": "GCTA returned non-zero exit status.",
+          "retryable": true,
+          "retry_suggestion": "Inspect stderr and retry once after input integrity checks."
+        }
+      ],
+      "supports_dry_run": true,
+      "stage_scope": ["stage_07_execution"],
+      "domain_scope": ["bioinformatics"]
+    },
+    {
+      "schema_version": "1.0.0",
+      "manifest_version": "1.0.0",
+      "name": "plink2_glm",
+      "description": "PLINK2 GWAS association model for genomic prediction preprocessing.",
+      "category": "atomic_algorithm",
+      "algorithm_family": "plink2",
+      "inputs": ["plink_prefix", "phenotype_table", "covariate_table"],
+      "outputs": ["glm_association_table"],
+      "preconditions": ["bed/bim/fam available", "phenotype table available"],
+      "resource_requirements": ["cpus=16", "memory_gb=64", "walltime=10:00:00", "retry=reduce_covariates_or_split_trait"],
+      "error_codes": ["INPUT_MISSING", "OUT_OF_MEMORY", "NONZERO_EXIT"],
+      "atomic_resource_profile": {
+        "cpus": 16,
+        "memory_gb": 64,
+        "walltime": "10:00:00",
+        "retry_suggestion": "Reduce covariate load or split trait groups before retry."
+      },
+      "failure_code_map": [
+        {
+          "code": "INPUT_MISSING",
+          "message": "Required PLINK or phenotype inputs are missing.",
+          "retryable": false,
+          "retry_suggestion": "Fix path contract for genotype and phenotype inputs."
+        },
+        {
+          "code": "OUT_OF_MEMORY",
+          "message": "Job exceeded scheduler memory allocation.",
+          "retryable": true,
+          "retry_suggestion": "Increase memory by +25% and reduce parallel trait load."
+        },
+        {
+          "code": "NONZERO_EXIT",
+          "message": "PLINK2 returned non-zero exit status.",
+          "retryable": true,
+          "retry_suggestion": "Inspect stderr and retry once after covariate QC."
+        }
+      ],
+      "supports_dry_run": true,
+      "stage_scope": ["stage_07_execution"],
+      "domain_scope": ["bioinformatics"]
+    },
+    {
+      "schema_version": "1.0.0",
+      "manifest_version": "1.0.0",
+      "name": "gcta_reml",
+      "description": "GCTA REML heritability estimation.",
+      "category": "atomic_algorithm",
+      "algorithm_family": "gcta",
+      "inputs": ["grm_prefix", "phenotype_table", "covariate_table"],
+      "outputs": ["reml_h2_report"],
+      "preconditions": ["GRM files available", "phenotype table available"],
+      "resource_requirements": ["cpus=16", "memory_gb=96", "walltime=12:00:00", "retry=adjust_model_terms"],
+      "error_codes": ["INPUT_MISSING", "MATRIX_SINGULAR", "OUT_OF_MEMORY", "NONZERO_EXIT"],
+      "atomic_resource_profile": {
+        "cpus": 16,
+        "memory_gb": 96,
+        "walltime": "12:00:00",
+        "retry_suggestion": "Simplify model terms, then retry with +25% memory."
+      },
+      "failure_code_map": [
+        {
+          "code": "INPUT_MISSING",
+          "message": "Required GRM or phenotype inputs are missing.",
+          "retryable": false,
+          "retry_suggestion": "Fix GRM/phenotype path contract before resubmission."
+        },
+        {
+          "code": "MATRIX_SINGULAR",
+          "message": "Model matrix is singular or numerically unstable.",
+          "retryable": true,
+          "retry_suggestion": "Drop collinear covariates and retry after dry-run review."
+        },
+        {
+          "code": "OUT_OF_MEMORY",
+          "message": "Job exceeded scheduler memory allocation.",
+          "retryable": true,
+          "retry_suggestion": "Increase memory by +25% and rerun."
+        },
+        {
+          "code": "NONZERO_EXIT",
+          "message": "GCTA returned non-zero exit status.",
+          "retryable": true,
+          "retry_suggestion": "Inspect stderr and retry once after phenotype/covariate QC."
+        }
+      ],
+      "supports_dry_run": true,
+      "stage_scope": ["stage_07_execution"],
+      "domain_scope": ["bioinformatics"]
+    },
+    {
+      "schema_version": "1.0.0",
+      "manifest_version": "1.0.0",
+      "name": "gcta_reml_pred_rand",
+      "description": "GCTA REML random-effect prediction component for genomic prediction.",
+      "category": "atomic_algorithm",
+      "algorithm_family": "gcta",
+      "inputs": ["grm_prefix", "phenotype_table", "covariate_table"],
+      "outputs": ["random_effect_prediction"],
+      "preconditions": ["GRM files available", "phenotype table available"],
+      "resource_requirements": ["cpus=16", "memory_gb=96", "walltime=12:00:00", "retry=adjust_model_terms"],
+      "error_codes": ["INPUT_MISSING", "MATRIX_SINGULAR", "OUT_OF_MEMORY", "NONZERO_EXIT"],
+      "atomic_resource_profile": {
+        "cpus": 16,
+        "memory_gb": 96,
+        "walltime": "12:00:00",
+        "retry_suggestion": "Simplify model terms, then retry with +25% memory."
+      },
+      "failure_code_map": [
+        {
+          "code": "INPUT_MISSING",
+          "message": "Required GRM or phenotype inputs are missing.",
+          "retryable": false,
+          "retry_suggestion": "Fix GRM/phenotype path contract before resubmission."
+        },
+        {
+          "code": "MATRIX_SINGULAR",
+          "message": "Model matrix is singular or numerically unstable.",
+          "retryable": true,
+          "retry_suggestion": "Drop collinear covariates and retry after dry-run review."
+        },
+        {
+          "code": "OUT_OF_MEMORY",
+          "message": "Job exceeded scheduler memory allocation.",
+          "retryable": true,
+          "retry_suggestion": "Increase memory by +25% and rerun."
+        },
+        {
+          "code": "NONZERO_EXIT",
+          "message": "GCTA returned non-zero exit status.",
+          "retryable": true,
+          "retry_suggestion": "Inspect stderr and retry once after phenotype/covariate QC."
+        }
+      ],
+      "supports_dry_run": true,
+      "stage_scope": ["stage_07_execution"],
+      "domain_scope": ["bioinformatics"]
+    },
+    {
+      "schema_version": "1.0.0",
+      "manifest_version": "1.0.0",
+      "name": "gcta_grm_blup",
+      "description": "GCTA BLUP prediction over precomputed GRM.",
+      "category": "atomic_algorithm",
+      "algorithm_family": "gcta",
+      "inputs": ["grm_prefix", "phenotype_table", "covariate_table"],
+      "outputs": ["blup_prediction"],
+      "preconditions": ["GRM files available", "phenotype table available"],
+      "resource_requirements": ["cpus=12", "memory_gb=48", "walltime=06:00:00", "retry=split_traits_or_adjust_model"],
+      "error_codes": ["INPUT_MISSING", "MATRIX_SINGULAR", "OUT_OF_MEMORY", "NONZERO_EXIT"],
+      "atomic_resource_profile": {
+        "cpus": 12,
+        "memory_gb": 48,
+        "walltime": "06:00:00",
+        "retry_suggestion": "Split traits and retry with adjusted model terms."
+      },
+      "failure_code_map": [
+        {
+          "code": "INPUT_MISSING",
+          "message": "Required GRM or phenotype inputs are missing.",
+          "retryable": false,
+          "retry_suggestion": "Fix GRM/phenotype path contract before resubmission."
+        },
+        {
+          "code": "MATRIX_SINGULAR",
+          "message": "Model matrix is singular or numerically unstable.",
+          "retryable": true,
+          "retry_suggestion": "Drop collinear covariates and retry after dry-run review."
+        },
+        {
+          "code": "OUT_OF_MEMORY",
+          "message": "Job exceeded scheduler memory allocation.",
+          "retryable": true,
+          "retry_suggestion": "Increase memory by +25% and rerun."
+        },
+        {
+          "code": "NONZERO_EXIT",
+          "message": "GCTA returned non-zero exit status.",
+          "retryable": true,
+          "retry_suggestion": "Inspect stderr and retry once after phenotype/covariate QC."
+        }
+      ],
+      "supports_dry_run": true,
+      "stage_scope": ["stage_07_execution"],
+      "domain_scope": ["bioinformatics"]
+    }
+  ]
+}

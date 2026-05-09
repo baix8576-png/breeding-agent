@@ -21,6 +21,7 @@ def test_audit_store_append_and_list() -> None:
     assert len(events) == 1
     assert events[0].event_type == "plan_drafted"
     assert events[0].task_id == "task-audit-001"
+    assert events[0].schema_version == "audit_event.v2"
 
 
 def test_audit_store_list_returns_copy() -> None:

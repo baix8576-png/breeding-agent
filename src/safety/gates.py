@@ -44,6 +44,7 @@ class SafetyReviewContext(BaseModel):
 
     task_id: str = "unknown-task"
     run_id: str = "unknown-run"
+    stage_id: str | None = None
     action_name: str
     target_paths: list[str] = Field(default_factory=list)
     command_preview: str | None = None
@@ -123,6 +124,7 @@ class SafetyGateService:
 
         checks = [
             self._check_task_keys(review_context),
+            self._check_stage_guard(review_context),
             self._check_target_scope(review_context, destructive_write),
             self._check_raw_data_boundary(review_context),
             self._check_dangerous_command(review_context),
@@ -193,6 +195,29 @@ class SafetyGateService:
                 detail="task_id/run_id should be passed end-to-end.",
             )
         return PreflightCheck(name="task_keys", status=CheckStatus.PASS, detail="Correlation keys are present.")
+
+    def _check_stage_guard(self, context: SafetyReviewContext) -> PreflightCheck:
+        if context.action_name == "submit_execution":
+            if context.stage_id != "stage_06_resource_and_safety_gate":
+                return PreflightCheck(
+                    name="stage_guard",
+                    status=CheckStatus.FAIL,
+                    detail=(
+                        "submit_execution must be evaluated at stage_06_resource_and_safety_gate "
+                        "before execution starts."
+                    ),
+                )
+            if not context.scheduler_dry_run_done:
+                return PreflightCheck(
+                    name="stage_guard",
+                    status=CheckStatus.PENDING,
+                    detail="submit_execution requires dry-run completion before gate pass.",
+                )
+        return PreflightCheck(
+            name="stage_guard",
+            status=CheckStatus.PASS,
+            detail="Stage guard checks passed for the requested action.",
+        )
 
     def _check_target_scope(self, context: SafetyReviewContext, destructive_write: bool) -> PreflightCheck:
         if destructive_write and not context.target_paths:

@@ -87,3 +87,75 @@ def test_catalog_rejects_duplicated_manifest_names() -> None:
 
     with pytest.raises(ValidationError):
         ToolManifestCatalog.model_validate(payload)
+
+
+def test_schema_accepts_atomic_algorithm_manifest() -> None:
+    payload = _valid_manifest_payload()
+    payload.update(
+        {
+            "name": "plink2_pca",
+            "category": "atomic_algorithm",
+            "algorithm_family": "plink2",
+            "atomic_resource_profile": {
+                "cpus": 12,
+                "memory_gb": 48,
+                "walltime": "06:00:00",
+                "retry_suggestion": "increase memory by +25% and retry once",
+            },
+            "error_codes": ["INPUT_MISSING", "OUT_OF_MEMORY", "NONZERO_EXIT"],
+            "failure_code_map": [
+                {
+                    "code": "INPUT_MISSING",
+                    "message": "input missing",
+                    "retryable": False,
+                    "retry_suggestion": "fix path",
+                },
+                {
+                    "code": "OUT_OF_MEMORY",
+                    "message": "oom",
+                    "retryable": True,
+                    "retry_suggestion": "increase memory",
+                },
+            ],
+            "stage_scope": ["stage_07_execution"],
+            "domain_scope": ["bioinformatics"],
+        }
+    )
+
+    manifest = ToolManifest.model_validate(payload)
+
+    assert manifest.category == "atomic_algorithm"
+    assert manifest.atomic_resource_profile is not None
+    assert manifest.atomic_resource_profile.cpus == 12
+    assert manifest.failure_code_map[1].code == "OUT_OF_MEMORY"
+
+
+def test_schema_rejects_atomic_failure_codes_not_declared() -> None:
+    payload = _valid_manifest_payload()
+    payload.update(
+        {
+            "name": "gcta_reml",
+            "category": "atomic_algorithm",
+            "algorithm_family": "gcta",
+            "atomic_resource_profile": {
+                "cpus": 16,
+                "memory_gb": 96,
+                "walltime": "12:00:00",
+                "retry_suggestion": "drop collinear covariates",
+            },
+            "error_codes": ["OUT_OF_MEMORY"],
+            "failure_code_map": [
+                {
+                    "code": "MATRIX_SINGULAR",
+                    "message": "singular matrix",
+                    "retryable": True,
+                    "retry_suggestion": "adjust model",
+                }
+            ],
+            "stage_scope": ["stage_07_execution"],
+            "domain_scope": ["bioinformatics"],
+        }
+    )
+
+    with pytest.raises(ValidationError):
+        ToolManifest.model_validate(payload)

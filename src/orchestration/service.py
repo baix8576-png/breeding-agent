@@ -11,6 +11,7 @@ from knowledge.retrieval import KnowledgeResolver
 from memory.stores import MemoryCoordinator
 from orchestration.router import IntentRouter
 from orchestration.workflow import WorkflowComposer
+from pipeline.execution import resolve_pipeline_algorithms
 from safety.circuit_breaker import CircuitBreaker
 from safety.gates import SafetyGateService, SafetyReviewContext
 from scheduler.resource_estimator import ConservativeResourceEstimator
@@ -74,7 +75,6 @@ class OrchestratorService:
             available_tools=workflow.referenced_tools,
             retrieval_sources=retrieval.source_labels,
         )
-        estimate = self._resource_estimator.estimate_for_domain(classification.domain)
         is_bio_chain = classification.domain == TaskDomain.BIOINFORMATICS
         gate_stage_present = any(stage.stage_id == "stage_06_resource_and_safety_gate" for stage in workflow.stages)
         gate_ready = (
@@ -96,6 +96,11 @@ class OrchestratorService:
         selected_blueprint_key = workflow.selected_blueprint_key
         pipeline_stages = workflow.blueprint_stage_ids or [stage.stage_id for stage in workflow.stages]
         pipeline_deliverables = workflow.artifact_contract or workflow.stable_outputs
+        input_paths = (
+            [entry.path for entry in request.input_bundle.entries]
+            if request.input_bundle is not None
+            else []
+        )
         stage_io_contract = [
             {
                 "stage_id": stage.stage_id,
@@ -104,6 +109,37 @@ class OrchestratorService:
             }
             for stage in workflow.stages
         ]
+        pipeline_spec = PipelineSpec(
+            name=selected_blueprint,
+            domain=classification.domain,
+            blueprint_key=selected_blueprint_key,
+            analysis_targets=sorted(classification.analysis_targets),
+            stages=pipeline_stages,
+            stage_contract=pipeline_stages,
+            stage_io_contract=stage_io_contract,
+            input_paths=input_paths,
+            input_bundle=request.input_bundle,
+            requested_outputs=request.requested_outputs,
+            deliverables=pipeline_deliverables,
+            artifact_contract=pipeline_deliverables,
+            atomic_algorithms=[],
+        )
+        domain_estimate = self._resource_estimator.estimate_for_domain(classification.domain)
+        estimate = domain_estimate
+        atomic_algorithms: list[str] = []
+        if is_bio_chain:
+            atomic_algorithms = resolve_pipeline_algorithms(pipeline_spec, request_text=request.text)
+            pipeline_spec = pipeline_spec.model_copy(update={"atomic_algorithms": atomic_algorithms})
+            workload_estimate = self._resource_estimator.estimate_for_workload(selected_blueprint)
+            atomic_estimate = self._resource_estimator.estimate_for_atomic_tools(
+                atomic_algorithms,
+                requested_partition=workload_estimate.partition,
+            )
+            estimate = self._resource_estimator.merge_estimates(
+                domain_estimate,
+                workload_estimate,
+                atomic_estimate,
+            )
         header = RoleOutputHeader(
             role="orchestrator",
             task_id=resolved_context.task_id,
@@ -152,8 +188,10 @@ class OrchestratorService:
                 f"execution_enabled={str(workflow.execution_enabled).lower()}",
                 f"selected_blueprint={selected_blueprint}",
                 f"selected_blueprint_key={selected_blueprint_key or 'none'}",
+                f"atomic_algorithms={','.join(atomic_algorithms) if atomic_algorithms else 'none'}",
                 f"memory_handoffs={len(run_record.handoffs)}",
                 f"stable_outputs={','.join(workflow.stable_outputs)}",
+                f"input_bundle_entries={len(input_paths)}",
             ],
             deliverables=[
                 "parsed_request_summary",
@@ -161,24 +199,14 @@ class OrchestratorService:
                 f"blueprint_stage_contract:{','.join(pipeline_stages)}",
                 f"artifact_contract:{','.join(pipeline_deliverables) if pipeline_deliverables else 'none'}",
                 f"stage_io_contract_count:{len(stage_io_contract)}",
+                f"input_paths:{','.join(input_paths) if input_paths else 'none'}",
                 f"context_sources:{','.join(retrieval.source_labels) if retrieval.source_labels else 'none'}",
                 f"tool_registry_selection:{','.join(workflow.referenced_tools) if workflow.referenced_tools else 'none'}",
                 f"memory_handoff_count:{len(run_record.handoffs)}",
                 "resource_and_safety_gate_summary",
             ],
             required_roles=workflow.required_roles,
-            pipeline_spec=PipelineSpec(
-                name=selected_blueprint,
-                domain=classification.domain,
-                blueprint_key=selected_blueprint_key,
-                analysis_targets=sorted(classification.analysis_targets),
-                stages=pipeline_stages,
-                stage_contract=pipeline_stages,
-                stage_io_contract=stage_io_contract,
-                requested_outputs=request.requested_outputs,
-                deliverables=pipeline_deliverables,
-                artifact_contract=pipeline_deliverables,
-            ),
+            pipeline_spec=pipeline_spec,
             resource_estimate=estimate,
         )
 
@@ -225,6 +253,8 @@ class OrchestratorService:
                 "matched_tags": hit.matched_tags,
                 "matched_keywords": hit.matched_keywords,
                 "hit_reasons": hit.hit_reasons,
+                "conflict_entries": hit.conflict_entries,
+                "confidence_sources": hit.confidence_sources,
             }
             for hit in all_hits
         ]
@@ -236,10 +266,13 @@ class OrchestratorService:
             "fallback_requested": retrieval.fallback_requested,
             "fallback_gate_decision": retrieval.fallback_gate_decision,
             "fallback_gate_reason": retrieval.fallback_gate_reason,
+            "fallback_gate_audit": retrieval.fallback_gate_audit,
             "fallback_used": retrieval.fallback_used,
             "diagnostic_suggestions": [item.model_dump(mode="json") for item in retrieval.diagnostic_suggestions],
             "sources": sources,
             "rationale": retrieval.rationale,
+            "evidence_conflicts": retrieval.evidence_conflicts,
+            "confidence_sources": retrieval.confidence_sources,
         }
 
     def _build_task_id(self, request: UserRequest, domain_key: str) -> str:
@@ -248,6 +281,7 @@ class OrchestratorService:
                 domain_key,
                 request.text.strip().lower(),
                 request.working_directory or "",
+                ",".join(entry.path for entry in request.input_bundle.entries) if request.input_bundle is not None else "",
             ]
         )
         digest = hashlib.sha1(normalized.encode("utf-8")).hexdigest()[:10]

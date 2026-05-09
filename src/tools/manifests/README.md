@@ -4,6 +4,9 @@ This directory stores file-based tool manifest definitions.
 
 Current state:
 - `catalog.v1.json` is the primary source loaded by `src/tools/manifest_loader.py`.
+- `atomic_algorithms.v1.json` extends the catalog with atomic bioinformatics tools
+  (for example `plink2_pca`, `gcta_reml`, `vcftools_weir_fst`) and structured
+  resource/failure metadata.
 - `ToolRegistry` still keeps a legacy fallback source through `src/tools/manifest_legacy.py` for
   gradual migration safety.
 - Manifest schema is validated by `src/tools/manifest_schema.py`.

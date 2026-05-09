@@ -7,7 +7,7 @@ from functools import lru_cache
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from contracts.common import SchedulerKind
+from contracts.common import SchedulerKind, TaskDomain
 
 
 class Settings(BaseSettings):
@@ -23,11 +23,20 @@ class Settings(BaseSettings):
     log_root: str = "/cluster/work/geneagent/logs"
     knowledge_base_root: str = "/cluster/work/geneagent/knowledge"
     knowledge_external_fallback_enabled: bool = True
-    knowledge_external_fallback_policy: str = "knowledge_only"
+    knowledge_external_fallback_policy: str = "tiered"
+    knowledge_external_fallback_default_sensitivity: str = "low"
+    knowledge_external_fallback_domain_sensitivity_limits: dict[str, str] = Field(
+        default_factory=lambda: {
+            TaskDomain.BIOINFORMATICS.value: "low",
+            TaskDomain.KNOWLEDGE.value: "medium",
+            TaskDomain.SYSTEM.value: "low",
+        }
+    )
     max_cpu: int = 64
     max_mem_gb: int = 256
     dry_run_default: bool = True
     scheduler_real_execution_enabled: bool = False
+    scheduler_idempotent_submit_enabled: bool = True
     scheduler_retry_max_attempts: int = 3
     scheduler_retry_backoff_seconds: list[int] = Field(default_factory=lambda: [2, 5, 10])
     scheduler_command_timeout_seconds: int = 60

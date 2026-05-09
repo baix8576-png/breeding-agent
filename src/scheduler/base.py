@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+import hashlib
+import json
 import os
 from pathlib import Path, PurePosixPath, PureWindowsPath
 import re
@@ -15,6 +17,11 @@ from typing import Callable
 from contracts.common import JobState, SchedulerKind
 from contracts.execution import JobHandle, RunContext
 from contracts.tasks import ResourceEstimate
+from scheduler.atomic_profiles import (
+    estimate_resources_for_atomic_tools,
+    failure_code_mapping_for_atomic_tools,
+    summarize_retry_guidance,
+)
 from scheduler.models import SchedulerPaths, SchedulerResourceRequest, SubmissionPlan
 
 
@@ -52,12 +59,14 @@ class BaseSchedulerAdapter(ABC):
         self,
         *,
         real_execution_enabled: bool = False,
+        idempotent_submit_enabled: bool = True,
         retry_max_attempts: int = 3,
         retry_backoff_seconds: list[int] | None = None,
         command_timeout_seconds: int = 60,
         command_runner: Callable[[list[str], str | None, int], subprocess.CompletedProcess[str]] | None = None,
     ) -> None:
         self._real_execution_enabled = real_execution_enabled
+        self._idempotent_submit_enabled = idempotent_submit_enabled
         self._retry_max_attempts = max(1, int(retry_max_attempts))
         self._retry_backoff_seconds = retry_backoff_seconds or [2, 5, 10]
         self._command_timeout_seconds = max(1, int(command_timeout_seconds))
@@ -99,12 +108,19 @@ class BaseSchedulerAdapter(ABC):
         mode: str = "dry-run",
         task_id: str | None = None,
         run_id: str | None = None,
+        atomic_tools: list[str] | None = None,
     ) -> SubmissionPlan:
         """Build a structured submission plan without touching a real scheduler."""
 
         resolved_command = command or ["echo", "geneagent-noop"]
         paths = self._build_paths(working_directory=working_directory, job_name=job_name)
-        request = self._normalize_resources(resources=resources, paths=paths, job_name=job_name)
+        resolved_atomic_tools = atomic_tools or []
+        request = self._normalize_resources(
+            resources=resources,
+            paths=paths,
+            job_name=job_name,
+            atomic_tools=resolved_atomic_tools,
+        )
         tracking = self._resolve_tracking_ids(task_id=task_id, run_id=run_id, job_name=request.job_name)
         script_preview = self._compose_script(
             command=resolved_command,
@@ -132,7 +148,12 @@ class BaseSchedulerAdapter(ABC):
             run_id=tracking["run_id"],
         )
         poll_strategy = self._poll_strategy(handle=handle)
-        failure_recovery = self._failure_recovery_plan(handle=handle, request=request, paths=paths)
+        failure_recovery = self._failure_recovery_plan(
+            handle=handle,
+            request=request,
+            paths=paths,
+            atomic_tools=resolved_atomic_tools,
+        )
         warnings = self._plan_warnings(
             request=request,
             mode=mode,
@@ -158,6 +179,8 @@ class BaseSchedulerAdapter(ABC):
             polling_hint=self._poll_command_hint(handle.job_id),
             poll_strategy=poll_strategy,
             failure_recovery=failure_recovery,
+            atomic_tools=resolved_atomic_tools,
+            atomic_failure_code_mapping=failure_code_mapping_for_atomic_tools(resolved_atomic_tools),
         )
 
     def dry_run_submit(
@@ -168,6 +191,7 @@ class BaseSchedulerAdapter(ABC):
         job_name: str | None = None,
         task_id: str | None = None,
         run_id: str | None = None,
+        atomic_tools: list[str] | None = None,
     ) -> JobHandle:
         """Return a synthetic dry-run job handle without touching the real scheduler."""
 
@@ -179,6 +203,7 @@ class BaseSchedulerAdapter(ABC):
             mode="dry-run",
             task_id=task_id,
             run_id=run_id,
+            atomic_tools=atomic_tools,
         )
         return plan.job_handle
 
@@ -190,6 +215,7 @@ class BaseSchedulerAdapter(ABC):
         job_name: str | None = None,
         task_id: str | None = None,
         run_id: str | None = None,
+        atomic_tools: list[str] | None = None,
     ) -> JobHandle:
         """Submit a scheduler script in real mode, or return preview handle when disabled."""
 
@@ -201,9 +227,14 @@ class BaseSchedulerAdapter(ABC):
             mode="submit",
             task_id=task_id,
             run_id=run_id,
+            atomic_tools=atomic_tools,
         )
         if not self._real_execution_enabled:
             return plan.job_handle
+
+        cached_handle = self._load_idempotent_submission(plan)
+        if cached_handle is not None:
+            return cached_handle
 
         self._materialize_submission_files(plan=plan)
         errors: list[SchedulerExecutionError] = []
@@ -225,7 +256,7 @@ class BaseSchedulerAdapter(ABC):
                     stderr=result.stderr,
                     returncode=result.returncode,
                 )
-                return JobHandle(
+                handle = JobHandle(
                     run_context=RunContext(
                         task_id=plan.task_id,
                         run_id=plan.run_id,
@@ -237,6 +268,8 @@ class BaseSchedulerAdapter(ABC):
                     stdout_path=plan.paths.stdout_path,
                     stderr_path=plan.paths.stderr_path,
                 )
+                self._persist_idempotent_submission(plan=plan, handle=handle)
+                return handle
             except SchedulerExecutionError as error:
                 errors.append(error)
                 if attempt >= self._retry_max_attempts or not self._is_retryable_submit_error(error):
@@ -255,6 +288,64 @@ class BaseSchedulerAdapter(ABC):
             retryable=last.retryable,
             phase=last.phase,
         )
+
+    def _load_idempotent_submission(self, plan: SubmissionPlan) -> JobHandle | None:
+        if not self._idempotent_submit_enabled:
+            return None
+        cache_path = self._submission_cache_path(plan=plan)
+        try:
+            if not cache_path.exists():
+                return None
+            payload = json.loads(cache_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return None
+        if not isinstance(payload, dict):
+            return None
+        cached_digest = str(payload.get("command_digest", "")).strip()
+        current_digest = self._command_digest(plan.command)
+        if cached_digest and cached_digest != current_digest:
+            raise SchedulerExecutionError(
+                "Idempotent submit conflict: same task_id/run_id received a different command payload.",
+                command=plan.submit_command,
+                error_code="IDEMPOTENCY_CONFLICT",
+                retryable=False,
+                phase="submit",
+            )
+        handle_payload = payload.get("job_handle")
+        if not isinstance(handle_payload, dict):
+            return None
+        try:
+            return JobHandle.model_validate(handle_payload)
+        except Exception:
+            return None
+
+    def _persist_idempotent_submission(self, *, plan: SubmissionPlan, handle: JobHandle) -> None:
+        if not self._idempotent_submit_enabled:
+            return
+        cache_path = self._submission_cache_path(plan=plan)
+        payload = {
+            "schema_version": "scheduler_submission.v1",
+            "scheduler": self.kind.value,
+            "task_id": plan.task_id,
+            "run_id": plan.run_id,
+            "working_directory": plan.paths.working_directory,
+            "command_digest": self._command_digest(plan.command),
+            "submit_command_digest": self._command_digest(plan.submit_command),
+            "job_handle": handle.model_dump(mode="json"),
+        }
+        try:
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            cache_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        except OSError:
+            return
+
+    def _submission_cache_path(self, *, plan: SubmissionPlan) -> Path:
+        root = Path(plan.paths.working_directory) / ".geneagent" / "scheduler" / "submissions"
+        return root / plan.task_id / f"{plan.run_id}.json"
+
+    def _command_digest(self, command: list[str]) -> str:
+        joined = "\x1f".join(command)
+        return hashlib.sha1(joined.encode("utf-8")).hexdigest()
 
     def poll(self, job_id: str) -> JobState:
         """Query scheduler state in real mode; otherwise infer from synthetic identifiers."""
@@ -323,9 +414,15 @@ class BaseSchedulerAdapter(ABC):
         resources: ResourceEstimate,
         paths: SchedulerPaths,
         job_name: str | None,
+        atomic_tools: list[str] | None = None,
     ) -> SchedulerResourceRequest:
         """Normalize a coarse resource estimate into a richer scheduler request."""
 
+        resolved_atomic_tools = atomic_tools or []
+        atomic_estimate = estimate_resources_for_atomic_tools(
+            resolved_atomic_tools,
+            requested_partition=resources.partition,
+        )
         hints: list[str] = []
         if resources.conservative_default:
             hints.append("Resource request still uses conservative defaults from the estimator.")
@@ -333,15 +430,21 @@ class BaseSchedulerAdapter(ABC):
             hints.append("Scheduler real execution is enabled; submit() may call sbatch/qsub.")
         else:
             hints.append("Submission remains plan-only until scheduler real execution is enabled.")
+        if resolved_atomic_tools:
+            hints.append(
+                "Atomic tool profile merged: "
+                f"cpus>={atomic_estimate.cpus}, memory_gb>={atomic_estimate.memory_gb}, "
+                f"walltime>={atomic_estimate.walltime}."
+            )
         return SchedulerResourceRequest(
             job_name=self._safe_job_name(job_name or "geneagent-job"),
             nodes=1,
             tasks=1,
-            cpus_per_task=max(1, int(resources.cpus)),
-            memory_gb=max(1, int(resources.memory_gb)),
-            walltime=self._normalize_walltime(resources.walltime),
+            cpus_per_task=max(1, int(max(resources.cpus, atomic_estimate.cpus))),
+            memory_gb=max(1, int(max(resources.memory_gb, atomic_estimate.memory_gb))),
+            walltime=self._max_walltime(resources.walltime, atomic_estimate.walltime),
             partition=resources.partition,
-            conservative_default=resources.conservative_default,
+            conservative_default=resources.conservative_default and atomic_estimate.conservative_default,
             scheduler_hints=hints,
             environment_exports={
                 "GENEAGENT_SCHEDULER_KIND": self.kind.value,
@@ -447,6 +550,7 @@ class BaseSchedulerAdapter(ABC):
         handle: JobHandle,
         request: SchedulerResourceRequest,
         paths: SchedulerPaths,
+        atomic_tools: list[str] | None = None,
     ) -> list[str]:
         """Return a conservative failure recovery checklist."""
 
@@ -459,7 +563,7 @@ class BaseSchedulerAdapter(ABC):
             "resource recovery: rerun dry-run with +25% CPU or memory before any resubmission",
             f"suggested retry resources: cpus_per_task={bumped_cpu}, memory_gb={bumped_mem}",
             "require manual approval before requeue when output overwrite or bulk recompute is involved",
-        ]
+        ] + self._atomic_retry_lines(atomic_tools or [])
 
     def _build_job_handle(
         self,
@@ -557,6 +661,31 @@ class BaseSchedulerAdapter(ABC):
             hours, minutes = walltime.split(":")
             return f"{int(hours):02d}:{int(minutes):02d}:00"
         return "04:00:00"
+
+    def _max_walltime(self, left: str, right: str) -> str:
+        left_normalized = self._normalize_walltime(left)
+        right_normalized = self._normalize_walltime(right)
+        if self._walltime_to_seconds(right_normalized) > self._walltime_to_seconds(left_normalized):
+            return right_normalized
+        return left_normalized
+
+    def _walltime_to_seconds(self, walltime: str) -> int:
+        parts = walltime.split(":")
+        if len(parts) != 3:
+            return 0
+        try:
+            hours, minutes, seconds = (int(part) for part in parts)
+        except ValueError:
+            return 0
+        return max(0, hours * 3600 + minutes * 60 + seconds)
+
+    def _atomic_retry_lines(self, atomic_tools: list[str]) -> list[str]:
+        guidance = summarize_retry_guidance(atomic_tools)
+        if not guidance:
+            return []
+        lines = ["atomic tool retry guidance:"]
+        lines.extend(f" - {item}" for item in guidance[:6])
+        return lines
 
     def _safe_job_name(self, value: str) -> str:
         """Return a scheduler-safe job name with stable characters only."""

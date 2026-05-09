@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from contracts.common import TaskDomain
 from contracts.execution import PipelineSpec
+from contracts.validation import InputBundle, InputBundleEntry
 from pipeline.execution import build_execution_plan
 
 
@@ -66,3 +67,31 @@ def test_execution_plan_alias_resolves_population_structure_pipeline() -> None:
     assert "vcftools_weir_fst" in plan.algorithms
     assert "vcftools_window_pi" in plan.algorithms
     assert "vcftools_tajima_d" in plan.algorithms
+
+
+def test_execution_plan_uses_input_bundle_as_first_class_arguments() -> None:
+    plan = build_execution_plan(
+        PipelineSpec(
+            name="genomic_prediction",
+            domain=TaskDomain.BIOINFORMATICS,
+            input_bundle=InputBundle(
+                entries=[
+                    InputBundleEntry(role="vcf", path="/data/sheep/demo.vcf.gz"),
+                    InputBundleEntry(role="phenotype_table", path="/data/sheep/demo_pheno.tsv"),
+                    InputBundleEntry(role="covariate_table", path="/data/sheep/demo_cov.tsv"),
+                    InputBundleEntry(role="pedigree_table", path="/data/sheep/demo_pedigree.tsv"),
+                ]
+            ),
+        ),
+        request_text="Run genomic prediction on sheep cohort",
+        working_directory="/cluster/work/demo",
+    )
+
+    assert "--vcf" in plan.command
+    assert "/data/sheep/demo.vcf.gz" in plan.command
+    assert "--phenotype" in plan.command
+    assert "/data/sheep/demo_pheno.tsv" in plan.command
+    assert "--covariate" in plan.command
+    assert "/data/sheep/demo_cov.tsv" in plan.command
+    assert "--pedigree" in plan.command
+    assert "/data/sheep/demo_pedigree.tsv" in plan.command

@@ -2,21 +2,17 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-import shutil
 import subprocess
-
-import pytest
 
 
 ROOT = Path(__file__).resolve().parents[2]
 BUILD_INDEX_SCRIPT = ROOT / "scripts" / "report_generator" / "build_result_index.sh"
 
 
-def test_build_result_index_emits_v2_required_keys(tmp_path: Path) -> None:
-    bash = shutil.which("bash")
-    if bash is None:
-        pytest.skip("bash is not available in the current test environment")
-
+def test_build_result_index_emits_v2_required_keys(
+    tmp_path: Path,
+    bash_executable: str,
+) -> None:
     workdir = tmp_path
     results_root = workdir / "results"
     reports_root = workdir / "reports"
@@ -43,7 +39,7 @@ def test_build_result_index_emits_v2_required_keys(tmp_path: Path) -> None:
     output_path = results_root / "report_index.json"
     result = subprocess.run(
         [
-            bash,
+            bash_executable,
             "--noprofile",
             "--norc",
             BUILD_INDEX_SCRIPT.as_posix(),
@@ -84,10 +80,6 @@ def test_build_result_index_emits_v2_required_keys(tmp_path: Path) -> None:
         text=True,
         check=False,
     )
-
-    output = f"{result.stdout}{result.stderr}".replace("\x00", "")
-    if result.returncode != 0 and ("E_ACCESSDENIED" in output or "Bash/Service/CreateInstance" in output):
-        pytest.skip("bash is present but WSL bash service is unavailable in this Windows session")
 
     assert result.returncode == 0, result.stderr or result.stdout
     assert output_path.is_file()

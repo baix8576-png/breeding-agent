@@ -1,21 +1,17 @@
 from __future__ import annotations
 
 from pathlib import Path
-import shutil
 import subprocess
-
-import pytest
 
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "genomic_prediction" / "run_genomic_prediction.sh"
 
 
-def test_genomic_prediction_script_fails_when_no_analysis_step_executes(tmp_path: Path) -> None:
-    bash = shutil.which("bash")
-    if bash is None:
-        pytest.skip("bash is not available in the current test environment")
-
+def test_genomic_prediction_script_fails_when_no_analysis_step_executes(
+    tmp_path: Path,
+    bash_executable: str,
+) -> None:
     input_root = tmp_path / "inputs"
     input_root.mkdir(parents=True, exist_ok=True)
     plink_prefix = input_root / "demo_dataset"
@@ -27,7 +23,7 @@ def test_genomic_prediction_script_fails_when_no_analysis_step_executes(tmp_path
 
     result = subprocess.run(
         [
-            bash,
+            bash_executable,
             "--noprofile",
             "--norc",
             SCRIPT.as_posix(),
@@ -49,11 +45,5 @@ def test_genomic_prediction_script_fails_when_no_analysis_step_executes(tmp_path
     )
 
     output = f"{result.stdout}{result.stderr}".replace("\x00", "")
-    if result.returncode != 0 and (
-        "E_ACCESSDENIED" in output
-        or "Bash/Service/CreateInstance" in output
-    ):
-        pytest.skip("bash is present but WSL bash service is unavailable in this Windows session")
-
     assert result.returncode != 0
     assert "No genomic prediction step executed" in output

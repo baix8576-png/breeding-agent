@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from contracts.execution import RunContext
 from contracts.tasks import UserRequest
+from contracts.validation import InputBundle, InputBundleEntry
 from runtime.bootstrap import create_application_context
 
 
@@ -18,6 +19,11 @@ def test_draft_plan_preserves_run_context_and_pipeline_contract() -> None:
             text="Run PCA on a sheep VCF dataset and draft a report outline",
             working_directory=run_context.working_directory,
             requested_outputs=["pca_plot", "report_outline"],
+            input_bundle=InputBundle(
+                entries=[
+                    InputBundleEntry(role="vcf", path="/data/sheep/demo.vcf.gz"),
+                ]
+            ),
         ),
         run_context=run_context,
     )
@@ -42,9 +48,15 @@ def test_draft_plan_preserves_run_context_and_pipeline_contract() -> None:
     assert "pca_computation" in plan.pipeline_spec.stages
     assert "pca_computation" in plan.pipeline_spec.stage_contract
     assert "eigenvec_table" in plan.pipeline_spec.artifact_contract
+    assert "plink2_pca" in plan.pipeline_spec.atomic_algorithms
     assert len(plan.pipeline_spec.stage_io_contract) == 9
+    assert any(path.endswith("demo.vcf.gz") for path in plan.pipeline_spec.input_paths)
+    assert plan.pipeline_spec.input_bundle is not None
     assert "pca_plot" in plan.pipeline_spec.requested_outputs
     assert "report_outline" in plan.pipeline_spec.requested_outputs
+    assert plan.resource_estimate is not None
+    assert plan.resource_estimate.cpus >= 8
+    assert plan.resource_estimate.memory_gb >= 24
 
 
 def test_non_bio_plan_uses_lightweight_chain_without_execution_stage() -> None:

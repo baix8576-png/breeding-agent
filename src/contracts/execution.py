@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from contracts.common import GateDecision, JobState, RiskLevel, RoleOutputHeader, SchedulerKind, TaskDomain
 from contracts.tasks import ResourceEstimate, UserRequest
+from contracts.validation import InputBundle, ValidationReport
 
 
 class RunContext(BaseModel):
@@ -24,10 +25,12 @@ class PipelineSpec(BaseModel):
     domain: TaskDomain
     blueprint_key: str | None = None
     analysis_targets: list[str] = Field(default_factory=list)
+    atomic_algorithms: list[str] = Field(default_factory=list)
     stages: list[str] = Field(default_factory=list)
     stage_contract: list[str] = Field(default_factory=list)
     stage_io_contract: list[dict[str, object]] = Field(default_factory=list)
     input_paths: list[str] = Field(default_factory=list)
+    input_bundle: InputBundle | None = None
     requested_outputs: list[str] = Field(default_factory=list)
     deliverables: list[str] = Field(default_factory=list)
     artifact_contract: list[str] = Field(default_factory=list)
@@ -47,6 +50,8 @@ class TaskPlan(BaseModel):
     required_roles: list[str] = Field(default_factory=list)
     pipeline_spec: PipelineSpec | None = None
     resource_estimate: ResourceEstimate | None = None
+    input_validation: ValidationReport | None = None
+    runtime_lifecycle: dict[str, object] | None = None
 
 
 class ExecutionRequest(BaseModel):
@@ -141,3 +146,6 @@ class SubmissionPreview(BaseModel):
     manual_confirmation_items: list[str] = Field(default_factory=list)
     circuit_break_conditions: list[str] = Field(default_factory=list)
     artifacts: ExecutionArtifacts | None = None
+    input_bundle: InputBundle | None = None
+    input_validation: ValidationReport | None = None
+    runtime_lifecycle: dict[str, object] | None = None

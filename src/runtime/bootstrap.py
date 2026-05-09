@@ -45,11 +45,13 @@ def create_application_context(settings: Settings | None = None) -> ApplicationC
     circuit_breaker = CircuitBreaker()
     input_validator = InputValidator()
     memory_coordinator = MemoryCoordinator()
-    audit_store = FileAuditStore(fallback_root=str(Path.cwd() / ".tmp" / "audit"))
+    audit_store = FileAuditStore(fallback_root=str(Path.cwd() / "logs" / "audit"))
     resource_estimator = ConservativeResourceEstimator(default_partition=None)
     knowledge_resolver = KnowledgeResolver(
         external_fallback_enabled=settings.knowledge_external_fallback_enabled,
         external_fallback_policy=settings.knowledge_external_fallback_policy,
+        external_fallback_default_sensitivity=settings.knowledge_external_fallback_default_sensitivity,
+        external_fallback_domain_sensitivity_limits=settings.knowledge_external_fallback_domain_sensitivity_limits,
     )
     orchestrator = OrchestratorService(
         resource_estimator=resource_estimator,
@@ -85,6 +87,7 @@ def _build_scheduler(settings: Settings) -> BaseSchedulerAdapter:
 
     scheduler_kwargs = {
         "real_execution_enabled": settings.scheduler_real_execution_enabled,
+        "idempotent_submit_enabled": settings.scheduler_idempotent_submit_enabled,
         "retry_max_attempts": settings.scheduler_retry_max_attempts,
         "retry_backoff_seconds": settings.scheduler_retry_backoff_seconds,
         "command_timeout_seconds": settings.scheduler_command_timeout_seconds,

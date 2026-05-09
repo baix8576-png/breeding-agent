@@ -74,6 +74,7 @@ def test_execution_contracts_expose_tracking_and_submission_fields() -> None:
     assert "poll_strategy" in SubmissionPreview.model_fields
     assert "failure_recovery" in SubmissionPreview.model_fields
     assert "cluster_execution_enabled" in SubmissionPreview.model_fields
+    assert "runtime_lifecycle" in SubmissionPreview.model_fields
     assert "artifact_index" in ExecutionArtifacts.model_fields
     assert "figure_paths" in ExecutionArtifacts.model_fields
     assert "log_paths" in ExecutionArtifacts.model_fields

@@ -9,6 +9,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from contracts.execution import PipelineSpec
+from contracts.validation import InputBundle
 
 
 class PipelineExecutionPlan(BaseModel):
@@ -98,6 +99,7 @@ def build_execution_plan(
         "--request-text",
         request_text,
     ]
+    command.extend(_resolve_input_bundle_arguments(pipeline_spec.input_bundle))
     return PipelineExecutionPlan(
         pipeline_name=pipeline_name,
         script_path=str(script_path),
@@ -105,6 +107,17 @@ def build_execution_plan(
         analysis_targets=analysis_targets,
         algorithms=algorithms,
     )
+
+
+def resolve_pipeline_algorithms(
+    pipeline_spec: PipelineSpec,
+    *,
+    request_text: str,
+) -> list[str]:
+    """Resolve atomic algorithms for one pipeline spec without scheduler side effects."""
+
+    analysis_targets = _resolve_analysis_targets(pipeline_spec, request_text)
+    return _resolve_algorithms(analysis_targets)
 
 
 def build_execution_command(
@@ -221,6 +234,51 @@ def _resolve_algorithms(analysis_targets: list[str]) -> list[str]:
             if algorithm not in algorithms:
                 algorithms.append(algorithm)
     return algorithms
+
+
+def _resolve_input_bundle_arguments(input_bundle: InputBundle | None) -> list[str]:
+    if input_bundle is None:
+        return []
+
+    arguments: list[str] = []
+    plink_prefix = _resolve_plink_prefix(input_bundle)
+    vcf_path = _first_path_for_roles(input_bundle, {"vcf"})
+    phenotype_path = _first_path_for_roles(input_bundle, {"phenotype_table"})
+    covariate_path = _first_path_for_roles(input_bundle, {"covariate_table"})
+    pedigree_path = _first_path_for_roles(input_bundle, {"pedigree_table"})
+
+    if vcf_path:
+        arguments.extend(["--vcf", vcf_path])
+    if plink_prefix:
+        arguments.extend(["--plink-prefix", plink_prefix])
+    if phenotype_path:
+        arguments.extend(["--phenotype", phenotype_path])
+    if covariate_path:
+        arguments.extend(["--covariate", covariate_path])
+    if pedigree_path:
+        arguments.extend(["--pedigree", pedigree_path])
+    return arguments
+
+
+def _first_path_for_roles(input_bundle: InputBundle, roles: set[str]) -> str | None:
+    for entry in input_bundle.entries:
+        if entry.role in roles:
+            return entry.path
+    return None
+
+
+def _resolve_plink_prefix(input_bundle: InputBundle) -> str | None:
+    prefix_components: dict[str, set[str]] = {}
+    for entry in input_bundle.entries:
+        suffix = Path(entry.path).suffix.lower()
+        if suffix not in {".bed", ".bim", ".fam"}:
+            continue
+        prefix = str(Path(entry.path).with_suffix(""))
+        prefix_components.setdefault(prefix, set()).add(suffix)
+    for prefix, suffixes in prefix_components.items():
+        if {".bed", ".bim", ".fam"}.issubset(suffixes):
+            return prefix
+    return None
 
 
 def _stable_unique(items) -> list[str]:

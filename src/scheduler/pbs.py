@@ -212,8 +212,14 @@ class PbsSchedulerAdapter(BaseSchedulerAdapter):
         handle,
         request,
         paths,
+        atomic_tools: list[str] | None = None,
     ) -> list[str]:
-        plan = super()._failure_recovery_plan(handle=handle, request=request, paths=paths)
+        plan = super()._failure_recovery_plan(
+            handle=handle,
+            request=request,
+            paths=paths,
+            atomic_tools=atomic_tools,
+        )
         plan.extend(
             [
                 f"pbs diagnostics: qstat -f {handle.job_id}",

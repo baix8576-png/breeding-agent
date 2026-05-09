@@ -9,6 +9,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from contracts.common import TaskDomain
+from knowledge.indexing import ReferenceKnowledgeIndexer
 
 _TOKEN_PATTERN = re.compile(r"[A-Za-z0-9_]+|[\u4e00-\u9fff]+")
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -40,6 +41,66 @@ _SEVERITY_RANK = {
     "medium": 2,
     "low": 1,
 }
+_SENSITIVITY_RANK = {
+    "low": 1,
+    "medium": 2,
+    "high": 3,
+    "restricted": 4,
+}
+_DEFAULT_DOMAIN_SENSITIVITY_LIMITS = {
+    TaskDomain.BIOINFORMATICS.value: "low",
+    TaskDomain.KNOWLEDGE.value: "medium",
+    TaskDomain.SYSTEM.value: "low",
+}
+_DATA_PATH_PATTERN = re.compile(
+    r"([A-Za-z]:[\\/][^\\/\s]+(?:[\\/][^\\/\s]+)*\.(?:vcf(?:\.gz)?|bam|fastq(?:\.gz)?|fasta|fa|bed|bim|fam|ped|tsv|csv)|"
+    r"/[^/\s]+(?:/[^/\s]+)*\.(?:vcf(?:\.gz)?|bam|fastq(?:\.gz)?|fasta|fa|bed|bim|fam|ped|tsv|csv))",
+    flags=re.IGNORECASE,
+)
+_RESTRICTED_SENSITIVITY_TOKENS = (
+    "password",
+    "passwd",
+    "secret",
+    "client_secret",
+    "private key",
+    "ssh-rsa",
+    "api_key",
+    "access key",
+    "refresh_token",
+    "credential",
+    "密码",
+    "密钥",
+    "令牌",
+    "凭证",
+)
+_HIGH_SENSITIVITY_TOKENS = (
+    "vcf",
+    "bam",
+    "fastq",
+    "fasta",
+    "plink",
+    ".bed",
+    ".bim",
+    ".fam",
+    "phenotype",
+    "covariate",
+    "pedigree",
+    "sample_id",
+    "iid",
+    "fid",
+    "表型",
+    "协变量",
+    "谱系",
+    "样本",
+)
+_MEDIUM_SENSITIVITY_TOKENS = (
+    "cohort",
+    "study",
+    "project",
+    "internal",
+    "审计",
+    "日志",
+)
 
 
 @dataclass(frozen=True)
@@ -348,14 +409,24 @@ class RetrievalDocument(BaseModel):
 
     source: str
     path: str = ""
+    doc_id: str | None = None
+    chunk_id: str | None = None
+    section: str | None = None
+    page_or_anchor: str | None = None
+    blueprint_scope: str | None = None
+    species: str | None = None
+    evidence_level: str | None = None
     title: str
     summary: str
     tags: list[str] = Field(default_factory=list)
     keywords: list[str] = Field(default_factory=list)
+    retrieval_channels: list[str] = Field(default_factory=list)
     score: int = 0
     matched_tags: list[str] = Field(default_factory=list)
     matched_keywords: list[str] = Field(default_factory=list)
     hit_reasons: list[str] = Field(default_factory=list)
+    conflict_entries: list[str] = Field(default_factory=list)
+    confidence_sources: list[str] = Field(default_factory=list)
     confidence: float = 0.0
 
 
@@ -381,10 +452,13 @@ class RetrievalBundle(BaseModel):
     fallback_requested: bool = False
     fallback_gate_decision: str = "not_requested"
     fallback_gate_reason: str = "coverage_high"
+    fallback_gate_audit: dict[str, object] = Field(default_factory=dict)
     fallback_used: bool = False
     retrieval_mode: str = "local_only"
     coverage: str = "low"
     rationale: list[str] = Field(default_factory=list)
+    evidence_conflicts: list[str] = Field(default_factory=list)
+    confidence_sources: list[str] = Field(default_factory=list)
     diagnostic_suggestions: list[DiagnosticSuggestion] = Field(default_factory=list)
 
     @property
@@ -536,6 +610,46 @@ class LocalKnowledgeRetriever:
             if not path.is_file():
                 continue
             documents.append(self._document_from_reference(path))
+        documents.extend(self._chunk_documents_from_references())
+        return documents
+
+    def _chunk_documents_from_references(self) -> list[RetrievalDocument]:
+        """Expose validated knowledge_item.v2 cards as traceable retrieval chunks."""
+
+        load_result = ReferenceKnowledgeIndexer(_REFERENCES_ROOT).build()
+        documents: list[RetrievalDocument] = []
+        for chunk in load_result.chunks:
+            documents.append(
+                RetrievalDocument(
+                    source="reference",
+                    path=chunk.source_path,
+                    doc_id=chunk.doc_id,
+                    chunk_id=chunk.chunk_id,
+                    section=chunk.section,
+                    page_or_anchor=chunk.page_or_anchor,
+                    blueprint_scope=chunk.blueprint_scope.value,
+                    species=chunk.species,
+                    evidence_level=chunk.evidence_level.value,
+                    title=chunk.section,
+                    summary=self._truncate_summary(chunk.text),
+                    tags=sorted(
+                        dict.fromkeys(
+                            [
+                                "reference",
+                                "shared",
+                                TaskDomain.BIOINFORMATICS.value,
+                                chunk.blueprint_scope.value,
+                                chunk.evidence_level.value,
+                                chunk.source.value,
+                                chunk.species.lower(),
+                                "knowledge_item_v2",
+                            ]
+                        )
+                    ),
+                    keywords=chunk.keywords,
+                    retrieval_channels=["bm25", "keyword", "embedding_lite"],
+                )
+            )
         return documents
 
     def _document_from_reference(self, path: Path) -> RetrievalDocument:
@@ -554,6 +668,13 @@ class LocalKnowledgeRetriever:
             tags=tags,
             keywords=keywords,
         )
+
+    @staticmethod
+    def _truncate_summary(text: str, limit: int = 360) -> str:
+        normalized = " ".join(text.split())
+        if len(normalized) <= limit:
+            return normalized
+        return normalized[: limit - 3].rstrip() + "..."
 
     @staticmethod
     def _read_text(path: Path) -> str:
@@ -669,6 +790,142 @@ class LocalKnowledgeRetriever:
             confidence += 0.07
         return round(min(1.0, confidence), 3)
 
+    @staticmethod
+    def _build_confidence_sources(
+        *,
+        score: int,
+        token_count: int,
+        matched_keywords: set[str],
+        matched_tags: set[str],
+        title_hits: set[str],
+        summary_hits: set[str],
+        path_hits: set[str],
+        document: RetrievalDocument,
+    ) -> list[str]:
+        expected_max = max(token_count, 1) * 10
+        score_ratio = round(score / expected_max, 3) if expected_max else 0.0
+        keyword_bonus = 0.08 if matched_keywords else 0.0
+        tag_bonus = 0.05 if matched_tags else 0.0
+        title_bonus = 0.07 if title_hits else 0.0
+
+        sources = [
+            (
+                "confidence_formula:min(1.0,score_ratio+keyword_bonus+tag_bonus+title_bonus)"
+                f";score_ratio={score_ratio};keyword_bonus={keyword_bonus};"
+                f"tag_bonus={tag_bonus};title_bonus={title_bonus}"
+            )
+        ]
+        if matched_keywords:
+            sources.append(f"matched_keywords:{','.join(sorted(matched_keywords)[:8])}")
+        if matched_tags:
+            sources.append(f"matched_tags:{','.join(sorted(matched_tags)[:8])}")
+        if title_hits:
+            sources.append(f"title_hits:{','.join(sorted(title_hits)[:8])}")
+        if summary_hits:
+            sources.append(f"summary_hits:{','.join(sorted(summary_hits)[:8])}")
+        if path_hits:
+            sources.append(f"path_hits:{','.join(sorted(path_hits)[:8])}")
+        if document.retrieval_channels:
+            sources.append(f"retrieval_channels:{','.join(document.retrieval_channels)}")
+        if document.evidence_level:
+            sources.append(f"evidence_level:{document.evidence_level}")
+        if document.source:
+            sources.append(f"source:{document.source}")
+        return sources
+
+    @staticmethod
+    def _build_conflict_entries(
+        *,
+        document: RetrievalDocument,
+        peers: list[RetrievalDocument],
+    ) -> list[str]:
+        conflicts: list[str] = []
+        seen: set[str] = set()
+        current_keywords = set(document.matched_keywords)
+        current_tags = set(document.matched_tags)
+
+        for peer in peers:
+            if peer is document:
+                continue
+            shared_keywords = sorted(current_keywords.intersection(peer.matched_keywords))
+            shared_tags = sorted(current_tags.intersection(peer.matched_tags))
+            against = peer.doc_id or peer.title
+
+            if (
+                document.blueprint_scope
+                and peer.blueprint_scope
+                and document.blueprint_scope != peer.blueprint_scope
+                and shared_keywords
+            ):
+                entry = (
+                    "blueprint_scope_conflict:"
+                    f"{document.blueprint_scope}!={peer.blueprint_scope};"
+                    f"shared_keywords={','.join(shared_keywords[:6])};against={against}"
+                )
+                if entry not in seen:
+                    seen.add(entry)
+                    conflicts.append(entry)
+
+            if (
+                document.evidence_level
+                and peer.evidence_level
+                and document.evidence_level != peer.evidence_level
+                and (document.doc_id == peer.doc_id or len(shared_keywords) >= 2)
+            ):
+                entry = (
+                    "evidence_level_conflict:"
+                    f"{document.evidence_level}!={peer.evidence_level};"
+                    f"shared_keywords={','.join(shared_keywords[:6]) or 'none'};against={against}"
+                )
+                if entry not in seen:
+                    seen.add(entry)
+                    conflicts.append(entry)
+
+            if (
+                document.doc_id
+                and peer.doc_id
+                and document.doc_id == peer.doc_id
+                and document.chunk_id
+                and peer.chunk_id
+                and document.chunk_id != peer.chunk_id
+            ):
+                entry = (
+                    "intra_doc_focus_conflict:"
+                    f"{document.chunk_id}!={peer.chunk_id};"
+                    f"shared_tags={','.join(shared_tags[:6]) or 'none'}"
+                )
+                if entry not in seen:
+                    seen.add(entry)
+                    conflicts.append(entry)
+        return conflicts[:6]
+
+    def _attach_evidence_chain(self, hits: list[RetrievalDocument]) -> list[RetrievalDocument]:
+        positive_hits = [item for item in hits if item.score > 0]
+        if not positive_hits:
+            return hits
+
+        annotated: list[RetrievalDocument] = []
+        for hit in hits:
+            if hit.score <= 0:
+                annotated.append(
+                    hit.model_copy(
+                        update={
+                            "conflict_entries": [],
+                            "confidence_sources": hit.confidence_sources or ["score:0"],
+                        }
+                    )
+                )
+                continue
+            conflict_entries = self._build_conflict_entries(document=hit, peers=positive_hits)
+            annotated.append(
+                hit.model_copy(
+                    update={
+                        "conflict_entries": conflict_entries,
+                    }
+                )
+            )
+        return annotated
+
     def _evaluate_document(self, query: str, document: RetrievalDocument) -> dict[str, object]:
         normalized = query.lower()
         score = 0
@@ -709,6 +966,16 @@ class LocalKnowledgeRetriever:
             matched_keywords=matched_keywords,
             matched_tags=matched_tags,
         )
+        if document.doc_id:
+            hit_reasons.append(f"doc_id:{document.doc_id}")
+        if document.chunk_id:
+            hit_reasons.append(f"chunk_id:{document.chunk_id}")
+        if document.evidence_level:
+            hit_reasons.append(f"evidence_level:{document.evidence_level}")
+        if document.page_or_anchor:
+            hit_reasons.append(f"anchor:{document.page_or_anchor}")
+        if document.retrieval_channels:
+            hit_reasons.append(f"retrieval_channels:{','.join(document.retrieval_channels)}")
         confidence = self._confidence_from_score(
             score=score,
             token_count=len(query_tokens),
@@ -716,11 +983,23 @@ class LocalKnowledgeRetriever:
             matched_tags=matched_tags,
             title_hits=title_hits,
         )
+        confidence_sources = self._build_confidence_sources(
+            score=score,
+            token_count=len(query_tokens),
+            matched_keywords=matched_keywords,
+            matched_tags=matched_tags,
+            title_hits=title_hits,
+            summary_hits=summary_hits,
+            path_hits=path_hits,
+            document=document,
+        )
         return {
             "score": score,
             "matched_tags": sorted(matched_tags),
             "matched_keywords": sorted(matched_keywords),
             "hit_reasons": hit_reasons,
+            "conflict_entries": [],
+            "confidence_sources": confidence_sources,
             "confidence": confidence,
         }
 
@@ -746,7 +1025,7 @@ class LocalKnowledgeRetriever:
         top_hits = matches[:limit]
         positive_hits = [document for document in top_hits if document.score > 0]
         if positive_hits:
-            return top_hits
+            return self._attach_evidence_chain(top_hits)
         return [
             RetrievalDocument(
                 source="local",
@@ -757,6 +1036,8 @@ class LocalKnowledgeRetriever:
                 matched_tags=[domain.value],
                 matched_keywords=self._query_tokens(query)[:6],
                 hit_reasons=["fallback_local_primer", "local_catalog_no_positive_hits"],
+                conflict_entries=[],
+                confidence_sources=["fallback_local_primer", "confidence_not_model_based"],
                 confidence=0.0,
             )
         ]
@@ -801,22 +1082,124 @@ class ExternalKnowledgeRetriever:
 class ExternalFallbackGate:
     """Gate external fallback so local-first retrieval remains the default behavior."""
 
-    _VALID_POLICIES = {"always", "knowledge_only", "diagnostic_only"}
+    _VALID_POLICIES = {"always", "knowledge_only", "diagnostic_only", "tiered"}
 
-    def __init__(self, *, enabled: bool = True, policy: str = "knowledge_only") -> None:
+    def __init__(
+        self,
+        *,
+        enabled: bool = True,
+        policy: str = "tiered",
+        domain_sensitivity_limits: dict[str, str] | None = None,
+        default_sensitivity: str = "low",
+    ) -> None:
         self._enabled = enabled
-        normalized_policy = policy.strip().lower() if policy else "knowledge_only"
+        normalized_policy = policy.strip().lower() if policy else "tiered"
         if normalized_policy not in self._VALID_POLICIES:
-            normalized_policy = "knowledge_only"
+            normalized_policy = "tiered"
         self._policy = normalized_policy
+        self._default_sensitivity = self._normalize_sensitivity_level(default_sensitivity, fallback="low")
+        self._domain_sensitivity_limits = self._normalize_domain_sensitivity_limits(
+            domain_sensitivity_limits
+        )
 
     @property
     def policy(self) -> str:
         return self._policy
 
+    @property
+    def domain_sensitivity_limits(self) -> dict[str, str]:
+        return dict(self._domain_sensitivity_limits)
+
+    @property
+    def default_sensitivity(self) -> str:
+        return self._default_sensitivity
+
     @staticmethod
     def _normalize_text(text: str) -> str:
         return " ".join(text.lower().split())
+
+    @staticmethod
+    def _normalize_sensitivity_level(level: str | None, *, fallback: str) -> str:
+        normalized = str(level or "").strip().lower()
+        if normalized in _SENSITIVITY_RANK:
+            return normalized
+        return fallback
+
+    @classmethod
+    def _normalize_domain_sensitivity_limits(cls, raw: dict[str, str] | None) -> dict[str, str]:
+        limits = dict(_DEFAULT_DOMAIN_SENSITIVITY_LIMITS)
+        if not raw:
+            return limits
+        for domain_key, sensitivity in raw.items():
+            normalized_domain = str(domain_key).strip().lower()
+            if not normalized_domain:
+                continue
+            limits[normalized_domain] = cls._normalize_sensitivity_level(
+                sensitivity,
+                fallback=limits.get(normalized_domain, "low"),
+            )
+        return limits
+
+    @staticmethod
+    def _domain_key(domain: TaskDomain) -> str:
+        return domain.value
+
+    @staticmethod
+    def _contains_any_token(normalized_text: str, tokens: tuple[str, ...]) -> tuple[bool, str | None]:
+        for token in tokens:
+            if token in normalized_text:
+                return True, token
+        return False, None
+
+    def _classify_sensitivity(
+        self,
+        *,
+        query: str,
+        local_hits: list[RetrievalDocument],
+    ) -> tuple[str, list[str]]:
+        normalized_query = self._normalize_text(query)
+        reasons: list[str] = []
+
+        restricted_match, restricted_token = self._contains_any_token(
+            normalized_query,
+            _RESTRICTED_SENSITIVITY_TOKENS,
+        )
+        if restricted_match:
+            if restricted_token is not None:
+                reasons.append(f"restricted_token:{restricted_token}")
+            return ("restricted", reasons)
+
+        if _DATA_PATH_PATTERN.search(query):
+            reasons.append("raw_data_path_detected")
+            return ("high", reasons)
+
+        high_match, high_token = self._contains_any_token(normalized_query, _HIGH_SENSITIVITY_TOKENS)
+        if high_match:
+            if high_token is not None:
+                reasons.append(f"high_signal:{high_token}")
+            return ("high", reasons)
+
+        medium_match, medium_token = self._contains_any_token(
+            normalized_query,
+            _MEDIUM_SENSITIVITY_TOKENS,
+        )
+        if medium_match:
+            if medium_token is not None:
+                reasons.append(f"medium_signal:{medium_token}")
+            return ("medium", reasons)
+
+        if any(hit.path for hit in local_hits):
+            reasons.append("local_reference_paths_present")
+
+        reasons.append(f"default_sensitivity:{self._default_sensitivity}")
+        return (self._default_sensitivity, reasons)
+
+    def _domain_limit(self, domain: TaskDomain) -> str:
+        domain_key = self._domain_key(domain)
+        return self._domain_sensitivity_limits.get(
+            domain_key,
+            self._domain_sensitivity_limits.get("default", "low"),
+        )
 
     def evaluate(
         self,
@@ -825,23 +1208,65 @@ class ExternalFallbackGate:
         domain: TaskDomain,
         coverage: str,
         local_hits: list[RetrievalDocument],
-    ) -> tuple[str, str]:
-        del coverage, local_hits
+    ) -> tuple[str, str, dict[str, object]]:
+        sensitivity_level, sensitivity_reasons = self._classify_sensitivity(
+            query=query,
+            local_hits=local_hits,
+        )
+        domain_limit = self._domain_limit(domain)
+        domain_key = self._domain_key(domain)
+        sensitivity_rank = _SENSITIVITY_RANK[sensitivity_level]
+        domain_limit_rank = _SENSITIVITY_RANK[domain_limit]
+        audit: dict[str, object] = {
+            "policy": self._policy,
+            "domain": domain_key,
+            "coverage": coverage,
+            "data_sensitivity_level": sensitivity_level,
+            "data_sensitivity_reasons": sensitivity_reasons,
+            "domain_max_sensitivity_level": domain_limit,
+            "domain_max_sensitivity_rank": domain_limit_rank,
+            "sensitivity_rank": sensitivity_rank,
+            "enabled": self._enabled,
+        }
         if not self._enabled:
-            return ("blocked", "external_fallback_disabled")
+            audit["decision"] = "blocked"
+            audit["reason"] = "external_fallback_disabled"
+            return ("blocked", "external_fallback_disabled", audit)
         if self._policy == "always":
-            return ("allowed", "policy_always")
+            audit["decision"] = "allowed"
+            audit["reason"] = "policy_always"
+            return ("allowed", "policy_always", audit)
         if self._policy == "knowledge_only":
             if domain in {TaskDomain.KNOWLEDGE, TaskDomain.SYSTEM}:
-                return ("allowed", "policy_knowledge_only")
-            return ("blocked", "policy_knowledge_only_blocks_domain")
+                audit["decision"] = "allowed"
+                audit["reason"] = "policy_knowledge_only"
+                return ("allowed", "policy_knowledge_only", audit)
+            audit["decision"] = "blocked"
+            audit["reason"] = "policy_knowledge_only_blocks_domain"
+            return ("blocked", "policy_knowledge_only_blocks_domain", audit)
         if self._policy == "diagnostic_only":
             normalized_query = self._normalize_text(query)
             has_error_intent = any(token in normalized_query for token in _ERROR_INTENT_TOKENS)
+            audit["has_error_intent"] = has_error_intent
             if domain == TaskDomain.SYSTEM and has_error_intent:
-                return ("allowed", "policy_diagnostic_only")
-            return ("blocked", "policy_diagnostic_only_requires_system_error_intent")
-        return ("blocked", f"invalid_policy:{self._policy}")
+                audit["decision"] = "allowed"
+                audit["reason"] = "policy_diagnostic_only"
+                return ("allowed", "policy_diagnostic_only", audit)
+            audit["decision"] = "blocked"
+            audit["reason"] = "policy_diagnostic_only_requires_system_error_intent"
+            return ("blocked", "policy_diagnostic_only_requires_system_error_intent", audit)
+        if self._policy == "tiered":
+            if sensitivity_rank <= domain_limit_rank:
+                audit["decision"] = "allowed"
+                audit["reason"] = "policy_tiered_allowed"
+                return ("allowed", "policy_tiered_allowed", audit)
+            audit["decision"] = "blocked"
+            audit["reason"] = "policy_tiered_blocks_sensitivity"
+            return ("blocked", "policy_tiered_blocks_sensitivity", audit)
+
+        audit["decision"] = "blocked"
+        audit["reason"] = f"invalid_policy:{self._policy}"
+        return ("blocked", f"invalid_policy:{self._policy}", audit)
 
 
 class KnowledgeResolver:
@@ -853,7 +1278,9 @@ class KnowledgeResolver:
         external_retriever: ExternalKnowledgeRetriever | None = None,
         fallback_gate: ExternalFallbackGate | None = None,
         external_fallback_enabled: bool = True,
-        external_fallback_policy: str = "knowledge_only",
+        external_fallback_policy: str = "tiered",
+        external_fallback_domain_sensitivity_limits: dict[str, str] | None = None,
+        external_fallback_default_sensitivity: str = "low",
     ) -> None:
         self._local_retriever = local_retriever or LocalKnowledgeRetriever()
         self._external_retriever = external_retriever or ExternalKnowledgeRetriever()
@@ -862,6 +1289,8 @@ class KnowledgeResolver:
         self._fallback_gate = fallback_gate or ExternalFallbackGate(
             enabled=external_fallback_enabled,
             policy=external_fallback_policy,
+            domain_sensitivity_limits=external_fallback_domain_sensitivity_limits,
+            default_sensitivity=external_fallback_default_sensitivity,
         )
 
     @staticmethod
@@ -1056,29 +1485,56 @@ class KnowledgeResolver:
         local_hits: list[RetrievalDocument],
         coverage: str,
         domain: TaskDomain,
-    ) -> tuple[str, str]:
+    ) -> tuple[str, str, dict[str, object]]:
         if not fallback_requested:
-            return ("not_requested", "coverage_high")
-        if not self._external_fallback_enabled:
-            return ("blocked", "external_fallback_disabled")
+            return (
+                "not_requested",
+                "coverage_high",
+                {
+                    "policy": self._external_fallback_policy,
+                    "enabled": self._external_fallback_enabled,
+                    "domain": domain.value,
+                    "coverage": coverage,
+                    "decision": "not_requested",
+                    "reason": "coverage_high",
+                },
+            )
         gate_response = self._fallback_gate.evaluate(
             query=query,
             domain=domain,
             coverage=coverage,
             local_hits=local_hits,
         )
+        audit: dict[str, object] = {}
         if isinstance(gate_response, tuple):
-            decision_raw, reason_raw = gate_response
-            decision = str(decision_raw).strip().lower()
-            reason = str(reason_raw).strip() or "gate_blocked"
+            decision_raw = gate_response[0] if len(gate_response) > 0 else "blocked"
+            reason_raw = gate_response[1] if len(gate_response) > 1 else "gate_blocked"
+            if len(gate_response) > 2 and isinstance(gate_response[2], dict):
+                audit = dict(gate_response[2])
+        elif isinstance(gate_response, dict):
+            decision_raw = gate_response.get("decision", "blocked")
+            reason_raw = gate_response.get("reason", "gate_blocked")
+            audit = dict(gate_response)
+            audit.pop("decision", None)
+            audit.pop("reason", None)
         else:
-            decision = str(gate_response).strip().lower()
-            reason = "gate_allowed" if decision == "allowed" else "gate_blocked"
+            decision_raw = gate_response
+            reason_raw = "gate_allowed" if str(decision_raw).strip().lower() == "allowed" else "gate_blocked"
+        decision = str(decision_raw).strip().lower()
+        reason = str(reason_raw).strip() or "gate_blocked"
+        audit.setdefault("policy", self._external_fallback_policy)
+        audit.setdefault("enabled", self._external_fallback_enabled)
+        audit.setdefault("domain", domain.value)
+        audit.setdefault("coverage", coverage)
+        audit["decision"] = decision
+        audit["reason"] = reason
         if decision == "allowed":
-            return ("allowed", reason if reason != "gate_blocked" else "gate_allowed")
+            return ("allowed", reason if reason != "gate_blocked" else "gate_allowed", audit)
         if decision == "blocked":
-            return ("blocked", reason if reason != "gate_allowed" else "gate_blocked")
-        return ("blocked", f"invalid_gate_decision:{decision}")
+            return ("blocked", reason if reason != "gate_allowed" else "gate_blocked", audit)
+        audit["decision"] = "blocked"
+        audit["reason"] = f"invalid_gate_decision:{decision}"
+        return ("blocked", f"invalid_gate_decision:{decision}", audit)
 
     def _execute_external_fallback(
         self,
@@ -1093,6 +1549,36 @@ class KnowledgeResolver:
         external_hits = self._external_retriever.search(query=query, domain=domain)
         return (True, external_hits)
 
+    @staticmethod
+    def _aggregate_evidence_conflicts(documents: list[RetrievalDocument], limit: int = 12) -> list[str]:
+        conflicts: list[str] = []
+        seen: set[str] = set()
+        for document in documents:
+            for entry in document.conflict_entries:
+                normalized = entry.strip()
+                if not normalized or normalized in seen:
+                    continue
+                seen.add(normalized)
+                conflicts.append(normalized)
+                if len(conflicts) >= limit:
+                    return conflicts
+        return conflicts
+
+    @staticmethod
+    def _aggregate_confidence_sources(documents: list[RetrievalDocument], limit: int = 16) -> list[str]:
+        sources: list[str] = []
+        seen: set[str] = set()
+        for document in documents:
+            for entry in document.confidence_sources:
+                normalized = entry.strip()
+                if not normalized or normalized in seen:
+                    continue
+                seen.add(normalized)
+                sources.append(normalized)
+                if len(sources) >= limit:
+                    return sources
+        return sources
+
     def resolve(self, query: str, domain: TaskDomain) -> RetrievalBundle:
         """Resolve retrieval context using local sources first and external fallback second."""
 
@@ -1106,7 +1592,7 @@ class KnowledgeResolver:
         top_score = max((document.score for document in positive_hits), default=0)
         coverage = "high" if len(positive_hits) >= 2 or top_score >= 5 else "partial" if len(positive_hits) == 1 else "low"
         fallback_requested = self._is_external_fallback_requested(coverage)
-        fallback_gate_decision, fallback_gate_reason = self._decide_external_fallback(
+        fallback_gate_decision, fallback_gate_reason, fallback_gate_audit = self._decide_external_fallback(
             query=query,
             fallback_requested=fallback_requested,
             local_hits=local_hits,
@@ -1119,6 +1605,8 @@ class KnowledgeResolver:
             fallback_requested=fallback_requested,
             fallback_gate_decision=fallback_gate_decision,
         )
+        evidence_conflicts = self._aggregate_evidence_conflicts(local_hits)
+        confidence_sources = self._aggregate_confidence_sources(local_hits)
         rationale = [
             f"local_hits={len(local_hits)}",
             f"positive_local_hits={len(positive_hits)}",
@@ -1128,7 +1616,11 @@ class KnowledgeResolver:
             f"fallback_gate_decision={fallback_gate_decision}",
             f"fallback_gate_reason={fallback_gate_reason}",
             f"fallback_policy={self._external_fallback_policy}",
+            f"fallback_data_sensitivity={fallback_gate_audit.get('data_sensitivity_level', 'n/a')}",
+            f"fallback_domain_limit={fallback_gate_audit.get('domain_max_sensitivity_level', 'n/a')}",
             f"diagnostic_suggestions={len(diagnostic_suggestions)}",
+            f"evidence_conflicts={len(evidence_conflicts)}",
+            f"confidence_sources={len(confidence_sources)}",
         ]
         if diagnostic_suggestions:
             diagnostic_tools = ",".join(sorted({item.tool for item in diagnostic_suggestions}))
@@ -1146,9 +1638,12 @@ class KnowledgeResolver:
             fallback_requested=fallback_requested,
             fallback_gate_decision=fallback_gate_decision,
             fallback_gate_reason=fallback_gate_reason,
+            fallback_gate_audit=fallback_gate_audit,
             fallback_used=fallback_used,
             retrieval_mode="local_plus_external_fallback" if fallback_used else "local_only",
             coverage=coverage,
             rationale=rationale,
+            evidence_conflicts=evidence_conflicts,
+            confidence_sources=confidence_sources,
             diagnostic_suggestions=diagnostic_suggestions,
         )

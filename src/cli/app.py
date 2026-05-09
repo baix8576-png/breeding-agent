@@ -10,6 +10,7 @@ from rich.console import Console
 from scheduler.base import SchedulerExecutionError
 
 from contracts.api import RequestIdentity
+from contracts.validation import InputBundle, InputBundleEntry
 from runtime.bootstrap import create_application_context
 
 app = typer.Typer(help="GeneAgent CLI for local genetics workflow orchestration.")
@@ -23,6 +24,13 @@ def plan(
     run_id: str | None = None,
     session_id: str | None = None,
     working_directory: str | None = None,
+    input_entry: list[str] | None = typer.Option(
+        None,
+        "--input-entry",
+        help="Structured input entry in role=path form; repeat for multiple values.",
+    ),
+    input_species: str | None = typer.Option(None, "--input-species", help="Optional species label for InputBundle."),
+    input_cohort: str | None = typer.Option(None, "--input-cohort", help="Optional cohort label for InputBundle."),
 ) -> None:
     """Draft a plan from a natural-language request."""
 
@@ -34,6 +42,11 @@ def plan(
             run_id=run_id,
             session_id=session_id,
             working_directory=working_directory,
+        ),
+        input_bundle=_build_cli_input_bundle(
+            input_entries=input_entry,
+            species=input_species,
+            cohort_name=input_cohort,
         ),
     )
     console.print_json(json.dumps(plan_result.model_dump(mode="json")))
@@ -130,6 +143,13 @@ def dry_run(
     task_id: str | None = None,
     run_id: str | None = None,
     session_id: str | None = None,
+    input_entry: list[str] | None = typer.Option(
+        None,
+        "--input-entry",
+        help="Structured input entry in role=path form; repeat for multiple values.",
+    ),
+    input_species: str | None = typer.Option(None, "--input-species", help="Optional species label for InputBundle."),
+    input_cohort: str | None = typer.Option(None, "--input-cohort", help="Optional cohort label for InputBundle."),
 ) -> None:
     """Generate a scheduler script preview without submitting a real job."""
 
@@ -141,6 +161,11 @@ def dry_run(
             run_id=run_id,
             session_id=session_id,
             working_directory=working_directory,
+        ),
+        input_bundle=_build_cli_input_bundle(
+            input_entries=input_entry,
+            species=input_species,
+            cohort_name=input_cohort,
         ),
     )
     console.print_json(json.dumps(submission.model_dump(mode="json")))
@@ -154,6 +179,13 @@ def submit_preview(
     task_id: str | None = None,
     run_id: str | None = None,
     session_id: str | None = None,
+    input_entry: list[str] | None = typer.Option(
+        None,
+        "--input-entry",
+        help="Structured input entry in role=path form; repeat for multiple values.",
+    ),
+    input_species: str | None = typer.Option(None, "--input-species", help="Optional species label for InputBundle."),
+    input_cohort: str | None = typer.Option(None, "--input-cohort", help="Optional cohort label for InputBundle."),
 ) -> None:
     """Generate submit-preview artifacts without issuing a real scheduler submission."""
 
@@ -167,6 +199,11 @@ def submit_preview(
             session_id=session_id,
             working_directory=working_directory,
         ),
+        input_bundle=_build_cli_input_bundle(
+            input_entries=input_entry,
+            species=input_species,
+            cohort_name=input_cohort,
+        ),
     )
     console.print_json(json.dumps(submission.model_dump(mode="json")))
 
@@ -179,6 +216,13 @@ def submit(
     task_id: str | None = None,
     run_id: str | None = None,
     session_id: str | None = None,
+    input_entry: list[str] | None = typer.Option(
+        None,
+        "--input-entry",
+        help="Structured input entry in role=path form; repeat for multiple values.",
+    ),
+    input_species: str | None = typer.Option(None, "--input-species", help="Optional species label for InputBundle."),
+    input_cohort: str | None = typer.Option(None, "--input-cohort", help="Optional cohort label for InputBundle."),
 ) -> None:
     """Submit a real scheduler job after safety checks pass."""
 
@@ -192,6 +236,11 @@ def submit(
                 run_id=run_id,
                 session_id=session_id,
                 working_directory=working_directory,
+            ),
+            input_bundle=_build_cli_input_bundle(
+                input_entries=input_entry,
+                species=input_species,
+                cohort_name=input_cohort,
             ),
         )
     except PermissionError as error:
@@ -256,6 +305,25 @@ def _scheduler_command_set(scheduler: str) -> list[str]:
     if scheduler.lower() == "pbs":
         return ["qsub", "qstat"]
     return ["sbatch", "squeue", "sacct"]
+
+
+def _build_cli_input_bundle(
+    *,
+    input_entries: list[str] | None,
+    species: str | None,
+    cohort_name: str | None,
+) -> InputBundle | None:
+    raw_entries = input_entries or []
+    if not raw_entries and species is None and cohort_name is None:
+        return None
+    entries: list[InputBundleEntry] = []
+    for index, item in enumerate(raw_entries):
+        role, separator, path = item.partition("=")
+        if separator and role.strip() and path.strip():
+            entries.append(InputBundleEntry(role=role.strip(), path=path.strip()))
+            continue
+        entries.append(InputBundleEntry(role=f"input_{index + 1}", path=item.strip()))
+    return InputBundle(species=species, cohort_name=cohort_name, entries=entries)
 
 
 def main() -> None:

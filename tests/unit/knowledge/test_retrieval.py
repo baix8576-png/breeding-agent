@@ -125,6 +125,67 @@ def test_local_retriever_emits_match_quality_fields() -> None:
     if top_hit.score > 0:
         assert top_hit.hit_reasons
         assert top_hit.matched_keywords or top_hit.matched_tags
+        assert top_hit.confidence_sources
+
+
+def test_local_retriever_returns_traceable_knowledge_chunks() -> None:
+    retriever = LocalKnowledgeRetriever()
+
+    hits = retriever.search(
+        query="VanRaden genomic relationship matrix GBLUP",
+        domain=TaskDomain.BIOINFORMATICS,
+        limit=5,
+    )
+
+    traceable_hit = next(hit for hit in hits if hit.doc_id == "paper_grm_vanraden_2008")
+    assert traceable_hit.chunk_id is not None
+    assert traceable_hit.section is not None
+    assert traceable_hit.page_or_anchor is not None
+    assert traceable_hit.blueprint_scope == "grm"
+    assert traceable_hit.evidence_level == "peer_reviewed"
+    assert "bm25" in traceable_hit.retrieval_channels
+    assert any(reason.startswith("doc_id:paper_grm_vanraden_2008") for reason in traceable_hit.hit_reasons)
+    assert any(reason.startswith("anchor:#grm-01") for reason in traceable_hit.hit_reasons)
+    assert any(source.startswith("confidence_formula:") for source in traceable_hit.confidence_sources)
+    assert isinstance(traceable_hit.conflict_entries, list)
+
+
+def test_local_retriever_emits_conflict_entries_for_competing_blueprints() -> None:
+    grm_doc = RetrievalDocument(
+        source="reference",
+        title="GRM Evidence",
+        summary="Use VanRaden-style GRM and relatedness checks for GBLUP.",
+        tags=["reference", "shared", TaskDomain.BIOINFORMATICS.value, "grm"],
+        keywords=["vanraden", "grm", "gblup", "relatedness"],
+        blueprint_scope="grm",
+        evidence_level="peer_reviewed",
+        doc_id="paper_grm_vanraden_2008",
+    )
+    prediction_doc = RetrievalDocument(
+        source="reference",
+        title="Prediction Evidence",
+        summary="Use GBLUP prediction route with VanRaden relationship backbone.",
+        tags=["reference", "shared", TaskDomain.BIOINFORMATICS.value, "genomic_prediction"],
+        keywords=["vanraden", "gblup", "prediction", "grm"],
+        blueprint_scope="genomic_prediction",
+        evidence_level="sop",
+        doc_id="sop_genomic_prediction_stage_v1",
+    )
+    retriever = _local_retriever_with_catalog([grm_doc, prediction_doc])
+
+    hits = retriever.search(
+        query="vanraden gblup grm prediction",
+        domain=TaskDomain.BIOINFORMATICS,
+        limit=2,
+    )
+
+    assert hits
+    assert all(hit.confidence_sources for hit in hits)
+    assert any(
+        entry.startswith("blueprint_scope_conflict:")
+        for hit in hits
+        for entry in hit.conflict_entries
+    )
 
 
 def test_local_retriever_scheduler_errors_return_structured_actionable_guidance() -> None:
@@ -286,7 +347,45 @@ def test_knowledge_resolver_uses_fallback_for_low_coverage_query() -> None:
     assert bundle.fallback_used is True
     assert bundle.retrieval_mode == "local_plus_external_fallback"
     assert len(bundle.external_hits) >= 1
+    assert bundle.fallback_gate_audit["policy"] == "tiered"
+    assert bundle.fallback_gate_audit["decision"] == "allowed"
     assert "fallback=external_fallback" in bundle.rationale
+
+
+def test_knowledge_resolver_exposes_bundle_evidence_chain_fields() -> None:
+    local_retriever = _StaticLocalRetriever(
+        hits=[
+            RetrievalDocument(
+                source="reference",
+                title="Hit A",
+                summary="summary",
+                tags=["shared", TaskDomain.BIOINFORMATICS.value],
+                score=3,
+                conflict_entries=["blueprint_scope_conflict:grm!=genomic_prediction;shared_keywords=gblup"],
+                confidence_sources=["confidence_formula:min(1.0,score_ratio+keyword_bonus+tag_bonus+title_bonus)"],
+            ),
+            RetrievalDocument(
+                source="reference",
+                title="Hit B",
+                summary="summary",
+                tags=["shared", TaskDomain.BIOINFORMATICS.value],
+                score=2,
+                confidence_sources=["matched_keywords:gblup,grm"],
+            ),
+        ]
+    )
+    resolver = KnowledgeResolver(
+        local_retriever=local_retriever,
+        external_retriever=_CountingExternalRetriever(),
+        external_fallback_enabled=False,
+    )
+
+    bundle = resolver.resolve(query="gblup grm prediction", domain=TaskDomain.BIOINFORMATICS)
+
+    assert bundle.evidence_conflicts
+    assert any(item.startswith("blueprint_scope_conflict:") for item in bundle.evidence_conflicts)
+    assert bundle.confidence_sources
+    assert any(item.startswith("confidence_formula:") for item in bundle.confidence_sources)
 
 
 def test_knowledge_resolver_knowledge_only_policy_blocks_bio_domain_external_fallback() -> None:
@@ -364,6 +463,8 @@ def test_knowledge_resolver_disables_external_fallback_by_policy() -> None:
     assert bundle.fallback_requested is True
     assert bundle.fallback_gate_decision == "blocked"
     assert bundle.fallback_gate_reason == "external_fallback_disabled"
+    assert bundle.fallback_gate_audit["enabled"] is False
+    assert bundle.fallback_gate_audit["decision"] == "blocked"
     assert bundle.fallback_used is False
     assert bundle.external_hits == []
     assert external_retriever.calls == []
@@ -512,6 +613,7 @@ def test_knowledge_resolver_fallback_gate_not_requested_branch() -> None:
     assert bundle.coverage == "high"
     assert bundle.fallback_requested is False
     assert bundle.fallback_gate_decision == "not_requested"
+    assert bundle.fallback_gate_audit["decision"] == "not_requested"
     assert bundle.fallback_used is False
     assert bundle.retrieval_mode == "local_only"
     assert bundle.external_hits == []
@@ -530,3 +632,57 @@ def test_knowledge_resolver_uses_reference_assets_before_fallback() -> None:
     assert bundle.retrieval_mode == "local_only"
     assert any(hit.source == "reference" for hit in bundle.local_hits)
     assert any(hit.path.endswith("dataset-bundle-template.md") for hit in bundle.local_hits)
+
+
+def test_knowledge_resolver_tiered_policy_blocks_high_sensitivity_external_fallback() -> None:
+    local_retriever = _StaticLocalRetriever(hits=[])
+    external_retriever = _CountingExternalRetriever()
+    resolver = KnowledgeResolver(
+        local_retriever=local_retriever,
+        external_retriever=external_retriever,
+        external_fallback_policy="tiered",
+    )
+
+    bundle = resolver.resolve(
+        query="Summarize D:\\data\\sheep\\cohort.vcf.gz and phenotype table",
+        domain=TaskDomain.KNOWLEDGE,
+    )
+
+    assert bundle.fallback_requested is True
+    assert bundle.fallback_gate_decision == "blocked"
+    assert bundle.fallback_gate_reason == "policy_tiered_blocks_sensitivity"
+    assert bundle.fallback_gate_audit["data_sensitivity_level"] == "high"
+    assert bundle.fallback_gate_audit["domain_max_sensitivity_level"] == "medium"
+    assert bundle.fallback_gate_audit["decision"] == "blocked"
+    assert bundle.fallback_used is False
+    assert external_retriever.calls == []
+
+
+def test_knowledge_resolver_tiered_policy_allows_low_sensitivity_external_fallback() -> None:
+    local_retriever = _StaticLocalRetriever(hits=[])
+    external_retriever = _CountingExternalRetriever()
+    resolver = KnowledgeResolver(
+        local_retriever=local_retriever,
+        external_retriever=external_retriever,
+        external_fallback_policy="tiered",
+        external_fallback_domain_sensitivity_limits={
+            TaskDomain.SYSTEM.value: "low",
+            TaskDomain.KNOWLEDGE.value: "medium",
+            TaskDomain.BIOINFORMATICS.value: "low",
+        },
+        external_fallback_default_sensitivity="low",
+    )
+
+    bundle = resolver.resolve(
+        query="summarize scheduler troubleshooting overview",
+        domain=TaskDomain.SYSTEM,
+    )
+
+    assert bundle.fallback_requested is True
+    assert bundle.fallback_gate_decision == "allowed"
+    assert bundle.fallback_gate_reason == "policy_tiered_allowed"
+    assert bundle.fallback_gate_audit["data_sensitivity_level"] == "low"
+    assert bundle.fallback_gate_audit["domain_max_sensitivity_level"] == "low"
+    assert bundle.fallback_gate_audit["decision"] == "allowed"
+    assert bundle.fallback_used is True
+    assert external_retriever.calls

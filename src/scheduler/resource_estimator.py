@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from contracts.common import TaskDomain
 from contracts.tasks import ResourceEstimate
+from scheduler.atomic_profiles import (
+    estimate_resources_for_atomic_tools,
+    failure_code_mapping_for_atomic_tools,
+)
 
 
 class ConservativeResourceEstimator:
@@ -81,3 +85,48 @@ class ConservativeResourceEstimator:
                 "partition": requested_partition or self._default_partition,
             }
         )
+
+    def estimate_for_atomic_tools(
+        self,
+        atomic_tools: list[str],
+        *,
+        requested_partition: str | None = None,
+    ) -> ResourceEstimate:
+        """Aggregate resources from atomic algorithm profiles."""
+
+        return estimate_resources_for_atomic_tools(
+            atomic_tools,
+            requested_partition=requested_partition or self._default_partition,
+        )
+
+    def failure_code_mapping_for_atomic_tools(self, atomic_tools: list[str]) -> dict[str, list[dict[str, object]]]:
+        """Expose atomic failure-code mapping for planning and diagnostics."""
+
+        return failure_code_mapping_for_atomic_tools(atomic_tools)
+
+    def merge_estimates(self, *estimates: ResourceEstimate) -> ResourceEstimate:
+        """Merge one or more estimates using conservative upper bounds."""
+
+        valid = [estimate for estimate in estimates if estimate is not None]
+        if not valid:
+            return ResourceEstimate(partition=self._default_partition)
+        return ResourceEstimate(
+            cpus=max(item.cpus for item in valid),
+            memory_gb=max(item.memory_gb for item in valid),
+            walltime=max((item.walltime for item in valid), key=self._walltime_to_seconds),
+            partition=next(
+                (item.partition for item in valid if item.partition),
+                self._default_partition,
+            ),
+            conservative_default=all(item.conservative_default for item in valid),
+        )
+
+    def _walltime_to_seconds(self, walltime: str) -> int:
+        parts = walltime.split(":")
+        if len(parts) != 3:
+            return 0
+        try:
+            hours, minutes, seconds = (int(part) for part in parts)
+        except ValueError:
+            return 0
+        return max(0, hours * 3600 + minutes * 60 + seconds)

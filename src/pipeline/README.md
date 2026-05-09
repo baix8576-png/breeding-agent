@@ -6,6 +6,8 @@ This module owns local pipeline validation, workflow blueprints, and v1 executio
 - Validate local input bundle structure and file-path readiness.
 - Publish deterministic pipeline catalog metadata.
 - Build execution-ready workflow blueprints and output templates.
+- Expose typed `pipeline pack` contracts under `src/pipeline/packs/`:
+  spec + stage + artifact + report-template + test-contract.
 - Resolve bioinformatics requests into concrete wrapper commands under `scripts/*`.
 
 ## v1 analysis coverage

@@ -73,6 +73,7 @@ def test_memory_coordinator_records_execution_closure_for_run_and_session() -> N
         task_id="task-memory-closure-001",
         run_id="run-memory-closure-001",
         session_id="session-memory-closure-001",
+        project_id="project-memory-closure-001",
         domain=TaskDomain.BIOINFORMATICS,
         input_summary="Prepare genomic prediction submission preview.",
         planning_summary="Bioinformatics workflow ready.",
@@ -95,7 +96,50 @@ def test_memory_coordinator_records_execution_closure_for_run_and_session() -> N
     assert "sbatch /cluster/work/demo/.geneagent/scheduler/geneagent-job.sbatch.sh" in record.submission_commands
     assert len(record.log_paths) == 2
     assert len(record.audit_paths) == 1
+    assert record.project_id == "project-memory-closure-001"
+    assert len(record.approval_records) == 1
+    assert len(record.provenance_records) >= 4
     assert any(handoff.to_stage == "stage_09_audit_and_memory" for handoff in record.handoffs)
     session = coordinator.get_session("session-memory-closure-001")
     assert session is not None
     assert "execution_closure:run-memory-closure-001" in session.messages
+    assert "project-memory-closure-001" in session.project_ids
+    project = coordinator.get_project("project-memory-closure-001")
+    assert project is not None
+    assert "run-memory-closure-001" in project.run_ids
+    assert project.approval_records
+
+
+def test_memory_coordinator_records_failure_layer_for_project_scope() -> None:
+    coordinator = MemoryCoordinator()
+    coordinator.plan_run(
+        task_id="task-memory-failure-001",
+        run_id="run-memory-failure-001",
+        session_id="session-memory-failure-001",
+        project_id="project-memory-failure-001",
+        request_text="Run GRM pipeline and track scheduler failures.",
+        domain=TaskDomain.BIOINFORMATICS,
+        stage_specs=[
+            {"stage_id": "stage_07_execution", "owner": "hpc_scheduler", "outputs": ["submission_handle"]},
+        ],
+        available_tools=["gcta_make_grm"],
+        retrieval_sources=["grm SOP"],
+    )
+
+    coordinator.record_failure(
+        run_id="run-memory-failure-001",
+        stage_id="stage_07_execution",
+        error_code="OUT_OF_MEMORY",
+        message="scheduler OOM on gcta_make_grm",
+        retryable=True,
+        retry_suggestion="increase memory by +25%",
+        tool_name="gcta_make_grm",
+    )
+
+    run_record = coordinator.get_run("run-memory-failure-001")
+    assert run_record is not None
+    assert len(run_record.failure_records) == 1
+    assert run_record.failure_records[0].tool_name == "gcta_make_grm"
+    project = coordinator.get_project("project-memory-failure-001")
+    assert project is not None
+    assert len(project.failure_records) == 1

@@ -38,6 +38,37 @@ def test_tasks_draft_plan_route_preserves_identity_and_pipeline_spec() -> None:
     assert len(plan["pipeline_spec"]["stage_io_contract"]) == 9
 
 
+def test_tasks_draft_plan_route_accepts_first_class_input_bundle() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/tasks/draft-plan",
+        json={
+            "text": "Run PCA on sheep cohort from structured input bundle",
+            "input_bundle": {
+                "species": "sheep",
+                "entries": [
+                    {"role": "vcf", "path": "D:/data/sheep/cohort/demo.vcf.gz"},
+                    {"role": "phenotype", "path": "D:/data/sheep/cohort/demo_pheno.tsv"},
+                ],
+            },
+            "identity": {
+                "task_id": "task-api-plan-bundle-001",
+                "run_id": "run-api-plan-bundle-001",
+                "working_directory": "/cluster/work/sheep",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    plan = response.json()["plan"]
+    assert plan["pipeline_spec"]["input_bundle"]["species"] == "sheep"
+    assert len(plan["pipeline_spec"]["input_bundle"]["entries"]) == 2
+    assert any(path.endswith("demo.vcf.gz") for path in plan["pipeline_spec"]["input_paths"])
+    assert plan["input_validation"]["valid"] is False
+    assert any(issue["code"] == "missing_path" for issue in plan["input_validation"]["issues"])
+
+
 def test_tasks_draft_plan_route_covers_non_bio_lightweight_branch() -> None:
     client = TestClient(create_app())
 
@@ -93,6 +124,41 @@ def test_tasks_dry_run_route_returns_submission_preview_and_job_handle() -> None
     assert "artifact_index" in submission["artifacts"]
     assert "logs" in submission["artifacts"]["artifact_index"]
     assert submission["artifacts"]["audit_record_path"] is not None
+    assert submission["runtime_lifecycle"]["runtime_path"] == "bio_main_chain"
+    assert submission["runtime_lifecycle"]["current_stage"] == "completed"
+
+
+def test_tasks_dry_run_route_uses_input_bundle_in_default_command() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/tasks/dry-run",
+        json={
+            "request_text": "Dry-run genomic prediction on sheep cohort",
+            "input_bundle": {
+                "entries": [
+                    {"role": "vcf", "path": "D:/data/sheep/cohort/demo.vcf.gz"},
+                    {"role": "phenotype_table", "path": "D:/data/sheep/cohort/demo_pheno.tsv"},
+                    {"role": "covariate_table", "path": "D:/data/sheep/cohort/demo_cov.tsv"},
+                ],
+            },
+            "identity": {
+                "task_id": "task-api-dry-bundle-001",
+                "run_id": "run-api-dry-bundle-001",
+                "working_directory": "/cluster/work/sheep",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    submission = response.json()["submission"]
+    assert "--vcf" in submission["command"]
+    assert any("demo.vcf.gz" in item for item in submission["command"])
+    assert "--phenotype" in submission["command"]
+    assert any("demo_pheno.tsv" in item for item in submission["command"])
+    assert submission["input_bundle"] is not None
+    assert submission["input_validation"]["valid"] is False
+    assert any(item.startswith("Resolve blocking InputBundle validation issues") for item in submission["manual_confirmation_items"])
 
 
 def test_tasks_dry_run_route_non_bio_branch_clearly_skips_cluster() -> None:
@@ -117,6 +183,7 @@ def test_tasks_dry_run_route_non_bio_branch_clearly_skips_cluster() -> None:
     assert submission["wrapper_path"] is None
     assert submission["job_handle"]["job_id"].startswith("SKIPPED-NONBIO-")
     assert submission["script_preview"].startswith("scheduler_skipped:")
+    assert submission["runtime_lifecycle"]["runtime_path"] == "non_bio_lightweight"
 
 
 def test_tasks_submit_preview_route_returns_phase2_execution_surface() -> None:
@@ -240,6 +307,31 @@ def test_tasks_submit_route_blocks_dangerous_command_preview() -> None:
     assert "Safety gate rejected real submit" in response.json()["detail"]
 
 
+def test_tasks_submit_route_blocks_invalid_input_bundle_before_real_submit() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/tasks/submit",
+        json={
+            "request_text": "Submit sheep PCA workflow with explicit missing dataset",
+            "dry_run_completed": True,
+            "input_bundle": {
+                "entries": [
+                    {"role": "vcf", "path": "D:/data/sheep/cohort/missing.vcf.gz"},
+                ],
+            },
+            "identity": {
+                "task_id": "task-api-submit-real-invalid-input-001",
+                "run_id": "run-api-submit-real-invalid-input-001",
+                "working_directory": "/cluster/work/sheep",
+            },
+        },
+    )
+
+    assert response.status_code == 409
+    assert "InputBundle validation failed" in response.json()["detail"]
+
+
 def test_tasks_poll_explain_route_returns_structured_poll_interpretation() -> None:
     client = TestClient(create_app())
 
@@ -331,6 +423,7 @@ def test_tasks_diagnostic_route_non_bio_branch_clearly_skips_cluster() -> None:
     assert diagnostic["cluster_execution_enabled"] is False
     assert isinstance(diagnostic["fallback"], dict)
     assert diagnostic["fallback"]["gate_decision"] in {"allowed", "blocked", "not_requested"}
+    assert isinstance(diagnostic["fallback"].get("gate_audit"), dict)
     assert "non_bio_cluster_policy" in diagnostic
     assert "does not enter cluster execution" in diagnostic["non_bio_cluster_policy"]
 
@@ -357,6 +450,8 @@ def test_tasks_diagnostic_route_low_coverage_keeps_knowledge_fallback_path() -> 
     assert diagnostic["fallback"]["requested"] is True
     assert diagnostic["fallback"]["gate_decision"] in {"allowed", "blocked"}
     assert diagnostic["fallback"]["gate_decision"] != "not_requested"
+    assert isinstance(diagnostic["fallback"]["gate_audit"], dict)
+    assert "data_sensitivity_level" in diagnostic["fallback"]["gate_audit"]
     assert isinstance(diagnostic["fallback"]["used"], bool)
     assert diagnostic["cluster_execution_enabled"] is False
 
@@ -386,6 +481,7 @@ def test_tasks_diagnostic_route_supports_disabling_external_fallback_by_env(monk
         assert diagnostic["fallback"]["requested"] is True
         assert diagnostic["fallback"]["gate_decision"] == "blocked"
         assert diagnostic["fallback"]["gate_reason"] == "external_fallback_disabled"
+        assert diagnostic["fallback"]["gate_audit"]["decision"] == "blocked"
         assert diagnostic["fallback"]["used"] is False
     finally:
         get_settings.cache_clear()

@@ -63,6 +63,8 @@ class SubmissionPlan(BaseModel):
     polling_hint: str | None = None
     poll_strategy: list[str] = Field(default_factory=list)
     failure_recovery: list[str] = Field(default_factory=list)
+    atomic_tools: list[str] = Field(default_factory=list)
+    atomic_failure_code_mapping: dict[str, list[dict[str, object]]] = Field(default_factory=dict)
 
 
 class PollExplanation(BaseModel):
