@@ -63,6 +63,10 @@ class BaseSchedulerAdapter(ABC):
         retry_max_attempts: int = 3,
         retry_backoff_seconds: list[int] | None = None,
         command_timeout_seconds: int = 60,
+        quota_cpu_hours_limit: float = 1024.0,
+        quota_memory_gb_limit: int = 512,
+        quota_max_concurrent_jobs: int = 64,
+        current_active_jobs: int = 0,
         command_runner: Callable[[list[str], str | None, int], subprocess.CompletedProcess[str]] | None = None,
     ) -> None:
         self._real_execution_enabled = real_execution_enabled
@@ -70,6 +74,10 @@ class BaseSchedulerAdapter(ABC):
         self._retry_max_attempts = max(1, int(retry_max_attempts))
         self._retry_backoff_seconds = retry_backoff_seconds or [2, 5, 10]
         self._command_timeout_seconds = max(1, int(command_timeout_seconds))
+        self._quota_cpu_hours_limit = max(1.0, float(quota_cpu_hours_limit))
+        self._quota_memory_gb_limit = max(1, int(quota_memory_gb_limit))
+        self._quota_max_concurrent_jobs = max(1, int(quota_max_concurrent_jobs))
+        self._current_active_jobs = max(0, int(current_active_jobs))
         self._command_runner = command_runner or self._default_command_runner
 
     @property
@@ -121,6 +129,7 @@ class BaseSchedulerAdapter(ABC):
             job_name=job_name,
             atomic_tools=resolved_atomic_tools,
         )
+        quota_assessment = self._assess_quota(request)
         tracking = self._resolve_tracking_ids(task_id=task_id, run_id=run_id, job_name=request.job_name)
         script_preview = self._compose_script(
             command=resolved_command,
@@ -160,12 +169,18 @@ class BaseSchedulerAdapter(ABC):
             task_id_supplied=task_id is not None,
             run_id_supplied=run_id is not None,
         )
+        warnings.extend(
+            [
+                f"quota_gate={quota_assessment['status']}",
+                *[f"quota:{item}" for item in quota_assessment["reasons"]],
+            ]
+        )
         return SubmissionPlan(
             task_id=tracking["task_id"],
             run_id=tracking["run_id"],
             scheduler=self.kind,
             mode=mode,
-            ready_for_gate=self._ready_for_gate_status(mode=mode),
+            ready_for_gate=self._ready_for_gate_status(mode=mode, quota_status=quota_assessment["status"]),
             resource_request=request,
             paths=paths,
             command=resolved_command,
@@ -181,6 +196,9 @@ class BaseSchedulerAdapter(ABC):
             failure_recovery=failure_recovery,
             atomic_tools=resolved_atomic_tools,
             atomic_failure_code_mapping=failure_code_mapping_for_atomic_tools(resolved_atomic_tools),
+            quota_gate_status=quota_assessment["status"],
+            quota_gate_reasons=quota_assessment["reasons"],
+            quota_usage=quota_assessment["usage"],
         )
 
     def dry_run_submit(
@@ -618,9 +636,11 @@ class BaseSchedulerAdapter(ABC):
             warnings.append("run_id was not supplied by upstream orchestration; a compatibility fallback was generated.")
         return warnings
 
-    def _ready_for_gate_status(self, mode: str) -> str:
+    def _ready_for_gate_status(self, mode: str, quota_status: str = "pass") -> str:
         """Return a stage-oriented gate status instead of a boolean readiness flag."""
 
+        if quota_status == "blocked":
+            return "quota_blocked"
         if mode in {"submit-preview", "submit"}:
             return "awaiting_submission_gate"
         return "scheduler_plan_ready"
@@ -668,6 +688,63 @@ class BaseSchedulerAdapter(ABC):
         if self._walltime_to_seconds(right_normalized) > self._walltime_to_seconds(left_normalized):
             return right_normalized
         return left_normalized
+
+    def _assess_quota(self, request: SchedulerResourceRequest) -> dict[str, object]:
+        walltime_hours = self._walltime_to_seconds(request.walltime) / 3600
+        cpu_hours_requested = request.total_cpus * walltime_hours
+        memory_requested = request.memory_gb
+        concurrent_after_submit = self._current_active_jobs + request.tasks
+        reasons: list[str] = []
+        status = "pass"
+
+        if cpu_hours_requested > self._quota_cpu_hours_limit:
+            status = "blocked"
+            reasons.append(
+                f"cpu_hour_limit_exceeded(requested={cpu_hours_requested:.2f},limit={self._quota_cpu_hours_limit:.2f})"
+            )
+        elif cpu_hours_requested >= self._quota_cpu_hours_limit * 0.8:
+            status = "warn"
+            reasons.append(
+                f"cpu_hour_near_limit(requested={cpu_hours_requested:.2f},limit={self._quota_cpu_hours_limit:.2f})"
+            )
+
+        if memory_requested > self._quota_memory_gb_limit:
+            status = "blocked"
+            reasons.append(
+                f"memory_limit_exceeded(requested={memory_requested},limit={self._quota_memory_gb_limit})"
+            )
+        elif memory_requested >= int(self._quota_memory_gb_limit * 0.8):
+            if status != "blocked":
+                status = "warn"
+            reasons.append(
+                f"memory_near_limit(requested={memory_requested},limit={self._quota_memory_gb_limit})"
+            )
+
+        if concurrent_after_submit > self._quota_max_concurrent_jobs:
+            status = "blocked"
+            reasons.append(
+                "concurrency_limit_exceeded("
+                f"active={self._current_active_jobs},requested={request.tasks},limit={self._quota_max_concurrent_jobs})"
+            )
+        elif concurrent_after_submit >= int(self._quota_max_concurrent_jobs * 0.8):
+            if status != "blocked":
+                status = "warn"
+            reasons.append(
+                "concurrency_near_limit("
+                f"active={self._current_active_jobs},requested={request.tasks},limit={self._quota_max_concurrent_jobs})"
+            )
+
+        return {
+            "status": status,
+            "reasons": reasons,
+            "usage": {
+                "cpu_hours_requested": round(cpu_hours_requested, 3),
+                "memory_gb_requested": memory_requested,
+                "current_active_jobs": self._current_active_jobs,
+                "requested_jobs": request.tasks,
+                "concurrent_after_submit": concurrent_after_submit,
+            },
+        }
 
     def _walltime_to_seconds(self, walltime: str) -> int:
         parts = walltime.split(":")

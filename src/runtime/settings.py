@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     scheduler_retry_max_attempts: int = 3
     scheduler_retry_backoff_seconds: list[int] = Field(default_factory=lambda: [2, 5, 10])
     scheduler_command_timeout_seconds: int = 60
+    scheduler_quota_cpu_hours_limit: float = 1024.0
+    scheduler_quota_memory_gb_limit: int = 512
+    scheduler_quota_max_concurrent_jobs: int = 64
+    scheduler_current_active_jobs: int = 0
+    outbound_policy_enforced: bool = True
     allow_cloud_fields: list[str] = Field(
         default_factory=lambda: [
             "prompt",
@@ -49,6 +54,13 @@ class Settings(BaseSettings):
             "parameter_schema",
         ]
     )
+    api_current_version: str = "v2"
+    api_v1_prefix: str = "/tasks"
+    api_v2_prefix: str = "/v2/tasks"
+    api_v1_deprecation_started_at: str = "2026-05-09"
+    api_v1_sunset_date: str = "2026-11-09"
+    api_compatibility_window_days: int = 180
+    api_version_policy_path: str = "/v2/version-policy"
 
     model_config = SettingsConfigDict(
         env_file=".env",

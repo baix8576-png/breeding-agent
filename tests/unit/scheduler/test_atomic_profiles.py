@@ -56,3 +56,15 @@ def test_atomic_failure_mapping_contains_retry_metadata() -> None:
     assert "gcta_reml" in mapping
     assert any(item["code"] == "MATRIX_SINGULAR" for item in mapping["gcta_reml"])
     assert any(item["retryable"] for item in mapping["gcta_reml"])
+
+
+def test_atomic_failure_mapping_regression_contains_actionable_retry_suggestions() -> None:
+    mapping = failure_code_mapping_for_atomic_tools(["plink2_pca", "gcta_reml"])
+
+    assert "plink2_pca" in mapping
+    assert "gcta_reml" in mapping
+    for tool_name in ("plink2_pca", "gcta_reml"):
+        records = mapping[tool_name]
+        assert records
+        assert any(str(item.get("retry_suggestion", "")).strip() for item in records)
+        assert any(bool(item.get("retryable", False)) for item in records)

@@ -50,8 +50,10 @@ class TaskPlan(BaseModel):
     required_roles: list[str] = Field(default_factory=list)
     pipeline_spec: PipelineSpec | None = None
     resource_estimate: ResourceEstimate | None = None
+    cross_run_handoff: dict[str, object] | None = None
     input_validation: ValidationReport | None = None
     runtime_lifecycle: dict[str, object] | None = None
+    explanation_layer: dict[str, object] | None = None
 
 
 class ExecutionRequest(BaseModel):
@@ -149,3 +151,26 @@ class SubmissionPreview(BaseModel):
     input_bundle: InputBundle | None = None
     input_validation: ValidationReport | None = None
     runtime_lifecycle: dict[str, object] | None = None
+    explanation_layer: dict[str, object] | None = None
+
+
+class AuditBundleItem(BaseModel):
+    """One file-level item included (or missing) in an exported audit bundle."""
+
+    kind: str
+    source_path: str
+    archived_path: str | None = None
+    exists: bool = False
+
+
+class AuditBundleExport(BaseModel):
+    """Export payload for one-click run-level audit bundle packaging."""
+
+    run_context: RunContext
+    bundle_path: str
+    manifest_path: str
+    source_audit_path: str | None = None
+    audit_event_count: int = 0
+    exported_items: list[AuditBundleItem] = Field(default_factory=list)
+    missing_items: list[AuditBundleItem] = Field(default_factory=list)
+    summary: str

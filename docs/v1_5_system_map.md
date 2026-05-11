@@ -23,6 +23,7 @@ Both call the same runtime facade:
 - runtime facade: `src/runtime/facade.py`
 - dependency wiring: `src/runtime/bootstrap.py`
 - unified request envelope mapper (v2 + legacy compatibility): `src/runtime/compat.py` + `src/contracts/envelope.py`
+- API version policy + compatibility window: `src/api/routes/versioning.py` + `src/runtime/settings.py`
 
 ### 2.2 Planning Core
 
@@ -90,7 +91,9 @@ audit and memory:
 - test gate: `python -m pytest -q`
 - entry coverage:
   - CLI: `plan/report/diagnostic/dry-run/submit-preview/submit/poll-explain`
-  - API: `/tasks/draft-plan /report /diagnostic /dry-run /submit-preview /submit /poll-explain`
+  - API v1 compat: `/tasks/draft-plan /report /diagnostic /dry-run /submit-preview /submit /poll-explain /audit-export`
+  - API v2 stable: `/v2/tasks/draft-plan /report /diagnostic /dry-run /submit-preview /submit /poll-explain /audit-export`
+  - API control plane: `/v2/version-policy /v2/console /v2/console/board /v2/console/runs/{run_id}`
 - policy gate:
   - non-bio branch must clearly stay outside cluster execution
 
@@ -116,3 +119,55 @@ For future iteration, all work should be described against this map first:
 3. Which acceptance gate test covers it?
 
 If any change cannot answer these three points, do not merge.
+
+---
+
+## 6) M3 Additions (Now Implemented)
+
+- M3-04 audit bundle one-click export:
+  - runtime export entry: `src/runtime/facade.py` (`export_audit_bundle`)
+  - audit file query/read board support: `src/audit/store.py`
+  - user entrypoints: `POST /tasks/audit-export`, `POST /v2/tasks/audit-export`, `cli audit-export`
+- M3-05 API versioning and stability strategy:
+  - v1 compatibility preserved with deprecation/sunset headers
+  - v2 stable surface provided under `/v2/*`
+  - version policy endpoint: `GET /v2/version-policy`
+- M3-06 minimal web console:
+  - HTML console: `GET /v2/console`
+  - task board: `GET /v2/console/board`
+  - run status/report snapshot: `GET /v2/console/runs/{run_id}`
+  - diagnostic entry in console calls `/v2/tasks/diagnostic`
+
+---
+
+## 7) M3.5 Governance/Observability Expansion
+
+- M3-07 unified explanation layer:
+  - output field: `explanation_layer`
+  - surfaces in `TaskPlan`, `SubmissionPreview`, `report/diagnostic previews`, and console run snapshots
+  - explains: why this blueprint, why this gate decision, why this repair suggestion
+
+- M3-08 observability:
+  - metrics: `GET /v2/observability/metrics`
+  - dashboard: `GET /v2/observability/dashboard`
+  - covers task metrics, scheduler distribution, gate distribution, failure taxonomy, timeline
+
+- M3-09 performance/stability:
+  - integration load tests for concurrent dry-run/submit-preview
+  - long-loop poll stability regression
+  - transient submit failure retry-recovery regression
+
+- M3-10 production gate pipeline:
+  - API: `POST /v2/release/production-gate`
+  - CLI: `production-gate`
+  - checks: contract regression, scheduler simulation, knowledge retrieval regression, audit integrity
+
+- M3-11 release standardization:
+  - API: `POST /v2/release/plan`
+  - CLI: `release-plan`
+  - docs: `docs/release_process_v2.md`
+
+- M3-12 final architect review:
+  - API: `GET /v2/release/final-review`
+  - CLI: `final-review`
+  - docs: `docs/v2_0_final_acceptance_review.md`

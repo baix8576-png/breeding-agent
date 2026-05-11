@@ -11,6 +11,8 @@ from contracts.common import (
     TaskDomain,
 )
 from contracts.execution import (
+    AuditBundleExport,
+    AuditBundleItem,
     ExecutionArtifacts,
     ExecutionRequest,
     JobHandle,
@@ -47,6 +49,8 @@ __all__ = [
     "BreakerState",
     "ExecutionArtifacts",
     "ExecutionRequest",
+    "AuditBundleExport",
+    "AuditBundleItem",
     "EvidenceLevel",
     "GateDecision",
     "GateStatus",

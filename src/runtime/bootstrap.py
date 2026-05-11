@@ -41,7 +41,13 @@ def create_application_context(settings: Settings | None = None) -> ApplicationC
 
     settings = settings or get_settings()
     scheduler = _build_scheduler(settings)
-    safety_gate = SafetyGateService()
+    safety_gate = SafetyGateService(
+        quota_cpu_hours_limit=settings.scheduler_quota_cpu_hours_limit,
+        quota_memory_gb_limit=settings.scheduler_quota_memory_gb_limit,
+        quota_max_concurrent_jobs=settings.scheduler_quota_max_concurrent_jobs,
+        outbound_allowed_fields=settings.allow_cloud_fields,
+        outbound_policy_enforced=settings.outbound_policy_enforced,
+    )
     circuit_breaker = CircuitBreaker()
     input_validator = InputValidator()
     memory_coordinator = MemoryCoordinator()
@@ -91,6 +97,10 @@ def _build_scheduler(settings: Settings) -> BaseSchedulerAdapter:
         "retry_max_attempts": settings.scheduler_retry_max_attempts,
         "retry_backoff_seconds": settings.scheduler_retry_backoff_seconds,
         "command_timeout_seconds": settings.scheduler_command_timeout_seconds,
+        "quota_cpu_hours_limit": settings.scheduler_quota_cpu_hours_limit,
+        "quota_memory_gb_limit": settings.scheduler_quota_memory_gb_limit,
+        "quota_max_concurrent_jobs": settings.scheduler_quota_max_concurrent_jobs,
+        "current_active_jobs": settings.scheduler_current_active_jobs,
     }
     kind = settings.scheduler_type
     if kind == SchedulerKind.PBS:

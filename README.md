@@ -5,6 +5,16 @@ GeneAgent 是面向动物遗传育种与群体基因组分析场景的 Agent 工
 系统框架总览（单页真相源）：
 - `docs/v1_5_system_map.md`
 
+## V1.5 Operational Guides
+- `docs/knowledge_update_workflow.md`: knowledge asset ingest/update workflow and evidence-chain regression checks.
+- `docs/pipeline_pack_integration_guide.md`: blueprint pack contract and integration checklist.
+- `docs/tool_manifest_authoring_spec.md`: tool manifest schema/rules and validation checklist.
+
+## M3 Safety Controls
+- Manual approval flow for high-risk actions now supports approver/reason/timestamp evidence and audit persistence.
+- Scheduler budget/quota gate now checks CPU-hours, memory, and concurrent job limits before submit readiness.
+- Outbound payload policy now enforces allow-listed cloud fields, sanitizes path-like content, and trips breaker on violations.
+
 ## Mandatory HANDOFF Protocol
 - Always update `docs/HANDOFF.md` at three checkpoints: after each stage task is completed, before context compression, and before opening a new window.
 - Always start a resumed/new-window session by reading `docs/HANDOFF.md` first, then verifying `git status --short` and key files before changing code.

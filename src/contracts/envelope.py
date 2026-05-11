@@ -33,8 +33,9 @@ class RuntimeRequestEnvelopeV2(BaseModel):
     requested_outputs: list[str] = Field(default_factory=list)
     command: list[str] | None = None
     dry_run_completed: bool = False
+    approval: dict[str, object] | None = None
+    outbound_payload: dict[str, object] | None = None
     metadata: dict[str, object] = Field(default_factory=dict)
 
     def resolved_working_directory(self) -> str | None:
         return self.working_directory or self.identity.working_directory
-

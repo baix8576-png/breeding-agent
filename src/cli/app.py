@@ -120,6 +120,22 @@ def review_action(
     run_id: str | None = None,
     session_id: str | None = None,
     working_directory: str | None = None,
+    reason: str | None = None,
+    target_path: list[str] | None = typer.Option(
+        None,
+        "--target-path",
+        help="Target path in scope for the reviewed action; repeat for multiple paths.",
+    ),
+    external_network: bool = False,
+    cloud_llm: bool = False,
+    approval_approver: str | None = typer.Option(None, "--approval-approver", help="Manual approval approver."),
+    approval_reason: str | None = typer.Option(None, "--approval-reason", help="Manual approval reason."),
+    approval_time: str | None = typer.Option(None, "--approval-time", help="Manual approval timestamp (ISO-8601)."),
+    outbound_field: list[str] | None = typer.Option(
+        None,
+        "--outbound-field",
+        help="Outbound payload field in key=value form; repeat for multiple fields.",
+    ),
 ) -> None:
     """Review a named action through the safety gate."""
 
@@ -132,6 +148,16 @@ def review_action(
             session_id=session_id,
             working_directory=working_directory,
         ),
+        reason=reason,
+        target_paths=target_path,
+        external_network=external_network,
+        cloud_llm=cloud_llm,
+        approval=_build_approval_payload(
+            approver=approval_approver,
+            reason=approval_reason,
+            approved_at=approval_time,
+        ),
+        outbound_payload=_build_outbound_payload(outbound_field),
     )
     console.print_json(json.dumps(review.model_dump(mode="json")))
 
@@ -150,6 +176,14 @@ def dry_run(
     ),
     input_species: str | None = typer.Option(None, "--input-species", help="Optional species label for InputBundle."),
     input_cohort: str | None = typer.Option(None, "--input-cohort", help="Optional cohort label for InputBundle."),
+    approval_approver: str | None = typer.Option(None, "--approval-approver", help="Manual approval approver."),
+    approval_reason: str | None = typer.Option(None, "--approval-reason", help="Manual approval reason."),
+    approval_time: str | None = typer.Option(None, "--approval-time", help="Manual approval timestamp (ISO-8601)."),
+    outbound_field: list[str] | None = typer.Option(
+        None,
+        "--outbound-field",
+        help="Outbound payload field in key=value form; repeat for multiple fields.",
+    ),
 ) -> None:
     """Generate a scheduler script preview without submitting a real job."""
 
@@ -167,6 +201,12 @@ def dry_run(
             species=input_species,
             cohort_name=input_cohort,
         ),
+        approval=_build_approval_payload(
+            approver=approval_approver,
+            reason=approval_reason,
+            approved_at=approval_time,
+        ),
+        outbound_payload=_build_outbound_payload(outbound_field),
     )
     console.print_json(json.dumps(submission.model_dump(mode="json")))
 
@@ -186,6 +226,14 @@ def submit_preview(
     ),
     input_species: str | None = typer.Option(None, "--input-species", help="Optional species label for InputBundle."),
     input_cohort: str | None = typer.Option(None, "--input-cohort", help="Optional cohort label for InputBundle."),
+    approval_approver: str | None = typer.Option(None, "--approval-approver", help="Manual approval approver."),
+    approval_reason: str | None = typer.Option(None, "--approval-reason", help="Manual approval reason."),
+    approval_time: str | None = typer.Option(None, "--approval-time", help="Manual approval timestamp (ISO-8601)."),
+    outbound_field: list[str] | None = typer.Option(
+        None,
+        "--outbound-field",
+        help="Outbound payload field in key=value form; repeat for multiple fields.",
+    ),
 ) -> None:
     """Generate submit-preview artifacts without issuing a real scheduler submission."""
 
@@ -204,6 +252,12 @@ def submit_preview(
             species=input_species,
             cohort_name=input_cohort,
         ),
+        approval=_build_approval_payload(
+            approver=approval_approver,
+            reason=approval_reason,
+            approved_at=approval_time,
+        ),
+        outbound_payload=_build_outbound_payload(outbound_field),
     )
     console.print_json(json.dumps(submission.model_dump(mode="json")))
 
@@ -223,6 +277,14 @@ def submit(
     ),
     input_species: str | None = typer.Option(None, "--input-species", help="Optional species label for InputBundle."),
     input_cohort: str | None = typer.Option(None, "--input-cohort", help="Optional cohort label for InputBundle."),
+    approval_approver: str | None = typer.Option(None, "--approval-approver", help="Manual approval approver."),
+    approval_reason: str | None = typer.Option(None, "--approval-reason", help="Manual approval reason."),
+    approval_time: str | None = typer.Option(None, "--approval-time", help="Manual approval timestamp (ISO-8601)."),
+    outbound_field: list[str] | None = typer.Option(
+        None,
+        "--outbound-field",
+        help="Outbound payload field in key=value form; repeat for multiple fields.",
+    ),
 ) -> None:
     """Submit a real scheduler job after safety checks pass."""
 
@@ -242,6 +304,12 @@ def submit(
                 species=input_species,
                 cohort_name=input_cohort,
             ),
+            approval=_build_approval_payload(
+                approver=approval_approver,
+                reason=approval_reason,
+                approved_at=approval_time,
+            ),
+            outbound_payload=_build_outbound_payload(outbound_field),
         )
     except PermissionError as error:
         console.print_json(json.dumps({"error": str(error), "gate": "blocked_or_confirmation_required"}))
@@ -269,6 +337,39 @@ def poll_explain(job_id: str) -> None:
     context = create_application_context()
     poll = context.facade.explain_poll_state(job_id=job_id)
     console.print_json(json.dumps(poll.model_dump(mode="json")))
+
+
+@app.command("audit-export")
+def audit_export(
+    run_id: str,
+    task_id: str | None = None,
+    working_directory: str | None = None,
+    output_path: str | None = None,
+    include_files: bool = typer.Option(
+        True,
+        "--include-files/--manifest-only",
+        help="Include real log/report/result attachments in zip, or export manifest-only package.",
+    ),
+) -> None:
+    """Export one run-level audit package (input/plan/command/job/log/report/approval trail)."""
+
+    context = create_application_context()
+    try:
+        bundle = context.facade.export_audit_bundle(
+            run_id=run_id,
+            task_id=task_id,
+            identity=RequestIdentity(
+                task_id=task_id,
+                run_id=run_id,
+                working_directory=working_directory,
+            ),
+            output_path=output_path,
+            include_files=include_files,
+        )
+    except ValueError as error:
+        console.print_json(json.dumps({"error": str(error), "gate": "audit_trace_not_found"}))
+        raise typer.Exit(code=1) from error
+    console.print_json(json.dumps(bundle.model_dump(mode="json")))
 
 
 @app.command("doctor")
@@ -301,6 +402,70 @@ def doctor() -> None:
     )
 
 
+@app.command("observability")
+def observability(
+    working_directory: str | None = None,
+    limit: int = 200,
+) -> None:
+    """Show observability metrics (task, scheduler, and failure taxonomy)."""
+
+    context = create_application_context()
+    payload = context.facade.observability_metrics(
+        working_directory=working_directory,
+        limit=max(1, limit),
+    )
+    console.print_json(json.dumps(payload))
+
+
+@app.command("production-gate")
+def production_gate(
+    working_directory: str | None = None,
+    execute_tests: bool = False,
+    timeout_seconds: int = 300,
+) -> None:
+    """Run production gate pipeline checks for contracts/scheduler/knowledge/audit."""
+
+    context = create_application_context()
+    payload = context.facade.production_gate_pipeline(
+        working_directory=working_directory,
+        execute_tests=execute_tests,
+        timeout_seconds=timeout_seconds,
+    )
+    console.print_json(json.dumps(payload))
+
+
+@app.command("release-plan")
+def release_plan(
+    version_tag: str = "v2.0.0",
+    change_summary: str = "",
+    stage_id: list[str] | None = typer.Option(
+        None,
+        "--stage-id",
+        help="Stage ids mapped to this release; repeat for multiple values.",
+    ),
+) -> None:
+    """Generate standardized release package plan with rollback template."""
+
+    context = create_application_context()
+    payload = context.facade.release_plan(
+        version_tag=version_tag,
+        change_summary=change_summary,
+        stage_ids=stage_id or [],
+    )
+    console.print_json(json.dumps(payload))
+
+
+@app.command("final-review")
+def final_review(working_directory: str | None = None) -> None:
+    """Run V2.0 final acceptance review (architecture/governance/operability)."""
+
+    context = create_application_context()
+    payload = context.facade.final_acceptance_review(
+        working_directory=working_directory,
+    )
+    console.print_json(json.dumps(payload))
+
+
 def _scheduler_command_set(scheduler: str) -> list[str]:
     if scheduler.lower() == "pbs":
         return ["qsub", "qstat"]
@@ -324,6 +489,39 @@ def _build_cli_input_bundle(
             continue
         entries.append(InputBundleEntry(role=f"input_{index + 1}", path=item.strip()))
     return InputBundle(species=species, cohort_name=cohort_name, entries=entries)
+
+
+def _build_approval_payload(
+    *,
+    approver: str | None,
+    reason: str | None,
+    approved_at: str | None,
+) -> dict[str, object] | None:
+    if not any([approver, reason, approved_at]):
+        return None
+    return {
+        "approved": True,
+        "approver": approver,
+        "reason": reason,
+        "approved_at": approved_at,
+    }
+
+
+def _build_outbound_payload(entries: list[str] | None) -> dict[str, object] | None:
+    raw_entries = entries or []
+    if not raw_entries:
+        return None
+    payload: dict[str, object] = {}
+    for item in raw_entries:
+        key, separator, value = item.partition("=")
+        if not separator:
+            continue
+        key_norm = key.strip()
+        value_norm = value.strip()
+        if not key_norm:
+            continue
+        payload[key_norm] = value_norm
+    return payload or None
 
 
 def main() -> None:

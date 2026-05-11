@@ -2,20 +2,31 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 import json
 from pathlib import Path, PurePosixPath, PureWindowsPath
 import shlex
 import shutil
 import subprocess
+import zipfile
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
+from audit.observability import ObservabilityService
 from audit.store import AuditEvent, FileAuditStore
 from contracts.api import RequestIdentity
 from contracts.common import GateDecision, JobState, TaskDomain
 from contracts.envelope import ExecutionIntent, RuntimeRequestEnvelopeV2
-from contracts.execution import ExecutionArtifacts, JobHandle, RunContext, SubmissionPreview, TaskPlan
+from contracts.execution import (
+    AuditBundleExport,
+    AuditBundleItem,
+    ExecutionArtifacts,
+    JobHandle,
+    RunContext,
+    SubmissionPreview,
+    TaskPlan,
+)
 from contracts.tasks import UserRequest
 from contracts.validation import InputBundle, ValidationReport
 from memory.stores import MemoryCoordinator
@@ -26,6 +37,7 @@ from safety.gates import SafetyGateResult, SafetyGateService, SafetyReviewContex
 from scheduler.base import BaseSchedulerAdapter
 from scheduler.models import PollExplanation
 from scheduler.poller import JobPoller
+from runtime.governance import GovernanceService
 from runtime.state_machine import RuntimeStage, create_stage_trace
 from runtime.settings import Settings
 
@@ -41,6 +53,7 @@ class ReportPreview(BaseModel):
     expected_artifacts: dict[str, list[str]] = Field(default_factory=dict)
     cluster_execution_enabled: bool = False
     non_bio_cluster_policy: str | None = None
+    explanation_layer: dict[str, object] = Field(default_factory=dict)
 
 
 class DiagnosticPreview(BaseModel):
@@ -60,6 +73,7 @@ class DiagnosticPreview(BaseModel):
     sources: list[dict[str, object]] = Field(default_factory=list)
     cluster_execution_enabled: bool = False
     non_bio_cluster_policy: str | None = None
+    explanation_layer: dict[str, object] = Field(default_factory=dict)
 
 
 class ApplicationFacade:
@@ -83,6 +97,8 @@ class ApplicationFacade:
         self._poller = JobPoller()
         self._memory_coordinator = memory_coordinator
         self._audit_store = audit_store
+        self._observability = ObservabilityService(audit_store)
+        self._governance = GovernanceService(settings=settings, audit_store=audit_store)
 
     def draft_plan(
         self,
@@ -127,7 +143,38 @@ class ApplicationFacade:
         else:
             trace.advance(RuntimeStage.LITE_02_LOCAL_RETRIEVAL.value)
             trace.advance(RuntimeStage.LITE_03_ANSWER_BLUEPRINT.value)
-        return plan.model_copy(update={"runtime_lifecycle": trace.to_contract()})
+        selected_blueprint = (
+            plan.pipeline_spec.name
+            if plan.pipeline_spec is not None
+            else f"{plan.domain.value}_lightweight"
+        )
+        explanation_layer = self._build_explanation_layer(
+            domain=plan.domain.value,
+            selected_blueprint=selected_blueprint,
+            blueprint_reason=(
+                f"intent routed to {plan.domain.value} domain and mapped to `{selected_blueprint}` "
+                "under the fixed blueprint selection contract."
+            ),
+            gate_decision="design_pass" if plan.header.ready_for_gate.value == "design_pass" else "not_ready",
+            gate_reason=(
+                "stage-06 resource/safety checks are required before real submit; "
+                "current plan is design-level and execution-gated."
+            ),
+            repair_recommendation=(
+                "If downstream execution fails, use diagnostic suggestions and cross-run failure-repair hints "
+                "before retrying submit."
+            ),
+            repair_basis=[
+                f"cross_run_failure_hints={len((plan.cross_run_handoff or {}).get('prioritized_failure_repairs', []))}",
+                f"cross_run_reuse_hints={len((plan.cross_run_handoff or {}).get('reused_parameters', []))}",
+            ],
+        )
+        return plan.model_copy(
+            update={
+                "runtime_lifecycle": trace.to_contract(),
+                "explanation_layer": explanation_layer,
+            }
+        )
 
     def validate_inputs(
         self,
@@ -156,6 +203,8 @@ class ApplicationFacade:
         input_bundle: InputBundle | None = None,
         command: list[str] | None = None,
         dry_run_completed: bool = False,
+        approval: dict[str, object] | None = None,
+        outbound_payload: dict[str, object] | None = None,
     ) -> RuntimeRequestEnvelopeV2:
         return RuntimeRequestEnvelopeV2(
             intent=intent,
@@ -165,6 +214,8 @@ class ApplicationFacade:
             requested_outputs=requested_outputs or [],
             command=command,
             dry_run_completed=dry_run_completed,
+            approval=approval,
+            outbound_payload=outbound_payload,
         )
 
     def _identity_from_envelope(self, envelope: RuntimeRequestEnvelopeV2) -> RequestIdentity:
@@ -224,6 +275,22 @@ class ApplicationFacade:
             if plan.domain != TaskDomain.BIOINFORMATICS
             else None
         )
+        explanation_layer = self._build_explanation_layer(
+            domain=plan.domain.value,
+            selected_blueprint=selected_blueprint,
+            blueprint_reason=(
+                f"report preview reuses orchestration selection `{selected_blueprint}` from the same request intent."
+            ),
+            gate_decision="informational_preview",
+            gate_reason="report preview does not submit jobs; scheduler gate remains closed in preview mode.",
+            repair_recommendation=(
+                "If report sections are missing, run diagnostic preview to inspect artifact gaps and failure signals."
+            ),
+            repair_basis=[
+                f"report_sections={len(self._resolve_report_sections_for_preview(plan=plan))}",
+                f"cluster_execution_enabled=false",
+            ],
+        )
         return ReportPreview(
             run_context=run_context,
             domain=plan.domain.value,
@@ -236,6 +303,7 @@ class ApplicationFacade:
             ),
             cluster_execution_enabled=False,
             non_bio_cluster_policy=non_bio_cluster_policy,
+            explanation_layer=explanation_layer,
         )
 
     def build_diagnostic_preview(
@@ -272,6 +340,34 @@ class ApplicationFacade:
             if domain != TaskDomain.BIOINFORMATICS.value
             else None
         )
+        top_repair = ""
+        suggestions = list(diagnostics.get("diagnostic_suggestions", []))
+        if suggestions and isinstance(suggestions[0], dict):
+            top_repair = str(suggestions[0].get("recommended_fix", "")).strip()
+        explanation_layer = self._build_explanation_layer(
+            domain=domain,
+            selected_blueprint=(
+                "non_bio_lightweight"
+                if domain != TaskDomain.BIOINFORMATICS.value
+                else "diagnostic_only"
+            ),
+            blueprint_reason=(
+                "diagnostic preview follows local-first retrieval diagnostics and does not trigger a workflow submit path."
+            ),
+            gate_decision=fallback_gate_decision,
+            gate_reason=(
+                f"fallback gate decision is `{fallback_gate_decision}` because `{fallback_gate_reason}`."
+            ),
+            repair_recommendation=(
+                top_repair
+                or "Use the top diagnostic_suggestions item and linked references before retrying execution."
+            ),
+            repair_basis=[
+                f"suggestions={len(suggestions)}",
+                f"fallback_used={str(fallback_used).lower()}",
+                f"retrieval_mode={str(diagnostics.get('retrieval_mode', 'local_only'))}",
+            ],
+        )
         return DiagnosticPreview(
             run_context=diagnostic_run_context,
             domain=domain,
@@ -293,6 +389,7 @@ class ApplicationFacade:
             sources=list(diagnostics.get("sources", [])),
             cluster_execution_enabled=False,
             non_bio_cluster_policy=non_bio_cluster_policy,
+            explanation_layer=explanation_layer,
         )
 
     def review_action(
@@ -302,6 +399,10 @@ class ApplicationFacade:
         identity: RequestIdentity | None = None,
         reason: str | None = None,
         target_paths: list[str] | None = None,
+        external_network: bool = False,
+        cloud_llm: bool = False,
+        outbound_payload: dict[str, object] | None = None,
+        approval: dict[str, object] | None = None,
     ) -> SafetyGateResult:
         """Run a named action through the safety gate."""
 
@@ -313,6 +414,16 @@ class ApplicationFacade:
                 action_name=action_name,
                 target_paths=target_paths or [],
                 command_preview=reason,
+                external_network=external_network,
+                cloud_llm=cloud_llm,
+                outbound_payload=outbound_payload,
+                manual_approval=approval,
+                current_active_jobs=self._settings.scheduler_current_active_jobs,
+                quota_cpu_hours_limit=self._settings.scheduler_quota_cpu_hours_limit,
+                quota_memory_gb_limit=self._settings.scheduler_quota_memory_gb_limit,
+                quota_max_concurrent_jobs=self._settings.scheduler_quota_max_concurrent_jobs,
+                outbound_allowed_fields=self._settings.allow_cloud_fields,
+                outbound_policy_enforced=self._settings.outbound_policy_enforced,
             )
         )
 
@@ -323,6 +434,8 @@ class ApplicationFacade:
         request_text: str = "Prepare a dry-run submission",
         identity: RequestIdentity | None = None,
         input_bundle: InputBundle | None = None,
+        approval: dict[str, object] | None = None,
+        outbound_payload: dict[str, object] | None = None,
     ) -> SubmissionPreview:
         """Generate a scheduler script preview and a synthetic dry-run handle."""
 
@@ -334,6 +447,8 @@ class ApplicationFacade:
             dry_run_completed=True,
             execute_submit=False,
             input_bundle=input_bundle,
+            approval=approval,
+            outbound_payload=outbound_payload,
         )
 
     def build_submit_preview(
@@ -344,6 +459,8 @@ class ApplicationFacade:
         identity: RequestIdentity | None = None,
         dry_run_completed: bool = False,
         input_bundle: InputBundle | None = None,
+        approval: dict[str, object] | None = None,
+        outbound_payload: dict[str, object] | None = None,
     ) -> SubmissionPreview:
         """Build a submit-preview payload without issuing a real scheduler command."""
 
@@ -355,6 +472,8 @@ class ApplicationFacade:
             dry_run_completed=dry_run_completed,
             execute_submit=False,
             input_bundle=input_bundle,
+            approval=approval,
+            outbound_payload=outbound_payload,
         )
 
     def submit(
@@ -365,6 +484,8 @@ class ApplicationFacade:
         identity: RequestIdentity | None = None,
         dry_run_completed: bool = False,
         input_bundle: InputBundle | None = None,
+        approval: dict[str, object] | None = None,
+        outbound_payload: dict[str, object] | None = None,
     ) -> SubmissionPreview:
         """Submit a real scheduler job after passing the safety gate."""
 
@@ -376,6 +497,8 @@ class ApplicationFacade:
             dry_run_completed=dry_run_completed,
             execute_submit=True,
             input_bundle=input_bundle,
+            approval=approval,
+            outbound_payload=outbound_payload,
         )
 
     def explain_poll_state(self, job_id: str) -> PollExplanation:
@@ -388,6 +511,430 @@ class ApplicationFacade:
             state=state,
         )
 
+    def list_task_board(
+        self,
+        *,
+        working_directory: str | None = None,
+        limit: int = 20,
+    ) -> dict[str, object]:
+        """List recent run closures for minimal dashboard/task-board rendering."""
+
+        rows = self._audit_store.list_recent_runs(
+            working_directory=working_directory or self._settings.work_root,
+            limit=max(1, limit),
+        )
+        return {
+            "source": "file_audit_store",
+            "limit": max(1, limit),
+            "runs": rows,
+        }
+
+    def observability_metrics(
+        self,
+        *,
+        working_directory: str | None = None,
+        limit: int = 200,
+    ) -> dict[str, object]:
+        """Return task/scheduler/failure metrics derived from audit traces."""
+
+        return self._observability.build_metrics(
+            working_directory=working_directory or self._settings.work_root,
+            limit=limit,
+        )
+
+    def observability_dashboard(
+        self,
+        *,
+        working_directory: str | None = None,
+        limit: int = 100,
+    ) -> dict[str, object]:
+        """Return dashboard payload combining metrics with recent run board."""
+
+        return self._observability.build_dashboard(
+            working_directory=working_directory or self._settings.work_root,
+            limit=limit,
+        )
+
+    def production_gate_pipeline(
+        self,
+        *,
+        working_directory: str | None = None,
+        execute_tests: bool = False,
+        timeout_seconds: int = 300,
+    ) -> dict[str, object]:
+        """Run production gate checks (contract/scheduler/knowledge/audit)."""
+
+        return self._governance.run_production_gate(
+            working_directory=working_directory or self._settings.work_root,
+            execute_tests=execute_tests,
+            timeout_seconds=timeout_seconds,
+        )
+
+    def release_plan(
+        self,
+        *,
+        version_tag: str,
+        change_summary: str,
+        stage_ids: list[str] | None = None,
+    ) -> dict[str, object]:
+        """Generate standardized release plan with changelog and rollback template."""
+
+        return self._governance.build_release_plan(
+            version_tag=version_tag,
+            change_summary=change_summary,
+            stage_ids=stage_ids or [],
+        )
+
+    def final_acceptance_review(
+        self,
+        *,
+        working_directory: str | None = None,
+    ) -> dict[str, object]:
+        """Run V2.0 final acceptance review across architecture/governance/operability."""
+
+        return self._governance.final_acceptance_review(
+            working_directory=working_directory or self._settings.work_root,
+        )
+
+    def get_run_snapshot(
+        self,
+        *,
+        run_id: str,
+        task_id: str | None = None,
+        working_directory: str | None = None,
+    ) -> dict[str, object]:
+        """Build one run-level snapshot from memory + audit traces."""
+
+        run_record = self._memory_coordinator.get_run(run_id)
+        events, audit_path = self._audit_store.read_run_events(
+            run_id=run_id,
+            task_id=task_id or (run_record.task_id if run_record else None),
+            working_directory=working_directory or self._settings.work_root,
+        )
+        if run_record is None and not events:
+            raise ValueError(f"No run trace found for run_id={run_id}.")
+        latest_event = events[-1] if events else None
+        metadata = latest_event.metadata if latest_event is not None else {}
+        if not isinstance(metadata, dict):
+            metadata = {}
+        runtime_lifecycle = metadata.get("runtime_lifecycle", {})
+        if not isinstance(runtime_lifecycle, dict):
+            runtime_lifecycle = {}
+        metadata_log_paths = metadata.get("log_paths", [])
+        if not isinstance(metadata_log_paths, list):
+            metadata_log_paths = []
+        metadata_manual_records = metadata.get("manual_confirmation_records", [])
+        if not isinstance(metadata_manual_records, list):
+            metadata_manual_records = []
+
+        resolved_task_id = (
+            task_id
+            or (run_record.task_id if run_record is not None else None)
+            or (latest_event.task_id if latest_event is not None else None)
+            or "unknown_task"
+        )
+        resolved_session_id = run_record.session_id if run_record is not None else None
+        resolved_workdir = (
+            working_directory
+            or (
+                self._resolve_working_directory_from_paths(
+                    paths=(
+                        run_record.log_paths
+                        if run_record is not None
+                        else []
+                    ),
+                )
+            )
+            or self._settings.work_root
+        )
+        run_context = RunContext(
+            task_id=resolved_task_id,
+            run_id=run_id,
+            session_id=resolved_session_id,
+            working_directory=resolved_workdir,
+        )
+        artifact_index = self._merge_artifact_index(
+            run_record.artifact_index if run_record is not None else {},
+            metadata.get("artifact_index", {}),
+        )
+        submission_commands = self._stable_unique(
+            [
+                *(
+                    run_record.submission_commands
+                    if run_record is not None
+                    else []
+                ),
+                str(metadata.get("submission_command", "")).strip(),
+            ]
+        )
+        job_ids = self._stable_unique(
+            [
+                *(
+                    run_record.job_ids
+                    if run_record is not None
+                    else []
+                ),
+                str(metadata.get("job_id", "")).strip(),
+            ]
+        )
+        log_paths = self._stable_unique(
+            [
+                *(
+                    run_record.log_paths
+                    if run_record is not None
+                    else []
+                ),
+                *[
+                    str(path).strip()
+                    for path in metadata_log_paths
+                    if str(path).strip()
+                ],
+                *artifact_index.get("logs", []),
+            ]
+        )
+        report_paths = self._stable_unique(artifact_index.get("reports", []))
+        manual_confirmation_records = self._stable_unique(
+            [
+                *(
+                    run_record.manual_confirmation_records
+                    if run_record is not None
+                    else []
+                ),
+                *[
+                    str(item).strip()
+                    for item in metadata_manual_records
+                    if str(item).strip()
+                ],
+            ]
+        )
+        approval_records = (
+            [
+                item.model_dump(mode="json")
+                for item in run_record.approval_records
+            ]
+            if run_record is not None
+            else []
+        )
+        report_summary = (
+            (run_record.report_summary if run_record is not None else None)
+            or str(metadata.get("report_summary", "")).strip()
+            or None
+        )
+        planning_summary = (
+            (run_record.planning_summary if run_record is not None else None)
+            or str(metadata.get("planning_summary", "")).strip()
+            or None
+        )
+        input_summary = (
+            (run_record.input_summary if run_record is not None else "")
+            or str(metadata.get("input_summary", "")).strip()
+        )
+        selected_blueprint = "unknown"
+        submission_cmd_first = submission_commands[0] if submission_commands else ""
+        lowered_cmd = submission_cmd_first.lower()
+        if "run_qc_pipeline.sh" in lowered_cmd:
+            selected_blueprint = "qc_pipeline"
+        elif "run_pca_pipeline.sh" in lowered_cmd:
+            selected_blueprint = "pca_pipeline"
+        elif "run_grm_builder.sh" in lowered_cmd:
+            selected_blueprint = "grm_builder"
+        elif "run_genomic_prediction.sh" in lowered_cmd:
+            selected_blueprint = "genomic_prediction"
+        gate_decision = "unknown"
+        if runtime_lifecycle.get("runtime_path") == "non_bio_lightweight":
+            gate_decision = "pass_non_bio_skip_cluster"
+        elif submission_commands and submission_commands[0] == "scheduler_skipped":
+            gate_decision = "pass_non_bio_skip_cluster"
+        elif manual_confirmation_records:
+            gate_decision = "require_confirmation"
+        else:
+            gate_decision = "pass_or_preview"
+        explanation_layer = self._build_explanation_layer(
+            domain=(
+                run_record.domain.value
+                if run_record is not None and run_record.domain is not None
+                else "unknown"
+            ),
+            selected_blueprint=selected_blueprint,
+            blueprint_reason="derived from persisted plan/command snapshot in audit+memory records.",
+            gate_decision=gate_decision,
+            gate_reason=(
+                f"runtime_stage={runtime_lifecycle.get('current_stage', 'unknown')}; "
+                f"manual_confirmation_records={len(manual_confirmation_records)}."
+            ),
+            repair_recommendation=(
+                "Prioritize failure_repair hints from history and diagnostic suggestions before re-submit."
+            ),
+            repair_basis=[
+                f"job_ids={len(job_ids)}",
+                f"audit_event_count={len(events)}",
+                f"report_paths={len(report_paths)}",
+            ],
+        )
+        return {
+            "run_context": run_context.model_dump(mode="json"),
+            "input_summary": input_summary,
+            "planning_summary": planning_summary,
+            "submission_commands": submission_commands,
+            "job_ids": job_ids,
+            "log_paths": log_paths,
+            "report_paths": report_paths,
+            "report_summary": report_summary,
+            "manual_confirmation_records": manual_confirmation_records,
+            "approval_records": approval_records,
+            "artifact_index": artifact_index,
+            "runtime_lifecycle": runtime_lifecycle,
+            "audit_path": audit_path,
+            "audit_event_count": len(events),
+            "explanation_layer": explanation_layer,
+        }
+
+    def export_audit_bundle(
+        self,
+        *,
+        run_id: str,
+        task_id: str | None = None,
+        identity: RequestIdentity | None = None,
+        output_path: str | None = None,
+        include_files: bool = True,
+    ) -> AuditBundleExport:
+        """Export one-click audit package (zip + manifest) for a run."""
+
+        snapshot = self.get_run_snapshot(
+            run_id=run_id,
+            task_id=task_id or (identity.task_id if identity else None),
+            working_directory=identity.working_directory if identity else None,
+        )
+        run_context = RunContext.model_validate(snapshot["run_context"])
+        export_path = self._resolve_audit_bundle_output_path(
+            run_context=run_context,
+            output_path=output_path,
+        )
+        export_path.parent.mkdir(parents=True, exist_ok=True)
+        manifest_path = export_path.with_suffix(".manifest.json")
+
+        artifact_index_raw = snapshot.get("artifact_index", {})
+        if not isinstance(artifact_index_raw, dict):
+            artifact_index_raw = {}
+        artifact_index: dict[str, list[str]] = {}
+        for key, values in artifact_index_raw.items():
+            if isinstance(values, list):
+                artifact_index[key] = [str(item) for item in values if str(item).strip()]
+
+        audit_path = str(snapshot.get("audit_path", "")).strip() or None
+        attachment_sources: list[tuple[str, str]] = []
+        for kind in ("results", "figures", "logs", "reports"):
+            for path in artifact_index.get(kind, []):
+                attachment_sources.append((kind, path))
+        for path in snapshot.get("log_paths", []):
+            if str(path).strip():
+                attachment_sources.append(("logs", str(path)))
+        for path in snapshot.get("report_paths", []):
+            if str(path).strip():
+                attachment_sources.append(("reports", str(path)))
+        if audit_path:
+            attachment_sources.append(("audit", audit_path))
+
+        exported_items: list[AuditBundleItem] = []
+        missing_items: list[AuditBundleItem] = []
+        archives_for_manifest: list[dict[str, object]] = []
+        workdir = run_context.working_directory or self._settings.work_root
+
+        manifest_payload = {
+            "schema_version": "audit_bundle.v1",
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "run_context": run_context.model_dump(mode="json"),
+            "input": {"summary": snapshot.get("input_summary", "")},
+            "plan": {"summary": snapshot.get("planning_summary")},
+            "execution": {
+                "commands": snapshot.get("submission_commands", []),
+                "job_ids": snapshot.get("job_ids", []),
+                "runtime_lifecycle": snapshot.get("runtime_lifecycle", {}),
+            },
+            "logs": {"paths": snapshot.get("log_paths", [])},
+            "report": {
+                "summary": snapshot.get("report_summary"),
+                "paths": snapshot.get("report_paths", []),
+            },
+            "approval_trail": {
+                "manual_confirmation_records": snapshot.get("manual_confirmation_records", []),
+                "approval_records": snapshot.get("approval_records", []),
+            },
+            "audit": {
+                "source_path": audit_path,
+                "event_count": int(snapshot.get("audit_event_count", 0)),
+            },
+            "artifact_index": artifact_index,
+            "attachments": archives_for_manifest,
+        }
+        manifest_path.write_text(
+            json.dumps(manifest_payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
+        with zipfile.ZipFile(export_path, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
+            if include_files:
+                for index, (kind, source) in enumerate(attachment_sources):
+                    resolved_source = self._resolve_artifact_path(
+                        working_directory=workdir,
+                        path=source,
+                    )
+                    path_obj = Path(resolved_source)
+                    if not path_obj.is_file():
+                        missing = AuditBundleItem(
+                            kind=kind,
+                            source_path=resolved_source,
+                            exists=False,
+                        )
+                        missing_items.append(missing)
+                        archives_for_manifest.append(missing.model_dump(mode="json"))
+                        continue
+                    archive_name = f"attachments/{kind}/{index:03d}_{path_obj.name}"
+                    try:
+                        archive.write(path_obj, arcname=archive_name)
+                    except OSError:
+                        missing = AuditBundleItem(
+                            kind=kind,
+                            source_path=resolved_source,
+                            exists=False,
+                        )
+                        missing_items.append(missing)
+                        archives_for_manifest.append(missing.model_dump(mode="json"))
+                        continue
+                    exported = AuditBundleItem(
+                        kind=kind,
+                        source_path=resolved_source,
+                        archived_path=archive_name,
+                        exists=True,
+                    )
+                    exported_items.append(exported)
+                    archives_for_manifest.append(exported.model_dump(mode="json"))
+            manifest_payload["attachments"] = archives_for_manifest
+            archive.writestr(
+                "manifest.json",
+                json.dumps(manifest_payload, ensure_ascii=False, indent=2),
+            )
+
+        manifest_payload["attachments"] = archives_for_manifest
+        manifest_path.write_text(
+            json.dumps(manifest_payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
+        return AuditBundleExport(
+            run_context=run_context,
+            bundle_path=str(export_path),
+            manifest_path=str(manifest_path),
+            source_audit_path=audit_path,
+            audit_event_count=int(snapshot.get("audit_event_count", 0)),
+            exported_items=exported_items,
+            missing_items=missing_items,
+            summary=(
+                f"audit bundle exported: {len(exported_items)} files archived, "
+                f"{len(missing_items)} files missing."
+            ),
+        )
+
     def _build_submission_preview(
         self,
         *,
@@ -398,6 +945,8 @@ class ApplicationFacade:
         dry_run_completed: bool,
         execute_submit: bool,
         input_bundle: InputBundle | None,
+        approval: dict[str, object] | None,
+        outbound_payload: dict[str, object] | None,
     ) -> SubmissionPreview:
         """Shared builder for dry-run, submit-preview, and submit modes."""
 
@@ -413,6 +962,8 @@ class ApplicationFacade:
             command=command,
             dry_run_completed=dry_run_completed,
             input_bundle=input_bundle,
+            approval=approval,
+            outbound_payload=outbound_payload,
         )
         normalized_identity = self._identity_from_envelope(envelope)
         run_context = self._resolve_run_context(identity=normalized_identity)
@@ -464,12 +1015,19 @@ class ApplicationFacade:
             run_id=run_context.run_id,
             atomic_tools=atomic_tools,
         )
+        gate_resources = resources.model_copy(
+            update={
+                "cpus": submission_plan.resource_request.total_cpus,
+                "memory_gb": submission_plan.resource_request.memory_gb,
+                "walltime": submission_plan.resource_request.walltime,
+            }
+        )
         safety_review = self._build_safety_review_for_scheduler(
             run_context=run_context,
             mode=mode,
             command=command,
             dry_run_completed=dry_run_completed,
-            resources=resources,
+            resources=gate_resources,
             stage_id=RuntimeStage.STAGE_06_RESOURCE_AND_SAFETY_GATE.value,
             target_paths=[
                 submission_plan.paths.script_path,
@@ -477,6 +1035,9 @@ class ApplicationFacade:
                 submission_plan.paths.stdout_path,
                 submission_plan.paths.stderr_path,
             ],
+            manual_approval=envelope.approval,
+            outbound_payload=envelope.outbound_payload,
+            concurrent_jobs=submission_plan.resource_request.tasks,
         )
         if validation_report is not None and not validation_report.valid:
             safety_review = self._apply_validation_warnings_to_safety_review(
@@ -539,6 +1100,7 @@ class ApplicationFacade:
             run_id=run_context.run_id,
             session_id=run_context.session_id,
             project_id=None,
+            working_directory=submission_plan.paths.working_directory,
             domain=plan.domain,
             input_summary=request_text,
             planning_summary=plan.summary,
@@ -546,9 +1108,36 @@ class ApplicationFacade:
             job_id=job_handle.job_id,
             log_paths=[submission_plan.paths.stdout_path, submission_plan.paths.stderr_path],
             manual_confirmation_records=safety_review.human_confirmation_conditions,
+            approval_records=[safety_review.approval_record] if safety_review.approval_record else None,
             artifact_index=artifact_index,
             report_summary=report_summary,
             audit_path=audit_record_path,
+            parameter_snapshot=self._parameter_snapshot_from_plan(plan),
+        )
+        explanation_layer = self._build_explanation_layer(
+            domain=plan.domain.value,
+            selected_blueprint=plan.pipeline_spec.name if plan.pipeline_spec is not None else "bioinformatics_pipeline",
+            blueprint_reason=(
+                f"selected blueprint `{plan.pipeline_spec.name if plan.pipeline_spec is not None else 'unknown'}` "
+                f"with key `{plan.pipeline_spec.blueprint_key if plan.pipeline_spec is not None else 'none'}` "
+                "based on intent/scope and pipeline contract."
+            ),
+            gate_decision=safety_review.decision.value,
+            gate_reason=(
+                f"gate_status={safety_review.ready_for_gate.value}; "
+                f"manual_confirmations={len(safety_review.human_confirmation_conditions)}; "
+                f"quota_status={safety_review.quota_gate.get('status', 'unknown') if isinstance(safety_review.quota_gate, dict) else 'unknown'}."
+            ),
+            repair_recommendation=(
+                safety_review.rollback_or_remediation[0]
+                if safety_review.rollback_or_remediation
+                else "Inspect stderr/logs and apply failure_recovery checklist before retry."
+            ),
+            repair_basis=[
+                f"failure_recovery_steps={len(submission_plan.failure_recovery)}",
+                f"report_generator_status={report_generator_status}",
+                f"audit_record={'present' if bool(audit_record_path) else 'missing'}",
+            ],
         )
         return SubmissionPreview(
             run_context=run_context,
@@ -587,6 +1176,7 @@ class ApplicationFacade:
             input_bundle=plan.pipeline_spec.input_bundle if plan.pipeline_spec is not None else None,
             input_validation=validation_report,
             runtime_lifecycle=runtime_trace.to_contract(),
+            explanation_layer=explanation_layer,
         )
 
     def _build_non_bio_submission_preview(
@@ -632,6 +1222,7 @@ class ApplicationFacade:
             run_id=run_context.run_id,
             session_id=run_context.session_id,
             project_id=None,
+            working_directory=run_context.working_directory or self._settings.work_root,
             domain=domain,
             input_summary=request_text or "non-bio lightweight branch",
             planning_summary=plan_summary or "non-bio lightweight plan",
@@ -639,9 +1230,25 @@ class ApplicationFacade:
             job_id=f"SKIPPED-NONBIO-{run_context.task_id}-{run_context.run_id}",
             log_paths=[],
             manual_confirmation_records=[],
+            approval_records=None,
             artifact_index=artifact_index,
             report_summary=report_summary,
             audit_path=audit_record_path,
+            parameter_snapshot={},
+        )
+        explanation_layer = self._build_explanation_layer(
+            domain=domain.value,
+            selected_blueprint=f"{domain.value}_lightweight",
+            blueprint_reason="non-bio intent routed to lightweight branch by intent+scope policy.",
+            gate_decision="pass",
+            gate_reason="non-bio branch explicitly forbids cluster submit/poll and keeps execution skipped.",
+            repair_recommendation=(
+                "Refine retrieval scope and answer blueprint; do not use scheduler recovery on non-bio branch."
+            ),
+            repair_basis=[
+                "cluster_execution_enabled=false",
+                "scheduler_script_generation=skipped",
+            ],
         )
         return SubmissionPreview(
             run_context=run_context,
@@ -687,6 +1294,7 @@ class ApplicationFacade:
             input_bundle=input_bundle,
             input_validation=validation_report,
             runtime_lifecycle=runtime_lifecycle,
+            explanation_layer=explanation_layer,
         )
 
     def _build_safety_review_for_scheduler(
@@ -699,6 +1307,9 @@ class ApplicationFacade:
         resources,
         stage_id: str,
         target_paths: list[str],
+        manual_approval: dict[str, object] | None = None,
+        outbound_payload: dict[str, object] | None = None,
+        concurrent_jobs: int = 1,
     ) -> SafetyGateResult:
         action_name = "dry_run_preview"
         if mode == "submit-preview":
@@ -719,7 +1330,16 @@ class ApplicationFacade:
                 cpu_cores=resources.cpus,
                 memory_gb=resources.memory_gb,
                 walltime_hours=self._walltime_to_hours(resources.walltime),
-                job_count=1,
+                job_count=max(1, concurrent_jobs),
+                current_active_jobs=self._settings.scheduler_current_active_jobs,
+                quota_cpu_hours_limit=self._settings.scheduler_quota_cpu_hours_limit,
+                quota_memory_gb_limit=self._settings.scheduler_quota_memory_gb_limit,
+                quota_max_concurrent_jobs=self._settings.scheduler_quota_max_concurrent_jobs,
+                manual_approval=manual_approval,
+                outbound_payload=outbound_payload,
+                outbound_allowed_fields=self._settings.allow_cloud_fields,
+                outbound_policy_enforced=self._settings.outbound_policy_enforced,
+                cloud_llm=bool(outbound_payload),
             )
         )
 
@@ -1150,6 +1770,39 @@ class ApplicationFacade:
             suffix = f"{suffix}; report_generator_message={message}"
         return f"{stripped}. {suffix}."
 
+    def _build_explanation_layer(
+        self,
+        *,
+        domain: str,
+        selected_blueprint: str,
+        blueprint_reason: str,
+        gate_decision: str,
+        gate_reason: str,
+        repair_recommendation: str,
+        repair_basis: list[str] | None = None,
+    ) -> dict[str, object]:
+        basis = [item for item in (repair_basis or []) if str(item).strip()]
+        return {
+            "schema_version": "explanation_layer.v1",
+            "why_blueprint": {
+                "domain": domain,
+                "selected_blueprint": selected_blueprint,
+                "reason": blueprint_reason,
+            },
+            "why_gate": {
+                "decision": gate_decision,
+                "reason": gate_reason,
+            },
+            "why_repair": {
+                "recommendation": repair_recommendation,
+                "basis": basis,
+            },
+            "summary": (
+                f"blueprint={selected_blueprint}; gate={gate_decision}; "
+                f"repair={repair_recommendation[:120]}"
+            ),
+        }
+
     def _resolve_artifact_path(
         self,
         *,
@@ -1173,6 +1826,58 @@ class ApplicationFacade:
             seen.add(item)
             ordered.append(item)
         return ordered
+
+    def _merge_artifact_index(
+        self,
+        existing: dict[str, object] | None,
+        incoming: dict[str, object] | None,
+    ) -> dict[str, list[str]]:
+        merged: dict[str, list[str]] = {}
+        for payload in (existing or {}, incoming or {}):
+            if not isinstance(payload, dict):
+                continue
+            for key, values in payload.items():
+                if not isinstance(values, list):
+                    continue
+                bucket = merged.setdefault(str(key), [])
+                for value in values:
+                    normalized = str(value).strip()
+                    if normalized and normalized not in bucket:
+                        bucket.append(normalized)
+        return merged
+
+    def _resolve_working_directory_from_paths(self, *, paths: list[str]) -> str | None:
+        for raw_path in paths:
+            normalized = str(raw_path).strip()
+            if not normalized:
+                continue
+            candidate = Path(normalized)
+            if candidate.is_file():
+                return str(candidate.parent.parent if candidate.parent.name == "logs" else candidate.parent)
+            if candidate.is_dir():
+                return str(candidate)
+        return None
+
+    def _resolve_audit_bundle_output_path(
+        self,
+        *,
+        run_context: RunContext,
+        output_path: str | None,
+    ) -> Path:
+        if output_path:
+            candidate = Path(output_path)
+            if candidate.suffix.lower() == ".zip":
+                return candidate
+            return candidate / f"{run_context.task_id}__{run_context.run_id}.zip"
+
+        primary_root = Path(run_context.working_directory or self._settings.work_root) / "results" / "audit_bundles"
+        try:
+            primary_root.mkdir(parents=True, exist_ok=True)
+            return primary_root / f"{run_context.task_id}__{run_context.run_id}.zip"
+        except OSError:
+            fallback_root = Path.cwd() / "results" / "audit_bundles"
+            fallback_root.mkdir(parents=True, exist_ok=True)
+            return fallback_root / f"{run_context.task_id}__{run_context.run_id}.zip"
 
     def _predict_audit_record_path(
         self,
@@ -1252,6 +1957,27 @@ class ApplicationFacade:
             request_text=request_text,
             working_directory=working_directory,
         )
+
+    @staticmethod
+    def _parameter_snapshot_from_plan(plan: TaskPlan) -> dict[str, str]:
+        snapshot: dict[str, str] = {
+            "domain": plan.domain.value,
+            "workflow_name": plan.workflow_name,
+        }
+        if plan.pipeline_spec is not None:
+            snapshot["blueprint_name"] = plan.pipeline_spec.name
+            snapshot["blueprint_key"] = plan.pipeline_spec.blueprint_key or "none"
+            snapshot["analysis_targets"] = ",".join(plan.pipeline_spec.analysis_targets) or "none"
+            snapshot["atomic_algorithms"] = ",".join(plan.pipeline_spec.atomic_algorithms) or "none"
+            if plan.pipeline_spec.input_bundle is not None:
+                snapshot["input.species"] = plan.pipeline_spec.input_bundle.species or "unknown"
+                snapshot["input.cohort"] = plan.pipeline_spec.input_bundle.cohort_name or "unknown"
+        if plan.resource_estimate is not None:
+            snapshot["resource.partition"] = plan.resource_estimate.partition or "none"
+            snapshot["resource.cpus"] = str(plan.resource_estimate.cpus)
+            snapshot["resource.memory_gb"] = str(plan.resource_estimate.memory_gb)
+            snapshot["resource.walltime"] = plan.resource_estimate.walltime
+        return snapshot
 
     def _resolve_report_sections_for_preview(self, *, plan: TaskPlan) -> list[str]:
         if plan.pipeline_spec is None:

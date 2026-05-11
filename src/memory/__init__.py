@@ -2,11 +2,14 @@
 
 from memory.stores import (
     ApprovalRecord,
+    CrossRunHandoff,
     FailureRecord,
+    FailureRepairHint,
     InMemoryRunStore,
     InMemoryProjectStore,
     InMemorySessionStore,
     MemoryCoordinator,
+    ParameterReuseHint,
     ProjectRecord,
     ProvenanceRecord,
     RunRecord,
@@ -17,11 +20,14 @@ from memory.stores import (
 
 __all__ = [
     "ApprovalRecord",
+    "CrossRunHandoff",
     "FailureRecord",
+    "FailureRepairHint",
     "InMemoryRunStore",
     "InMemoryProjectStore",
     "InMemorySessionStore",
     "MemoryCoordinator",
+    "ParameterReuseHint",
     "ProjectRecord",
     "ProvenanceRecord",
     "RunRecord",

@@ -606,3 +606,231 @@ Paste this into a new session:
 - next_actions:
   - Run `pytest -q`, compile gate with `PYTHONPYCACHEPREFIX`, then commit and push.
 - resume_first_command: `git status --short`
+
+## Session Update 2026-05-09 19:02 +08:00 (M2-12 + M2-13 + M2-14)
+- intent_domain: `system`
+- stage_id: `Audit + Memory`, `Blueprint Selection`, `Local-first RAG`
+- module_owner_path: `D:\geneagent\src\memory`, `D:\geneagent\src\orchestration`, `D:\geneagent\src\contracts`, `D:\geneagent\src\runtime`, `D:\geneagent\tests`, `D:\geneagent\docs`
+- cluster_execution_expected: `false` (this session delivered plan/memory/docs/test enhancements; no real submit executed)
+- contracts_impacted:
+  - `TaskPlan.cross_run_handoff` added for project-level historical hints.
+  - `RunRecord.parameter_snapshot` added for reusable planning parameters.
+  - New memory contracts: `ParameterReuseHint`, `FailureRepairHint`, `CrossRunHandoff`.
+- files_changed:
+  - `D:\geneagent\src\memory\stores.py`
+  - `D:\geneagent\src\memory\__init__.py`
+  - `D:\geneagent\src\orchestration\service.py`
+  - `D:\geneagent\src\contracts\execution.py`
+  - `D:\geneagent\src\runtime\facade.py`
+  - `D:\geneagent\tests\unit\memory\test_stores.py`
+  - `D:\geneagent\tests\unit\orchestration\test_orchestration_planning.py`
+  - `D:\geneagent\tests\unit\knowledge\test_retrieval.py`
+  - `D:\geneagent\tests\unit\scheduler\test_atomic_profiles.py`
+  - `D:\geneagent\tests\unit\contracts\test_execution.py`
+  - `D:\geneagent\docs\knowledge_update_workflow.md`
+  - `D:\geneagent\docs\pipeline_pack_integration_guide.md`
+  - `D:\geneagent\docs\tool_manifest_authoring_spec.md`
+  - `D:\geneagent\docs\README.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] M2-12: implemented cross-run handoff in memory coordinator with same-project history matching, reusable parameter hints, and prioritized failure repair hints.
+  - [x] M2-12: wired cross-run handoff into orchestrator draft plan output (`TaskPlan.cross_run_handoff`) and assumptions/deliverables summaries.
+  - [x] M2-12: persisted plan/execution parameter snapshots for future cross-run reuse.
+  - [x] M2-13: added regression tests for retrieval ranking accuracy, evidence explanation consistency, and actionable generic tool repair suggestions.
+  - [x] M2-13: added regression test for atomic tool failure mapping retry-action quality.
+  - [x] M2-14: added three docs: knowledge update workflow, pipeline pack integration guide, and tool manifest authoring spec; indexed in `docs/README.md`.
+  - [x] Passed scoped tests, compile gate (with `PYTHONPYCACHEPREFIX` fallback), and full `pytest -q`.
+- not_yet_done_checklist:
+  - [ ] Optional: surface `cross_run_handoff` directly in CLI/API report/diagnostic dedicated sections (currently exposed via plan payload contract).
+  - [ ] Optional: add integration/e2e flow asserting cross-run hints after one real dry-run/submit closure in same project.
+  - [ ] Existing Windows GBK subprocess decode warnings remain and should be handled in a dedicated environment-hardening task.
+- verification_commands:
+  - `& .\.venv\Scripts\python.exe -m pytest -q tests/unit/memory/test_stores.py tests/unit/orchestration/test_orchestration_planning.py tests/unit/knowledge/test_retrieval.py tests/unit/scheduler/test_atomic_profiles.py tests/unit/contracts/test_execution.py` -> pass
+  - `$env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; & .\.venv\Scripts\python.exe -m compileall src tests` -> pass
+  - `& .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; existing GBK warnings unchanged)
+- gate_result: `pass`
+- known_risks:
+  - Cross-run matching currently relies on session/workdir derived project identity and deterministic in-memory aggregation; future persistent backing store may require migration plan.
+  - Parameter reuse hints are heuristic summaries and do not replace domain-specific manual approval for high-risk submissions.
+- next_actions:
+  - Add one integration test that verifies cross-run handoff after runtime closure writes (`record_execution_closure`) and a subsequent plan in same project.
+  - Evaluate exposing top repair hints in runtime diagnostic/report summary fields for quicker operator feedback.
+- resume_first_command: `git status --short`
+
+## Session Update 2026-05-09 20:18 +08:00 (M3-01 + M3-02 + M3-03)
+- intent_domain: `system`
+- stage_id: `Resource + Safety Gate`, `Execution`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\src\safety`, `D:\geneagent\src\scheduler`, `D:\geneagent\src\runtime`, `D:\geneagent\src\memory`, `D:\geneagent\tests`
+- cluster_execution_expected: `false` (implementation and validation session only; no real scheduler submit executed)
+- contracts_impacted:
+  - `SafetyReviewContext` adds manual approval, quota, and outbound payload policy fields.
+  - `SafetyGateResult` adds `approval_status/approval_record/quota_gate/outbound_policy_audit`.
+  - `RuntimeRequestEnvelopeV2` adds optional `approval/outbound_payload`.
+  - API request contracts add `ManualApprovalRequest` and optional approval/outbound payload fields.
+  - `SubmissionPlan` adds `quota_gate_status/quota_gate_reasons/quota_usage`.
+  - `ApprovalRecord` adds `approved_at`; runtime closure supports structured approval record write-back.
+- files_changed:
+  - `D:\geneagent\src\safety\gates.py`
+  - `D:\geneagent\src\safety\redaction.py`
+  - `D:\geneagent\src\safety\__init__.py`
+  - `D:\geneagent\src\scheduler\base.py`
+  - `D:\geneagent\src\scheduler\models.py`
+  - `D:\geneagent\src\runtime\settings.py`
+  - `D:\geneagent\src\runtime\bootstrap.py`
+  - `D:\geneagent\src\runtime\facade.py`
+  - `D:\geneagent\src\runtime\compat.py`
+  - `D:\geneagent\src\contracts\api.py`
+  - `D:\geneagent\src\contracts\envelope.py`
+  - `D:\geneagent\src\api\routes\tasks.py`
+  - `D:\geneagent\src\cli\app.py`
+  - `D:\geneagent\src\memory\stores.py`
+  - `D:\geneagent\.env.example`
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\tests\unit\safety\test_gates.py`
+  - `D:\geneagent\tests\unit\safety\test_redaction.py`
+  - `D:\geneagent\tests\unit\scheduler\test_scheduler_planning.py`
+  - `D:\geneagent\tests\unit\runtime\test_settings.py`
+  - `D:\geneagent\tests\unit\runtime\test_compat_envelope.py`
+  - `D:\geneagent\tests\unit\memory\test_stores.py`
+  - `D:\geneagent\tests\integration\api\test_task_routes.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] M3-01: implemented manual approval flow model with approver/reason/time evidence and approval-state transitions (`pending/approved/invalid/rejected`).
+  - [x] M3-01: approval evidence now propagates into runtime closure and memory approval records for audit traceability.
+  - [x] M3-02: implemented scheduler-side budget/quota gate (CPU-hours, memory GB, concurrent jobs) with `pass/warn/blocked` status.
+  - [x] M3-02: wired quota policy defaults/env into runtime bootstrap and scheduler adapter planning surfaces.
+  - [x] M3-03: implemented outbound payload policy enforcement (allow-list validation + path redaction + violation-based breaker).
+  - [x] M3-03: outbound policy audit is now surfaced by safety result for API/CLI review and gate diagnostics.
+  - [x] Added unit/integration regression coverage for approval flow, quota gating, outbound policy enforcement, and envelope/settings mapping.
+  - [x] Passed targeted tests, full `pytest -q`, and compile gate with `PYTHONPYCACHEPREFIX` fallback.
+- not_yet_done_checklist:
+  - [ ] Optional: expose sanitized outbound payload preview directly in dedicated report/diagnostic endpoint schema for operator-friendly review.
+  - [ ] Optional: feed real-time active-job counts from scheduler query instead of settings fallback value.
+  - [ ] Existing Windows GBK subprocess decode warnings remain and should be addressed in a separate environment-hardening patch.
+- verification_commands:
+  - `& .\.venv\Scripts\python.exe -m pytest -q tests/unit/safety/test_gates.py tests/unit/safety/test_redaction.py tests/unit/scheduler/test_scheduler_planning.py tests/unit/runtime/test_settings.py tests/unit/runtime/test_compat_envelope.py tests/unit/memory/test_stores.py` -> pass
+  - `& .\.venv\Scripts\python.exe -m pytest -q tests/integration/api/test_task_routes.py` -> pass
+  - `$env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; & .\.venv\Scripts\python.exe -m compileall src tests` -> pass
+  - `& .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; existing GBK warnings unchanged)
+- gate_result: `pass`
+- known_risks:
+  - Quota gating currently uses configured active-job count input; without live scheduler telemetry this can drift from real queue state.
+  - Outbound policy currently treats disallowed fields as hard block when enforcement is on; teams should tune allow-list per deployment policy.
+- next_actions:
+  - Add live active-job probing adapter hooks (`squeue/qstat`) to replace static `scheduler_current_active_jobs`.
+  - Add one end-to-end submit test with approval payload to verify full approval evidence persistence chain.
+- resume_first_command: `git status --short`
+
+## Session Update 2026-05-09 22:35 +08:00 (M3-04 + M3-05 + M3-06)
+- intent_domain: `system`
+- stage_id: `stage_08_artifact_and_report`, `stage_09_audit_and_memory`
+- module_owner_path: `D:\geneagent\src\runtime`, `D:\geneagent\src\api`, `D:\geneagent\src\audit`, `D:\geneagent\src\cli`, `D:\geneagent\tests`, `D:\geneagent\docs`
+- cluster_execution_expected: `false` (control-plane capability extension only; no non-bio cluster policy change)
+- contracts_impacted:
+  - `AuditBundleExportRequest` (`src/contracts/api.py`)
+  - `AuditBundleItem` / `AuditBundleExport` (`src/contracts/execution.py`)
+  - API versioning settings (`src/runtime/settings.py`)
+- files_changed:
+  - `D:\geneagent\src\api\app.py`
+  - `D:\geneagent\src\api\routes\tasks.py`
+  - `D:\geneagent\src\api\routes\versioning.py`
+  - `D:\geneagent\src\api\routes\console.py`
+  - `D:\geneagent\src\audit\store.py`
+  - `D:\geneagent\src\runtime\facade.py`
+  - `D:\geneagent\src\runtime\settings.py`
+  - `D:\geneagent\src\cli\app.py`
+  - `D:\geneagent\src\contracts\api.py`
+  - `D:\geneagent\src\contracts\execution.py`
+  - `D:\geneagent\src\contracts\__init__.py`
+  - `D:\geneagent\tests\unit\audit\test_store.py`
+  - `D:\geneagent\tests\unit\runtime\test_audit_bundle_export.py`
+  - `D:\geneagent\tests\unit\runtime\test_settings.py`
+  - `D:\geneagent\tests\unit\contracts\test_execution.py`
+  - `D:\geneagent\tests\integration\api\test_v2_routes.py`
+  - `D:\geneagent\tests\e2e\cli\test_plan_placeholder.py`
+  - `D:\geneagent\docs\v1_5_system_map.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] M3-04: implemented run-level one-click audit bundle export (zip + manifest) covering input/plan/command/job/log/report/approval trail.
+  - [x] M3-04: exposed audit export on API (`/tasks/audit-export`, `/v2/tasks/audit-export`) and CLI (`audit-export`).
+  - [x] M3-05: introduced stable `/v2/tasks/*` API surface while preserving `/tasks/*` compatibility.
+  - [x] M3-05: added deprecation/sunset headers for v1 and `/v2/version-policy` for compatibility-window governance.
+  - [x] M3-06: delivered minimal web console (`/v2/console`) with board (`/v2/console/board`), run snapshot (`/v2/console/runs/{run_id}`), and diagnostic entry integration.
+  - [x] Added unit/integration/e2e tests for new contracts, audit export, v2 routing, and CLI export.
+  - [x] Gate pass: compileall with documented fallback + full pytest green.
+- not_yet_done_checklist:
+  - [ ] Optional hardening: enforce auth/session boundary for `/v2/console` before multi-user deployment.
+  - [ ] Optional hardening: signed checksum for exported audit bundles.
+  - [ ] Existing Windows GBK subprocess decode warnings remain in script-based tests (non-blocking).
+- verification_commands:
+  - `& .\.venv\Scripts\python.exe -m compileall src tests` -> fail (existing `__pycache__` permission restrictions)
+  - `$env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; & .\.venv\Scripts\python.exe -m compileall src tests` -> pass
+  - `& .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; existing GBK warning unchanged)
+- gate_result: `pass`
+- known_risks:
+  - Repository remains pre-existing dirty with unrelated changes; this session touched only scoped files listed above.
+  - Console is intentionally local-minimal; no auth boundary included in this stage.
+  - GBK decoding warnings are environment-side and currently non-blocking.
+- next_actions:
+  - M3 hardening follow-up: console access control + export bundle signature/checksum.
+  - Optional noise reduction: UTF-8-safe subprocess decoding strategy for bash-based tests.
+- resume_first_command: `git status --short`
+
+## Session Update 2026-05-09 21:30 +08:00 (M3-07 + M3-08 + M3-09 + M3-10 + M3-11 + M3-12)
+- intent_domain: `system`
+- stage_id: `Blueprint Selection`, `Resource + Safety Gate`, `Execution`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\src\runtime`, `D:\geneagent\src\api`, `D:\geneagent\src\audit`, `D:\geneagent\src\contracts`, `D:\geneagent\src\cli`, `D:\geneagent\tests`, `D:\geneagent\docs`
+- cluster_execution_expected: `false` (control-plane feature completion + verification session; no real cluster submission executed)
+- contracts_impacted:
+  - `TaskPlan.explanation_layer` (`src/contracts/execution.py`)
+  - `SubmissionPreview.explanation_layer` (`src/contracts/execution.py`)
+  - `ProductionGateRequest` / `ReleasePlanRequest` (`src/contracts/api.py`)
+- files_changed:
+  - `D:\geneagent\src\contracts\execution.py`
+  - `D:\geneagent\src\contracts\api.py`
+  - `D:\geneagent\src\runtime\facade.py`
+  - `D:\geneagent\src\runtime\governance.py`
+  - `D:\geneagent\src\audit\observability.py`
+  - `D:\geneagent\src\audit\__init__.py`
+  - `D:\geneagent\src\api\app.py`
+  - `D:\geneagent\src\api\routes\observability.py`
+  - `D:\geneagent\src\api\routes\release.py`
+  - `D:\geneagent\src\api\routes\console.py`
+  - `D:\geneagent\src\cli\app.py`
+  - `D:\geneagent\tests\unit\audit\test_observability.py`
+  - `D:\geneagent\tests\unit\runtime\test_governance.py`
+  - `D:\geneagent\tests\unit\contracts\test_execution.py`
+  - `D:\geneagent\tests\integration\api\test_task_routes.py`
+  - `D:\geneagent\tests\integration\api\test_v2_routes.py`
+  - `D:\geneagent\tests\integration\test_performance_stability.py`
+  - `D:\geneagent\tests\e2e\cli\test_plan_placeholder.py`
+  - `D:\geneagent\docs\release_process_v2.md`
+  - `D:\geneagent\docs\v2_0_final_acceptance_review.md`
+  - `D:\geneagent\docs\README.md`
+  - `D:\geneagent\docs\v1_5_system_map.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] M3-07: implemented unified explanation layer (`explanation_layer.v1`) across plan/dry-run/submit/report/diagnostic outputs with `why_blueprint/why_gate/why_repair`.
+  - [x] M3-08: implemented observability metrics + dashboard aggregation and exposed via `/v2/observability/metrics` and `/v2/observability/dashboard`.
+  - [x] M3-08: integrated observability snapshot into minimal web console and CLI command surface.
+  - [x] M3-09: added performance/stability regression coverage for concurrent dry-run/submit-preview/submit, long poll loop, and transient submit retry recovery.
+  - [x] M3-10: implemented production gate pipeline (contract regression, scheduler simulation, retrieval regression, audit integrity checks) in governance service + API/CLI.
+  - [x] M3-11: implemented standardized release plan builder with version tag normalization, release notes template, checklist, and rollback plan.
+  - [x] M3-12: implemented V2.0 final acceptance review report (architecture boundary, governance, operability) + API/CLI entrypoints.
+  - [x] Full gate passed: compileall (with `PYTHONPYCACHEPREFIX` fallback) + full pytest green.
+- not_yet_done_checklist:
+  - [ ] Optional: add authenticated access control for `/v2/console` and observability routes before multi-user deployment.
+  - [ ] Optional: add signed checksum/hash chain for exported audit bundles and release artifacts.
+  - [ ] Environment hardening: resolve Windows GBK decode warnings in script subprocess tests.
+- verification_commands:
+  - `$env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; & .\.venv\Scripts\python.exe -m compileall src tests` -> pass
+  - `& .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; 4 env warnings + 4 skip remain non-blocking)
+- gate_result: `pass`
+- known_risks:
+  - Observability and console endpoints are designed for local/dev visibility and currently lack built-in auth.
+  - Production gate checks are policy-complete for V2.0 but still depend on local environment consistency for subprocess encoding behavior.
+- next_actions:
+  - Stabilize Windows subprocess UTF-8/GBK handling to eliminate warning noise in script-based tests.
+  - Add auth and operator-role boundary for observability/console/release endpoints in multi-user deployments.
+  - Prepare grouped commit for M3-07..M3-12 feature set and push after user confirmation.
+- resume_first_command: `git status --short`

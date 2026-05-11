@@ -81,6 +81,14 @@ def test_memory_coordinator_records_execution_closure_for_run_and_session() -> N
         job_id="PLAN-SLURM-task-memory-closure-001-run-memory-closure-001-GENEAGENT-JOB",
         log_paths=["/cluster/work/demo/logs/stdout.log", "/cluster/work/demo/logs/stderr.log"],
         manual_confirmation_records=["Cross-directory writes require scope confirmation."],
+        approval_records=[
+            {
+                "approved": "true",
+                "approver": "ops_lead",
+                "reason": "validated rerun needed for qc drift",
+                "approved_at": "2026-05-09T12:40:00Z",
+            }
+        ],
         artifact_index={
             "results": ["/cluster/work/demo/results/predictions.tsv"],
             "figures": [],
@@ -97,7 +105,9 @@ def test_memory_coordinator_records_execution_closure_for_run_and_session() -> N
     assert len(record.log_paths) == 2
     assert len(record.audit_paths) == 1
     assert record.project_id == "project-memory-closure-001"
-    assert len(record.approval_records) == 1
+    assert len(record.approval_records) >= 1
+    explicit_approval = next(item for item in record.approval_records if item.approver == "ops_lead")
+    assert explicit_approval.approved_at == "2026-05-09T12:40:00Z"
     assert len(record.provenance_records) >= 4
     assert any(handoff.to_stage == "stage_09_audit_and_memory" for handoff in record.handoffs)
     session = coordinator.get_session("session-memory-closure-001")
@@ -143,3 +153,91 @@ def test_memory_coordinator_records_failure_layer_for_project_scope() -> None:
     project = coordinator.get_project("project-memory-failure-001")
     assert project is not None
     assert len(project.failure_records) == 1
+
+
+def test_memory_coordinator_builds_cross_run_handoff_with_reuse_and_repair_priority() -> None:
+    coordinator = MemoryCoordinator()
+    project_id = "project-memory-handoff-001"
+
+    coordinator.plan_run(
+        task_id="task-memory-handoff-001",
+        run_id="run-memory-handoff-001",
+        session_id="session-memory-handoff-001",
+        project_id=project_id,
+        request_text="Run PCA with default partition long and 16 CPUs.",
+        domain=TaskDomain.BIOINFORMATICS,
+        stage_specs=[
+            {"stage_id": "stage_07_execution", "owner": "hpc_scheduler", "outputs": ["submission_handle"]},
+        ],
+        parameter_snapshot={
+            "blueprint_key": "pca",
+            "resource.partition": "long",
+            "resource.cpus": "16",
+        },
+        available_tools=["plink2_pca"],
+        retrieval_sources=["pca SOP"],
+    )
+    coordinator.record_failure(
+        run_id="run-memory-handoff-001",
+        stage_id="stage_07_execution",
+        error_code="OUT_OF_MEMORY",
+        message="plink2 pca exceeded memory",
+        retryable=True,
+        retry_suggestion="increase memory to 32G",
+        tool_name="plink2_pca",
+    )
+
+    coordinator.plan_run(
+        task_id="task-memory-handoff-002",
+        run_id="run-memory-handoff-002",
+        session_id="session-memory-handoff-001",
+        project_id=project_id,
+        request_text="Run PCA again for the same cohort with adjusted memory.",
+        domain=TaskDomain.BIOINFORMATICS,
+        stage_specs=[
+            {"stage_id": "stage_07_execution", "owner": "hpc_scheduler", "outputs": ["submission_handle"]},
+        ],
+        parameter_snapshot={
+            "blueprint_key": "pca",
+            "resource.partition": "long",
+            "resource.cpus": "16",
+        },
+        available_tools=["plink2_pca"],
+        retrieval_sources=["pca SOP"],
+    )
+    coordinator.record_failure(
+        run_id="run-memory-handoff-002",
+        stage_id="stage_07_execution",
+        error_code="OUT_OF_MEMORY",
+        message="plink2 pca exceeded memory again",
+        retryable=True,
+        retry_suggestion="increase memory to 32G",
+        tool_name="plink2_pca",
+    )
+    coordinator.record_failure(
+        run_id="run-memory-handoff-002",
+        stage_id="stage_07_execution",
+        error_code="COMMAND_NOT_FOUND",
+        message="plink2 command not found",
+        retryable=True,
+        retry_suggestion="check tool PATH and module load",
+        tool_name="plink2_pca",
+    )
+
+    handoff = coordinator.build_cross_run_handoff(
+        task_id="task-memory-handoff-003",
+        run_id="run-memory-handoff-003",
+        session_id="session-memory-handoff-001",
+        project_id=project_id,
+        domain=TaskDomain.BIOINFORMATICS,
+    )
+
+    assert handoff.project_id == project_id
+    assert handoff.history_run_count == 2
+    assert len(handoff.reused_parameters) >= 2
+    assert any(item.key == "blueprint_key" and item.value == "pca" for item in handoff.reused_parameters)
+    assert handoff.prioritized_failure_repairs
+    top_hint = handoff.prioritized_failure_repairs[0]
+    assert top_hint.error_code == "OUT_OF_MEMORY"
+    assert top_hint.support_count == 2
+    assert "increase memory to 32G" in top_hint.recommended_action

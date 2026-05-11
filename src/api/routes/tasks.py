@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from contracts.api import (
+    AuditBundleExportRequest,
     DiagnosticPreviewRequest,
     DraftPlanRequest,
     DryRunRequest,
@@ -74,6 +75,10 @@ def review_action(payload: ReviewActionRequest) -> dict[str, object]:
         identity=payload.identity,
         reason=payload.reason,
         target_paths=payload.target_paths,
+        external_network=payload.external_network,
+        cloud_llm=payload.cloud_llm,
+        outbound_payload=payload.outbound_payload,
+        approval=payload.approval.model_dump(mode="json") if payload.approval is not None else None,
     )
     return {"review": result.model_dump(mode="json")}
 
@@ -116,6 +121,8 @@ def dry_run(payload: DryRunRequest) -> dict[str, object]:
         request_text=envelope.request_text,
         identity=envelope.identity,
         input_bundle=envelope.input_bundle,
+        approval=envelope.approval,
+        outbound_payload=envelope.outbound_payload,
     )
     return {"submission": submission.model_dump(mode="json")}
 
@@ -132,6 +139,8 @@ def submit_preview(payload: SubmitPreviewRequest) -> dict[str, object]:
         identity=envelope.identity,
         dry_run_completed=envelope.dry_run_completed,
         input_bundle=envelope.input_bundle,
+        approval=envelope.approval,
+        outbound_payload=envelope.outbound_payload,
     )
     return {"submission": submission.model_dump(mode="json")}
 
@@ -149,6 +158,8 @@ def submit(payload: SubmitRequest) -> dict[str, object]:
             identity=envelope.identity,
             dry_run_completed=envelope.dry_run_completed,
             input_bundle=envelope.input_bundle,
+            approval=envelope.approval,
+            outbound_payload=envelope.outbound_payload,
         )
     except PermissionError as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
@@ -173,3 +184,21 @@ def poll_explain(payload: PollExplainRequest) -> dict[str, object]:
     context = create_application_context()
     explanation = context.facade.explain_poll_state(payload.job_id)
     return {"poll": explanation.model_dump(mode="json")}
+
+
+@router.post("/audit-export")
+def audit_export(payload: AuditBundleExportRequest) -> dict[str, object]:
+    """Export one run-level audit package with input/plan/job/log/report/approval trail."""
+
+    context = create_application_context()
+    try:
+        bundle = context.facade.export_audit_bundle(
+            run_id=payload.run_id,
+            task_id=payload.task_id,
+            identity=payload.identity,
+            output_path=payload.output_path,
+            include_files=payload.include_files,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    return {"audit_bundle": bundle.model_dump(mode="json")}

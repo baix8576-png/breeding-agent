@@ -33,6 +33,8 @@ def test_cli_plan_command_returns_structured_plan_with_tracking_ids() -> None:
     assert payload["workflow_name"] == "bioinformatics-standard-chain-v1"
     assert payload["pipeline_spec"]["name"] == "pca_pipeline"
     assert payload["domain"] == "bioinformatics"
+    assert isinstance(payload["explanation_layer"], dict)
+    assert set(payload["explanation_layer"]).issuperset({"why_blueprint", "why_gate", "why_repair"})
 
 
 def test_cli_plan_command_covers_non_bio_lightweight_branch() -> None:
@@ -254,6 +256,7 @@ def test_cli_dry_run_command_non_bio_branch_clearly_skips_cluster() -> None:
     assert payload["wrapper_path"] is None
     assert payload["job_handle"]["job_id"].startswith("SKIPPED-NONBIO-")
     assert payload["script_preview"].startswith("scheduler_skipped:")
+    assert isinstance(payload["explanation_layer"], dict)
 
 
 def test_cli_submit_preview_command_returns_phase2_execution_surface() -> None:
@@ -367,3 +370,83 @@ def test_cli_poll_explain_command_interprets_scheduler_state() -> None:
     assert payload["state"] == "failed"
     assert payload["recommended_action"] == "trigger_failure_recovery"
     assert payload["terminal"] is True
+
+
+def test_cli_audit_export_command_packages_run_closure(tmp_path: Path) -> None:
+    task_id = "task-cli-audit-export-001"
+    run_id = "run-cli-audit-export-001"
+    dry_run = runner.invoke(
+        app,
+        [
+            "dry-run",
+            "--task-id",
+            task_id,
+            "--run-id",
+            run_id,
+            "--working-directory",
+            str(tmp_path),
+            "--request-text",
+            "Dry-run PCA for CLI audit export",
+        ],
+    )
+    assert dry_run.exit_code == 0
+
+    exported = runner.invoke(
+        app,
+        [
+            "audit-export",
+            run_id,
+            "--task-id",
+            task_id,
+            "--working-directory",
+            str(tmp_path),
+            "--manifest-only",
+        ],
+    )
+    assert exported.exit_code == 0
+    payload = json.loads(exported.stdout)
+    assert payload["run_context"]["task_id"] == task_id
+    assert payload["run_context"]["run_id"] == run_id
+    assert Path(payload["bundle_path"]).is_file()
+    assert Path(payload["manifest_path"]).is_file()
+
+
+def test_cli_governance_commands_cover_production_gate_release_and_final_review() -> None:
+    gate = runner.invoke(
+        app,
+        [
+            "production-gate",
+            "--timeout-seconds",
+            "120",
+        ],
+    )
+    assert gate.exit_code == 0
+    gate_payload = json.loads(gate.stdout)
+    assert gate_payload["schema_version"] == "production_gate.v1"
+    assert gate_payload["overall_status"] in {"planned", "pass"}
+
+    release = runner.invoke(
+        app,
+        [
+            "release-plan",
+            "--version-tag",
+            "v2.0.0-rc2",
+            "--change-summary",
+            "Promote explanation layer, observability, and governance gates.",
+            "--stage-id",
+            "stage_05_blueprint_selection",
+            "--stage-id",
+            "stage_06_resource_and_safety_gate",
+        ],
+    )
+    assert release.exit_code == 0
+    release_payload = json.loads(release.stdout)
+    assert release_payload["schema_version"] == "release_plan.v1"
+    assert release_payload["version_tag"] == "v2.0.0-rc2"
+    assert release_payload["rollback_plan"]
+
+    review = runner.invoke(app, ["final-review"])
+    assert review.exit_code == 0
+    review_payload = json.loads(review.stdout)
+    assert review_payload["schema_version"] == "v2_final_review.v1"
+    assert review_payload["overall_status"] in {"pass", "not_ready"}

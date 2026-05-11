@@ -16,6 +16,15 @@ class RequestIdentity(BaseModel):
     working_directory: str | None = None
 
 
+class ManualApprovalRequest(BaseModel):
+    """Optional human-approval evidence for high-risk gated actions."""
+
+    approved: bool = True
+    approver: str | None = None
+    reason: str | None = None
+    approved_at: str | None = None
+
+
 class DraftPlanRequest(BaseModel):
     """Payload for planning a natural-language request."""
 
@@ -43,6 +52,10 @@ class ReviewActionRequest(BaseModel):
     action_name: str
     reason: str | None = None
     target_paths: list[str] = Field(default_factory=list)
+    external_network: bool = False
+    cloud_llm: bool = False
+    outbound_payload: dict[str, object] | None = None
+    approval: ManualApprovalRequest | None = None
     identity: RequestIdentity = Field(default_factory=RequestIdentity)
 
 
@@ -52,6 +65,8 @@ class DryRunRequest(BaseModel):
     request_text: str = "Prepare a dry-run submission"
     command: list[str] | None = None
     input_bundle: InputBundle | None = None
+    approval: ManualApprovalRequest | None = None
+    outbound_payload: dict[str, object] | None = None
     identity: RequestIdentity = Field(default_factory=RequestIdentity)
 
 
@@ -62,6 +77,8 @@ class SubmitPreviewRequest(BaseModel):
     command: list[str] | None = None
     dry_run_completed: bool = False
     input_bundle: InputBundle | None = None
+    approval: ManualApprovalRequest | None = None
+    outbound_payload: dict[str, object] | None = None
     identity: RequestIdentity = Field(default_factory=RequestIdentity)
 
 
@@ -72,6 +89,8 @@ class SubmitRequest(BaseModel):
     command: list[str] | None = None
     dry_run_completed: bool = False
     input_bundle: InputBundle | None = None
+    approval: ManualApprovalRequest | None = None
+    outbound_payload: dict[str, object] | None = None
     identity: RequestIdentity = Field(default_factory=RequestIdentity)
 
 
@@ -94,3 +113,29 @@ class PollExplainRequest(BaseModel):
     """Payload for explaining a scheduler poll state."""
 
     job_id: str
+
+
+class AuditBundleExportRequest(BaseModel):
+    """Payload for exporting one run's audit package."""
+
+    run_id: str
+    task_id: str | None = None
+    output_path: str | None = None
+    include_files: bool = True
+    identity: RequestIdentity = Field(default_factory=RequestIdentity)
+
+
+class ProductionGateRequest(BaseModel):
+    """Payload for production gate pipeline checks."""
+
+    working_directory: str | None = None
+    execute_tests: bool = False
+    timeout_seconds: int = 300
+
+
+class ReleasePlanRequest(BaseModel):
+    """Payload for standardized release planning."""
+
+    version_tag: str = "v2.0.0"
+    change_summary: str = ""
+    stage_ids: list[str] = Field(default_factory=list)

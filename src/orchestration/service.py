@@ -57,24 +57,6 @@ class OrchestratorService:
             requested_outputs=sorted(set(request.requested_outputs)),
             retrieval=retrieval,
         )
-        run_record = self._memory_coordinator.plan_run(
-            task_id=resolved_context.task_id,
-            run_id=resolved_context.run_id,
-            session_id=resolved_context.session_id,
-            request_text=request.text,
-            domain=classification.domain,
-            stage_specs=[
-                {
-                    "stage_id": stage.stage_id,
-                    "owner": stage.owner,
-                    "outputs": stage.outputs,
-                    "notes": stage.notes,
-                }
-                for stage in workflow.stages
-            ],
-            available_tools=workflow.referenced_tools,
-            retrieval_sources=retrieval.source_labels,
-        )
         is_bio_chain = classification.domain == TaskDomain.BIOINFORMATICS
         gate_stage_present = any(stage.stage_id == "stage_06_resource_and_safety_gate" for stage in workflow.stages)
         gate_ready = (
@@ -140,6 +122,53 @@ class OrchestratorService:
                 workload_estimate,
                 atomic_estimate,
             )
+        cross_run_handoff = self._memory_coordinator.build_cross_run_handoff(
+            task_id=resolved_context.task_id,
+            run_id=resolved_context.run_id,
+            session_id=resolved_context.session_id,
+            working_directory=resolved_context.working_directory,
+            domain=classification.domain,
+        )
+        parameter_snapshot = {
+            "domain": classification.domain.value,
+            "workflow_name": workflow.name,
+            "blueprint_name": selected_blueprint,
+            "blueprint_key": selected_blueprint_key or "none",
+            "analysis_targets": ",".join(sorted(classification.analysis_targets)) or "none",
+            "atomic_algorithms": ",".join(atomic_algorithms) if atomic_algorithms else "none",
+            "resource.partition": estimate.partition or "none",
+            "resource.cpus": str(estimate.cpus),
+            "resource.memory_gb": str(estimate.memory_gb),
+            "resource.walltime": estimate.walltime,
+            "input.species": request.input_bundle.species or "unknown" if request.input_bundle else "unknown",
+            "input.cohort": request.input_bundle.cohort_name or "unknown" if request.input_bundle else "unknown",
+        }
+        run_record = self._memory_coordinator.plan_run(
+            task_id=resolved_context.task_id,
+            run_id=resolved_context.run_id,
+            session_id=resolved_context.session_id,
+            request_text=request.text,
+            domain=classification.domain,
+            stage_specs=[
+                {
+                    "stage_id": stage.stage_id,
+                    "owner": stage.owner,
+                    "outputs": stage.outputs,
+                    "notes": stage.notes,
+                }
+                for stage in workflow.stages
+            ],
+            parameter_snapshot=parameter_snapshot,
+            available_tools=workflow.referenced_tools,
+            retrieval_sources=retrieval.source_labels,
+            working_directory=resolved_context.working_directory,
+        )
+        cross_run_payload = cross_run_handoff.model_dump(mode="json")
+        reuse_keys = ",".join(item.key for item in cross_run_handoff.reused_parameters[:3]) or "none"
+        top_failure_codes = (
+            ",".join(item.error_code for item in cross_run_handoff.prioritized_failure_repairs[:2])
+            or "none"
+        )
         header = RoleOutputHeader(
             role="orchestrator",
             task_id=resolved_context.task_id,
@@ -190,6 +219,9 @@ class OrchestratorService:
                 f"selected_blueprint_key={selected_blueprint_key or 'none'}",
                 f"atomic_algorithms={','.join(atomic_algorithms) if atomic_algorithms else 'none'}",
                 f"memory_handoffs={len(run_record.handoffs)}",
+                f"cross_run_history_hits={cross_run_handoff.history_run_count}",
+                f"cross_run_reuse_keys={reuse_keys}",
+                f"cross_run_top_failure_codes={top_failure_codes}",
                 f"stable_outputs={','.join(workflow.stable_outputs)}",
                 f"input_bundle_entries={len(input_paths)}",
             ],
@@ -203,11 +235,14 @@ class OrchestratorService:
                 f"context_sources:{','.join(retrieval.source_labels) if retrieval.source_labels else 'none'}",
                 f"tool_registry_selection:{','.join(workflow.referenced_tools) if workflow.referenced_tools else 'none'}",
                 f"memory_handoff_count:{len(run_record.handoffs)}",
+                f"cross_run_parameter_reuse_hints:{len(cross_run_handoff.reused_parameters)}",
+                f"cross_run_failure_repair_hints:{len(cross_run_handoff.prioritized_failure_repairs)}",
                 "resource_and_safety_gate_summary",
             ],
             required_roles=workflow.required_roles,
             pipeline_spec=pipeline_spec,
             resource_estimate=estimate,
+            cross_run_handoff=cross_run_payload,
         )
 
     def review_high_risk_action(self, action_name: str, run_context: RunContext | None = None) -> dict[str, str]:

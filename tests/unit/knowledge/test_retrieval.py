@@ -686,3 +686,57 @@ def test_knowledge_resolver_tiered_policy_allows_low_sensitivity_external_fallba
     assert bundle.fallback_gate_audit["decision"] == "allowed"
     assert bundle.fallback_used is True
     assert external_retriever.calls
+
+
+def test_local_retriever_regression_accuracy_prefers_grm_core_reference_card() -> None:
+    retriever = LocalKnowledgeRetriever()
+
+    hits = retriever.search(
+        query="VanRaden 2008 genomic relationship matrix GRM",
+        domain=TaskDomain.BIOINFORMATICS,
+        limit=5,
+    )
+
+    positive_hits = [item for item in hits if item.score > 0]
+    assert positive_hits
+    top_hit = positive_hits[0]
+    assert top_hit.doc_id == "paper_grm_vanraden_2008"
+    if len(positive_hits) >= 2:
+        assert top_hit.score >= positive_hits[1].score
+    assert any("vanraden" in keyword for keyword in top_hit.matched_keywords)
+
+
+def test_retrieval_bundle_evidence_explanation_is_consistent_with_hit_fields() -> None:
+    resolver = KnowledgeResolver()
+
+    bundle = resolver.resolve(
+        query="VanRaden GRM and GBLUP prediction conflict diagnostics",
+        domain=TaskDomain.BIOINFORMATICS,
+    )
+
+    positive_hits = [item for item in bundle.local_hits if item.score > 0]
+    assert positive_hits
+    for hit in positive_hits:
+        assert hit.hit_reasons
+        assert hit.confidence_sources
+        if hit.matched_keywords:
+            assert any(reason.startswith("keyword_match:") for reason in hit.hit_reasons)
+        if hit.matched_tags:
+            assert any(reason.startswith("tag_match:") for reason in hit.hit_reasons)
+    if bundle.evidence_conflicts:
+        assert any(entry.startswith("blueprint_scope_conflict:") for entry in bundle.evidence_conflicts)
+
+
+def test_knowledge_resolver_generic_tool_error_suggestions_are_actionable() -> None:
+    resolver = KnowledgeResolver()
+
+    bundle = resolver.resolve(
+        query="gcta failed unexpectedly during reml model fitting",
+        domain=TaskDomain.BIOINFORMATICS,
+    )
+
+    suggestion = next(item for item in bundle.diagnostic_suggestions if item.pattern_id == "gcta.generic_error")
+    assert suggestion.error_category == "generic_tool_error"
+    assert len(suggestion.suggested_actions) >= 2
+    assert any("gcta64 --version" in action or "gcta --version" in action for action in suggestion.suggested_actions)
+    assert suggestion.reference_sources

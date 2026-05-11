@@ -106,3 +106,62 @@ def test_blueprint_selection_binds_grm_and_genomic_prediction_keys() -> None:
     assert "model_blueprint" in genomic_plan.pipeline_spec.stage_contract
 
 
+def test_draft_plan_cross_run_handoff_hits_same_project_history() -> None:
+    context = create_application_context()
+    shared_workdir = "/cluster/work/sheep/shared-project"
+    first_context = RunContext(
+        task_id="task-orch-history-001",
+        run_id="run-orch-history-001",
+        session_id="session-orch-history-001",
+        working_directory=shared_workdir,
+    )
+    second_context = RunContext(
+        task_id="task-orch-history-002",
+        run_id="run-orch-history-002",
+        session_id="session-orch-history-001",
+        working_directory=shared_workdir,
+    )
+
+    context.orchestrator.draft_plan(
+        UserRequest(
+            text="Run PCA structure analysis for this sheep cohort",
+            working_directory=shared_workdir,
+            input_bundle=InputBundle(
+                entries=[
+                    InputBundleEntry(role="vcf", path="/data/sheep/history.vcf.gz"),
+                ]
+            ),
+        ),
+        run_context=first_context,
+    )
+    context.memory_coordinator.record_failure(
+        run_id="run-orch-history-001",
+        stage_id="stage_07_execution",
+        error_code="OUT_OF_MEMORY",
+        message="pca memory pressure",
+        retryable=True,
+        retry_suggestion="increase memory request by 25%",
+        tool_name="plink2_pca",
+    )
+
+    second_plan = context.orchestrator.draft_plan(
+        UserRequest(
+            text="Run PCA structure analysis again for the same sheep cohort with report output",
+            working_directory=shared_workdir,
+            requested_outputs=["pca_plot", "report_outline"],
+            input_bundle=InputBundle(
+                entries=[
+                    InputBundleEntry(role="vcf", path="/data/sheep/history.vcf.gz"),
+                ]
+            ),
+        ),
+        run_context=second_context,
+    )
+
+    assert second_plan.cross_run_handoff is not None
+    assert second_plan.cross_run_handoff["history_run_count"] >= 1
+    assert second_plan.cross_run_handoff["reused_parameters"]
+    assert second_plan.cross_run_handoff["prioritized_failure_repairs"]
+    assert any(item.startswith("cross_run_history_hits=") for item in second_plan.assumptions)
+
+

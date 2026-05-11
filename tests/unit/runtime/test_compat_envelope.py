@@ -36,6 +36,8 @@ def test_envelope_mapper_for_submit_preserves_gate_flags() -> None:
     payload = SubmitRequest(
         request_text="Submit genomic prediction",
         dry_run_completed=True,
+        approval={"approved": True, "approver": "qa", "reason": "validated"},
+        outbound_payload={"prompt": "sanitized summary"},
         identity=RequestIdentity(task_id="task-env-003", run_id="run-env-003"),
     )
     envelope = envelope_from_submit(payload)
@@ -43,3 +45,5 @@ def test_envelope_mapper_for_submit_preserves_gate_flags() -> None:
     assert envelope.intent.value == "submit"
     assert envelope.dry_run_completed is True
     assert envelope.identity.task_id == "task-env-003"
+    assert envelope.approval is not None
+    assert envelope.outbound_payload is not None

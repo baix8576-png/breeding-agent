@@ -36,6 +36,8 @@ def test_tasks_draft_plan_route_preserves_identity_and_pipeline_spec() -> None:
     assert "pca_computation" in plan["pipeline_spec"]["stages"]
     assert "pca_computation" in plan["pipeline_spec"]["stage_contract"]
     assert len(plan["pipeline_spec"]["stage_io_contract"]) == 9
+    assert isinstance(plan["explanation_layer"], dict)
+    assert set(plan["explanation_layer"]).issuperset({"why_blueprint", "why_gate", "why_repair"})
 
 
 def test_tasks_draft_plan_route_accepts_first_class_input_bundle() -> None:
@@ -126,6 +128,8 @@ def test_tasks_dry_run_route_returns_submission_preview_and_job_handle() -> None
     assert submission["artifacts"]["audit_record_path"] is not None
     assert submission["runtime_lifecycle"]["runtime_path"] == "bio_main_chain"
     assert submission["runtime_lifecycle"]["current_stage"] == "completed"
+    assert isinstance(submission["explanation_layer"], dict)
+    assert submission["explanation_layer"]["why_blueprint"]["selected_blueprint"] == "pca_pipeline"
 
 
 def test_tasks_dry_run_route_uses_input_bundle_in_default_command() -> None:
@@ -184,6 +188,7 @@ def test_tasks_dry_run_route_non_bio_branch_clearly_skips_cluster() -> None:
     assert submission["job_handle"]["job_id"].startswith("SKIPPED-NONBIO-")
     assert submission["script_preview"].startswith("scheduler_skipped:")
     assert submission["runtime_lifecycle"]["runtime_path"] == "non_bio_lightweight"
+    assert submission["explanation_layer"]["why_gate"]["decision"] == "pass"
 
 
 def test_tasks_submit_preview_route_returns_phase2_execution_surface() -> None:
@@ -375,6 +380,43 @@ def test_tasks_review_action_route_returns_structured_gate() -> None:
     assert review["risk_level"] == "manual_approval"
 
 
+def test_tasks_review_action_route_records_manual_approval_and_outbound_policy() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/tasks/review-action",
+        json={
+            "action_name": "overwrite_results",
+            "reason": "overwrite with approved high-risk context",
+            "target_paths": ["/cluster/work/sheep/results"],
+            "external_network": True,
+            "cloud_llm": True,
+            "outbound_payload": {
+                "prompt": "summarize sanitized diagnostics",
+                "raw_path": "/cluster/raw/sheep.vcf.gz",
+            },
+            "approval": {
+                "approved": True,
+                "approver": "ops_lead",
+                "reason": "approved for incident response",
+                "approved_at": "2026-05-09T12:20:00Z",
+            },
+            "identity": {
+                "task_id": "task-api-review-002",
+                "run_id": "run-api-review-002",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    review = response.json()["review"]
+    assert review["task_id"] == "task-api-review-002"
+    assert review["approval_status"] in {"approved", "pending", "invalid"}
+    assert isinstance(review["outbound_policy_audit"], dict)
+    if review["outbound_policy_audit"].get("status") == "blocked":
+        assert review["decision"] == "block"
+
+
 def test_tasks_report_route_returns_report_preview_payload() -> None:
     client = TestClient(create_app())
 
@@ -400,6 +442,8 @@ def test_tasks_report_route_returns_report_preview_payload() -> None:
     assert isinstance(report["report_sections"], list)
     assert isinstance(report["expected_artifacts"], dict)
     assert "reports" in report["expected_artifacts"]
+    assert isinstance(report["explanation_layer"], dict)
+    assert set(report["explanation_layer"]).issuperset({"why_blueprint", "why_gate", "why_repair"})
 
 
 def test_tasks_diagnostic_route_non_bio_branch_clearly_skips_cluster() -> None:
@@ -454,6 +498,8 @@ def test_tasks_diagnostic_route_low_coverage_keeps_knowledge_fallback_path() -> 
     assert "data_sensitivity_level" in diagnostic["fallback"]["gate_audit"]
     assert isinstance(diagnostic["fallback"]["used"], bool)
     assert diagnostic["cluster_execution_enabled"] is False
+    assert isinstance(diagnostic["explanation_layer"], dict)
+    assert set(diagnostic["explanation_layer"]).issuperset({"why_blueprint", "why_gate", "why_repair"})
 
 
 def test_tasks_diagnostic_route_supports_disabling_external_fallback_by_env(monkeypatch) -> None:

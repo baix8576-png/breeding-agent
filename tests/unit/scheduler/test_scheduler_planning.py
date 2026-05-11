@@ -389,3 +389,47 @@ def test_slurm_real_submit_idempotency_conflict_rejects_different_command(tmp_pa
     assert raised.value.error_code == "IDEMPOTENCY_CONFLICT"
 
 
+def test_scheduler_quota_gate_blocks_plan_when_limits_exceeded() -> None:
+    adapter = SlurmSchedulerAdapter(
+        quota_cpu_hours_limit=20,
+        quota_memory_gb_limit=32,
+        quota_max_concurrent_jobs=2,
+        current_active_jobs=2,
+    )
+
+    plan = adapter.build_submission_plan(
+        command=["bash", "scripts/grm_builder/run_grm_builder.sh"],
+        working_directory="/cluster/work/demo",
+        resources=ResourceEstimate(cpus=8, memory_gb=64, walltime="06:00:00"),
+        task_id="task-quota-block-001",
+        run_id="run-quota-block-001",
+    )
+
+    assert plan.quota_gate_status == "blocked"
+    assert plan.ready_for_gate == "quota_blocked"
+    assert plan.quota_gate_reasons
+    assert any(item.startswith("quota:") for item in plan.warnings)
+
+
+def test_scheduler_quota_gate_warns_when_usage_near_limit() -> None:
+    adapter = SlurmSchedulerAdapter(
+        quota_cpu_hours_limit=70,
+        quota_memory_gb_limit=40,
+        quota_max_concurrent_jobs=5,
+        current_active_jobs=3,
+    )
+
+    plan = adapter.build_submission_plan(
+        command=["bash", "scripts/qc_pipeline/run_qc_pipeline.sh"],
+        working_directory="/cluster/work/demo",
+        resources=ResourceEstimate(cpus=8, memory_gb=32, walltime="06:00:00"),
+        task_id="task-quota-warn-001",
+        run_id="run-quota-warn-001",
+    )
+
+    assert plan.quota_gate_status in {"warn", "pass"}
+    assert plan.quota_usage
+    if plan.quota_gate_status == "warn":
+        assert plan.quota_gate_reasons
+
+

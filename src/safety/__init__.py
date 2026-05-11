@@ -4,6 +4,7 @@ from safety.circuit_breaker import CircuitBreaker, CircuitBreakerEvent, CircuitB
 from safety.gates import (
     CheckStatus,
     GateStage,
+    ManualApprovalEvidence,
     PreflightCheck,
     RiskCategory,
     SafetyGateResult,
@@ -20,6 +21,7 @@ __all__ = [
     "CloudPayloadPolicy",
     "CloudPayloadReview",
     "GateStage",
+    "ManualApprovalEvidence",
     "PreflightCheck",
     "RiskCategory",
     "SafetyGateResult",

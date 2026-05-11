@@ -65,6 +65,9 @@ class SubmissionPlan(BaseModel):
     failure_recovery: list[str] = Field(default_factory=list)
     atomic_tools: list[str] = Field(default_factory=list)
     atomic_failure_code_mapping: dict[str, list[dict[str, object]]] = Field(default_factory=dict)
+    quota_gate_status: str = "pass"
+    quota_gate_reasons: list[str] = Field(default_factory=list)
+    quota_usage: dict[str, float | int] = Field(default_factory=dict)
 
 
 class PollExplanation(BaseModel):

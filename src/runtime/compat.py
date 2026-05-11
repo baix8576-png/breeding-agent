@@ -30,6 +30,8 @@ def envelope_from_dry_run(payload: DryRunRequest) -> RuntimeRequestEnvelopeV2:
         identity=payload.identity,
         input_bundle=payload.input_bundle,
         command=payload.command,
+        approval=payload.approval.model_dump(mode="json") if payload.approval is not None else None,
+        outbound_payload=payload.outbound_payload,
     )
 
 
@@ -41,6 +43,8 @@ def envelope_from_submit_preview(payload: SubmitPreviewRequest) -> RuntimeReques
         input_bundle=payload.input_bundle,
         command=payload.command,
         dry_run_completed=payload.dry_run_completed,
+        approval=payload.approval.model_dump(mode="json") if payload.approval is not None else None,
+        outbound_payload=payload.outbound_payload,
     )
 
 
@@ -52,6 +56,8 @@ def envelope_from_submit(payload: SubmitRequest) -> RuntimeRequestEnvelopeV2:
         input_bundle=payload.input_bundle,
         command=payload.command,
         dry_run_completed=payload.dry_run_completed,
+        approval=payload.approval.model_dump(mode="json") if payload.approval is not None else None,
+        outbound_payload=payload.outbound_payload,
     )
 
 
@@ -70,4 +76,3 @@ def envelope_from_diagnostic(payload: DiagnosticPreviewRequest) -> RuntimeReques
         request_text=payload.request_text,
         identity=payload.identity,
     )
-

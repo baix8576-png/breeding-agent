@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+
 from pydantic import BaseModel, Field
 
 from contracts.common import TaskDomain
@@ -51,6 +53,7 @@ class RunRecord(BaseModel):
     job_ids: list[str] = Field(default_factory=list)
     domain: TaskDomain | None = None
     request_text: str = ""
+    parameter_snapshot: dict[str, str] = Field(default_factory=dict)
     available_tools: list[str] = Field(default_factory=list)
     retrieval_sources: list[str] = Field(default_factory=list)
     stage_history: list[StageSnapshot] = Field(default_factory=list)
@@ -80,6 +83,41 @@ class FailureRecord(BaseModel):
     tool_name: str | None = None
 
 
+class ParameterReuseHint(BaseModel):
+    """One reusable parameter recommendation from historical runs."""
+
+    key: str
+    value: str
+    source_run_id: str
+    support_count: int = 1
+    confidence: float = 0.0
+    reason: str = ""
+
+
+class FailureRepairHint(BaseModel):
+    """Prioritized repair hint aggregated from historical failures."""
+
+    stage_id: str
+    error_code: str
+    tool_name: str | None = None
+    retryable: bool = False
+    support_count: int = 1
+    priority: int = 0
+    source_run_ids: list[str] = Field(default_factory=list)
+    recommended_action: str = ""
+
+
+class CrossRunHandoff(BaseModel):
+    """Cross-run context summary for parameter reuse and repair guidance."""
+
+    project_id: str
+    history_run_count: int = 0
+    matched_history_run_ids: list[str] = Field(default_factory=list)
+    reused_parameters: list[ParameterReuseHint] = Field(default_factory=list)
+    prioritized_failure_repairs: list[FailureRepairHint] = Field(default_factory=list)
+    summary: str = "no historical run context available"
+
+
 class ApprovalRecord(BaseModel):
     """Manual approval evidence captured during safety gating."""
 
@@ -89,6 +127,7 @@ class ApprovalRecord(BaseModel):
     reason: str
     scope: list[str] = Field(default_factory=list)
     approver: str = "human"
+    approved_at: str | None = None
 
 
 class ProvenanceRecord(BaseModel):
@@ -176,10 +215,12 @@ class MemoryCoordinator:
         request_text: str,
         domain: TaskDomain,
         stage_specs: list[dict[str, object]],
+        parameter_snapshot: dict[str, str] | None = None,
         available_tools: list[str],
         retrieval_sources: list[str],
         session_id: str | None = None,
         project_id: str | None = None,
+        working_directory: str | None = None,
     ) -> RunRecord:
         """Persist a deterministic run plan and return the resulting record."""
 
@@ -221,6 +262,7 @@ class MemoryCoordinator:
             project_id=project_id,
             task_id=task_id,
             session_id=session_id,
+            working_directory=working_directory,
         )
         record = RunRecord(
             run_id=run_id,
@@ -229,6 +271,7 @@ class MemoryCoordinator:
             input_summary=request_text[:160],
             domain=domain,
             request_text=request_text,
+            parameter_snapshot=self._normalize_parameter_snapshot(parameter_snapshot),
             available_tools=available_tools,
             retrieval_sources=retrieval_sources,
             stage_history=stage_history,
@@ -263,6 +306,7 @@ class MemoryCoordinator:
         run_id: str,
         session_id: str | None,
         project_id: str | None,
+        working_directory: str | None = None,
         domain: TaskDomain,
         input_summary: str,
         planning_summary: str,
@@ -270,9 +314,11 @@ class MemoryCoordinator:
         job_id: str,
         log_paths: list[str],
         manual_confirmation_records: list[str],
+        approval_records: list[dict[str, str]] | None = None,
         artifact_index: dict[str, list[str]],
         report_summary: str,
         audit_path: str | None,
+        parameter_snapshot: dict[str, str] | None = None,
     ) -> RunRecord:
         """Write back stage-3 runtime closure context for run and session scopes."""
 
@@ -291,6 +337,7 @@ class MemoryCoordinator:
             project_id=project_id or record.project_id,
             task_id=task_id,
             session_id=session_id,
+            working_directory=working_directory,
         )
         record.task_id = task_id
         record.domain = domain
@@ -298,6 +345,11 @@ class MemoryCoordinator:
         record.project_id = resolved_project_id
         record.input_summary = input_summary[:160]
         record.planning_summary = planning_summary
+        if parameter_snapshot:
+            record.parameter_snapshot = {
+                **record.parameter_snapshot,
+                **self._normalize_parameter_snapshot(parameter_snapshot),
+            }
         self._append_unique(record.job_ids, [job_id])
         self._append_unique(record.submission_commands, [submission_command])
         self._append_unique(record.log_paths, [path for path in log_paths if path])
@@ -310,6 +362,7 @@ class MemoryCoordinator:
             record=record,
             run_id=run_id,
             manual_confirmation_records=manual_confirmation_records,
+            approval_records=approval_records,
         )
         self._append_provenance_records(
             record=record,
@@ -444,6 +497,57 @@ class MemoryCoordinator:
                 failure_records=record.failure_records,
             )
 
+    def build_cross_run_handoff(
+        self,
+        *,
+        task_id: str,
+        run_id: str,
+        domain: TaskDomain,
+        session_id: str | None = None,
+        project_id: str | None = None,
+        working_directory: str | None = None,
+        history_limit: int = 8,
+    ) -> CrossRunHandoff:
+        """Build historical hints for parameter reuse and failure repair ordering."""
+
+        resolved_project_id = self._resolve_project_id(
+            project_id=project_id,
+            task_id=task_id,
+            session_id=session_id,
+            working_directory=working_directory,
+        )
+        project_record = self._project_store.get(resolved_project_id)
+        if project_record is None or not project_record.run_ids:
+            return CrossRunHandoff(project_id=resolved_project_id)
+
+        history_run_ids = [item for item in project_record.run_ids if item != run_id]
+        history_run_ids = history_run_ids[-history_limit:]
+        history_runs = [self._run_store.get(item) for item in history_run_ids]
+        valid_history_runs = [item for item in history_runs if item is not None and item.domain == domain]
+        if not valid_history_runs:
+            return CrossRunHandoff(
+                project_id=resolved_project_id,
+                history_run_count=len(history_run_ids),
+                matched_history_run_ids=history_run_ids,
+                summary="historical runs exist but no same-domain runs were matched",
+            )
+
+        parameter_hints = self._build_parameter_reuse_hints(valid_history_runs)
+        failure_hints = self._build_failure_repair_hints(valid_history_runs)
+        summary = (
+            f"history_runs={len(valid_history_runs)}; "
+            f"parameter_hints={len(parameter_hints)}; "
+            f"failure_repair_hints={len(failure_hints)}"
+        )
+        return CrossRunHandoff(
+            project_id=resolved_project_id,
+            history_run_count=len(valid_history_runs),
+            matched_history_run_ids=[item.run_id for item in valid_history_runs],
+            reused_parameters=parameter_hints,
+            prioritized_failure_repairs=failure_hints,
+            summary=summary,
+        )
+
     def _upsert_session(
         self,
         *,
@@ -509,12 +613,174 @@ class MemoryCoordinator:
         project_id: str | None,
         task_id: str,
         session_id: str | None,
+        working_directory: str | None = None,
     ) -> str:
         if project_id:
             return project_id
         if session_id:
             return f"project-{session_id}"
+        if working_directory:
+            normalized = "/".join(part for part in working_directory.replace("\\", "/").split("/") if part)
+            normalized = normalized.lower()
+            digest = hashlib.sha1(normalized.encode("utf-8")).hexdigest()[:12]
+            return f"project-wd-{digest}"
         return f"project-{task_id}"
+
+    def _normalize_parameter_snapshot(
+        self,
+        values: dict[str, str] | None,
+    ) -> dict[str, str]:
+        if not values:
+            return {}
+        normalized: dict[str, str] = {}
+        for key, value in values.items():
+            key_norm = str(key).strip()
+            value_norm = str(value).strip()
+            if not key_norm or not value_norm:
+                continue
+            normalized[key_norm] = value_norm
+        return normalized
+
+    def _build_parameter_reuse_hints(self, history_runs: list[RunRecord]) -> list[ParameterReuseHint]:
+        aggregations: dict[str, dict[str, dict[str, object]]] = {}
+        for index, record in enumerate(history_runs):
+            for key, value in record.parameter_snapshot.items():
+                bucket = aggregations.setdefault(key, {})
+                entry = bucket.setdefault(
+                    value,
+                    {
+                        "count": 0,
+                        "last_index": -1,
+                        "source_run_id": record.run_id,
+                    },
+                )
+                entry["count"] = int(entry["count"]) + 1
+                entry["last_index"] = index
+                entry["source_run_id"] = record.run_id
+
+        hints: list[ParameterReuseHint] = []
+        total_runs = max(1, len(history_runs))
+        for key, value_map in aggregations.items():
+            selected_value = max(
+                value_map.items(),
+                key=lambda item: (
+                    int(item[1]["count"]),
+                    int(item[1]["last_index"]),
+                ),
+            )
+            value, stats = selected_value
+            count = int(stats["count"])
+            support_ratio = count / total_runs
+            confidence = min(1.0, 0.45 + support_ratio * 0.5)
+            hints.append(
+                ParameterReuseHint(
+                    key=key,
+                    value=value,
+                    source_run_id=str(stats["source_run_id"]),
+                    support_count=count,
+                    confidence=round(confidence, 3),
+                    reason=f"reused in {count}/{total_runs} matched historical runs",
+                )
+            )
+        hints.sort(
+            key=lambda item: (
+                -item.support_count,
+                -item.confidence,
+                item.key,
+            )
+        )
+        return hints[:10]
+
+    def _build_failure_repair_hints(self, history_runs: list[RunRecord]) -> list[FailureRepairHint]:
+        aggregations: dict[tuple[str, str, str], dict[str, object]] = {}
+        for record in history_runs:
+            for failure in record.failure_records:
+                key = (failure.stage_id, failure.error_code, failure.tool_name or "")
+                bucket = aggregations.setdefault(
+                    key,
+                    {
+                        "stage_id": failure.stage_id,
+                        "error_code": failure.error_code,
+                        "tool_name": failure.tool_name,
+                        "retryable": failure.retryable,
+                        "count": 0,
+                        "source_run_ids": [],
+                        "suggestions": {},
+                    },
+                )
+                bucket["count"] = int(bucket["count"]) + 1
+                if record.run_id not in bucket["source_run_ids"]:
+                    bucket["source_run_ids"].append(record.run_id)
+                if failure.retryable:
+                    bucket["retryable"] = True
+                suggestion_text = (failure.retry_suggestion or "").strip()
+                if suggestion_text:
+                    suggestions = bucket["suggestions"]
+                    suggestions[suggestion_text] = int(suggestions.get(suggestion_text, 0)) + 1
+
+        hints: list[FailureRepairHint] = []
+        for payload in aggregations.values():
+            stage_id = str(payload["stage_id"])
+            error_code = str(payload["error_code"])
+            tool_name = str(payload["tool_name"]) if payload["tool_name"] else None
+            retryable = bool(payload["retryable"])
+            support_count = int(payload["count"])
+            source_run_ids = list(payload["source_run_ids"])
+            suggestions = payload["suggestions"]
+            recommended_action = (
+                max(
+                    suggestions.items(),
+                    key=lambda item: (item[1], item[0]),
+                )[0]
+                if suggestions
+                else (
+                    "Re-run dry-run, inspect scheduler/tool logs, and validate input-contract consistency before retry."
+                )
+            )
+            priority = self._compute_failure_priority(
+                stage_id=stage_id,
+                retryable=retryable,
+                support_count=support_count,
+                has_tool=tool_name is not None,
+            )
+            hints.append(
+                FailureRepairHint(
+                    stage_id=stage_id,
+                    error_code=error_code,
+                    tool_name=tool_name,
+                    retryable=retryable,
+                    support_count=support_count,
+                    priority=priority,
+                    source_run_ids=source_run_ids,
+                    recommended_action=recommended_action,
+                )
+            )
+        hints.sort(
+            key=lambda item: (
+                -item.priority,
+                -item.support_count,
+                item.stage_id,
+                item.error_code,
+            )
+        )
+        return hints[:8]
+
+    def _compute_failure_priority(
+        self,
+        *,
+        stage_id: str,
+        retryable: bool,
+        support_count: int,
+        has_tool: bool,
+    ) -> int:
+        score = support_count * 10
+        if stage_id in {"stage_06_resource_and_safety_gate", "stage_07_execution"}:
+            score += 30
+        if has_tool:
+            score += 10
+        if retryable:
+            score += 8
+        return score
 
     def _append_approval_records(
         self,
@@ -522,7 +788,25 @@ class MemoryCoordinator:
         record: RunRecord,
         run_id: str,
         manual_confirmation_records: list[str],
+        approval_records: list[dict[str, str]] | None = None,
     ) -> None:
+        for item in approval_records or []:
+            approver = str(item.get("approver", "human")).strip() or "human"
+            reason = str(item.get("reason", "")).strip()
+            approved_at = str(item.get("approved_at", "")).strip() or None
+            if not reason:
+                continue
+            approval = ApprovalRecord(
+                run_id=run_id,
+                stage_id="stage_06_resource_and_safety_gate",
+                decision=str(item.get("approved", "true")).strip().lower(),
+                reason=reason,
+                scope=["scheduler_submit"],
+                approver=approver,
+                approved_at=approved_at,
+            )
+            if approval not in record.approval_records:
+                record.approval_records.append(approval)
         for item in manual_confirmation_records:
             normalized = item.strip()
             if not normalized:
