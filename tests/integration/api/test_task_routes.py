@@ -478,7 +478,7 @@ def test_tasks_diagnostic_route_low_coverage_keeps_knowledge_fallback_path() -> 
     response = client.post(
         "/tasks/diagnostic",
         json={
-            "request_text": "xqzv-404-zzzz",
+            "request_text": "xqzv-qzrx-zzzz",
             "identity": {
                 "task_id": "task-api-diagnostic-fallback-001",
                 "run_id": "run-api-diagnostic-fallback-001",
@@ -511,7 +511,7 @@ def test_tasks_diagnostic_route_supports_disabling_external_fallback_by_env(monk
         response = client.post(
             "/tasks/diagnostic",
             json={
-                "request_text": "xqzv-404-zzzz",
+                "request_text": "xqzv-qzrx-zzzz",
                 "identity": {
                     "task_id": "task-api-diagnostic-fallback-disabled-001",
                     "run_id": "run-api-diagnostic-fallback-disabled-001",

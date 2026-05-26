@@ -339,7 +339,7 @@ def test_knowledge_resolver_uses_fallback_for_low_coverage_query() -> None:
     resolver = KnowledgeResolver()
 
     bundle = resolver.resolve(
-        query="xqzv-404-zzzz",
+        query="xqzv-qzrx-zzzz",
         domain=TaskDomain.KNOWLEDGE,
     )
 
@@ -397,7 +397,7 @@ def test_knowledge_resolver_knowledge_only_policy_blocks_bio_domain_external_fal
         external_fallback_policy="knowledge_only",
     )
 
-    bundle = resolver.resolve(query="xqzv-404-bio", domain=TaskDomain.BIOINFORMATICS)
+    bundle = resolver.resolve(query="xqzv-qzrx-bio", domain=TaskDomain.BIOINFORMATICS)
 
     assert bundle.fallback_requested is True
     assert bundle.fallback_gate_decision == "blocked"

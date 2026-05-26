@@ -159,7 +159,7 @@ def test_cli_diagnostic_command_keeps_knowledge_fallback_path_for_low_coverage()
             "--working-directory",
             "/cluster/work/sheep",
             "--request-text",
-            "xqzv-404-zzzz",
+            "xqzv-qzrx-zzzz",
         ],
     )
 

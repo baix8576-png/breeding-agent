@@ -1,11 +1,11 @@
 # references index
 
-This directory stores project-local reference documents for genetics workflow design, interpretation boundaries, and report packaging.
+This directory stores the Git-tracked layer of the GeneAgent 知识库 for genetics workflow design, interpretation boundaries, report packaging, and literature-backed planning.
 
 Current status:
-- Documents in this tree are placeholders and templates.
-- They define expected knowledge organization for the MVP but do not claim validated scientific defaults.
-- Pipeline blueprints may point to these files as human-readable companions.
+- Documents in this tree are copyright-safe summaries, templates, SOPs, and curated paper cards.
+- Original PDFs, extracted full text, chunks, and indexes belong under `.geneagent/knowledge/*` and are not committed.
+- Pipeline blueprints may point to these files as human-readable and retrieval-ready companions.
 
 Subdirectories:
 - `input_specs/`: expected file roles, naming patterns, and dataset bundle templates.
@@ -33,6 +33,14 @@ Current paper seed packs:
 - `papers/pca_core_papers_v1.md`
 - `papers/grm_core_papers_v1.md`
 - `papers/genomic_prediction_core_papers_v1.md`
+- `papers/animal_genomics_classic_landmarks.md`
+- `papers/animal_genomics_recent_high_impact_2022_2026.md`
+- `papers/species_literature_index.md`
+
+Literature curation policy:
+- `ontology/literature_curation_policy.md`
+- Public-facing name: `GeneAgent 知识库`
+- Development-history labels (`V1`, `V1.5`, `V2`) must not replace the user-facing knowledge-base name.
 
 PDF ingestion SOP:
 - `sop/grobid_pdf_ingestion_sop.md`
