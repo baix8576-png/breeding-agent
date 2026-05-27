@@ -1,5 +1,19 @@
 # genomic prediction template
 
+## Genomic prediction template metadata
+
+```yaml
+knowledge_item.v2:
+  doc_id: template_genomic_prediction_report
+  version: v2
+  species: multi_species
+  blueprint_scope: genomic_prediction
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-05-26T00:00:00Z
+  owner: popgen_quantgen
+```
+
 Sections:
 - project and trait scope
 - cohort alignment summary

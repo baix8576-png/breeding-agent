@@ -102,6 +102,8 @@ def test_report_generator_critical_script_exists_and_has_help(
         cwd=ROOT,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         check=False,
     )
 

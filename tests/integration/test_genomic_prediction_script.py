@@ -41,6 +41,8 @@ def test_genomic_prediction_script_fails_when_no_analysis_step_executes(
         cwd=ROOT,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         check=False,
     )
 

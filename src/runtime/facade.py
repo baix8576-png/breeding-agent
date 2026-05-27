@@ -1573,6 +1573,8 @@ class ApplicationFacade:
                 command,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 check=False,
                 timeout=max(10, self._settings.scheduler_command_timeout_seconds),
             )

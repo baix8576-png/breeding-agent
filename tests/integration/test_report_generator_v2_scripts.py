@@ -78,6 +78,8 @@ def test_build_result_index_emits_v2_required_keys(
         cwd=ROOT,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         check=False,
     )
 

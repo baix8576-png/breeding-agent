@@ -1,5 +1,19 @@
 # QC report template
 
+## QC report asset metadata
+
+```yaml
+knowledge_item.v2:
+  doc_id: template_qc_report
+  version: v2
+  species: multi_species
+  blueprint_scope: qc
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-05-26T00:00:00Z
+  owner: popgen_quantgen
+```
+
 Sections:
 - dataset overview
 - input inventory

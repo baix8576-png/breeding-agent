@@ -66,6 +66,8 @@ def _is_runnable_bash(path: str) -> bool:
             [str(path_obj), "--noprofile", "--norc", "-lc", "echo geneagent-bash-ok"],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             check=False,
             timeout=15,
         )

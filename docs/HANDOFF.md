@@ -6,11 +6,12 @@
 - `1)` after each stage task is completed
 - `2)` before context compression
 - `3)` before opening a new window
-- In every resumed/new-window session, read this file first, then run `git status --short` and verify key files before coding.
+- In every resumed/new-window session, and after context compression recovery, read `docs/HANDOFF.md` and `AGENTS.md` before answering any question.
+- After reading both files, run `git status --short` and verify key files before coding.
 - If any record in this file conflicts with current repository reality, trust `AGENTS.md` + real code/command output, then fix this file immediately.
 
 ## HANDOFF v2 (Project-Specific Rules)
-- This project is stage-driven (`V1.5` chain + non-bio lightweight branch), so each handoff update must explicitly map to `stage_id`.
+- This project is stage-driven (`V2` current stage, inheriting the V1.5 execution chain + non-bio lightweight branch), so each handoff update must explicitly map to `stage_id`.
 - Every handoff entry must include a cluster policy statement:
 - `cluster_execution_expected=true` for bio submit/poll paths
 - `cluster_execution_expected=false` for non-bio branch (must not enter scheduler flow)
@@ -48,6 +49,7 @@
 
 ## Session Start Checklist (Mandatory)
 - Read this file from top to bottom.
+- Read `AGENTS.md` from top to bottom before answering any question.
 - Run `git status --short`.
 - Verify the highest-priority truth source (`AGENTS.md`) has no conflicting rule updates.
 - Verify at least one changed file mentioned in this handoff still matches current repository state.
@@ -141,7 +143,7 @@
 - `D:\geneagent\AGENTS.md`: highest-priority architecture, directory, role, safety, and gate instructions.
 - `D:\geneagent\docs\HANDOFF.md`: continuity notes for context compression and new-window recovery.
 - `D:\geneagent\docs\README.md`: docs directory index; should point readers to this handoff file.
-- `D:\geneagent\docs\v1_5_system_map.md`: current V1.5 system map and executable loop summary.
+- `D:\geneagent\docs\v2_system_map.md`: current V2 system map, including inherited V1.5 execution kernel and V2 control-plane additions.
 - `D:\geneagent\README.md`: user-facing project overview; verify before citing because it may have local edits.
 - `D:\geneagent\src\memory\README.md`: memory-layer context, including project handoff semantics in runtime memory.
 
@@ -157,7 +159,7 @@
 
 ## Resume Prompt
 Paste this into a new session:
-> Continue this project from `D:\geneagent\docs\HANDOFF.md`. First read it, then verify current files with `git status --short` and targeted file reads before making changes. Latest goal: maintain V1.5 continuity without violating `AGENTS.md` directory, safety, or testing gates.
+> Continue this project from `D:\geneagent\docs\HANDOFF.md`. First read both `docs/HANDOFF.md` and `AGENTS.md`, then verify current files with `git status --short` and targeted file reads before making changes. Latest goal: maintain V2 current-stage continuity without violating `AGENTS.md` directory, safety, or testing gates.
 
 ## Session Update 2026-05-09 (M2-01 + M2-02)
 - intent_domain: `knowledge`
@@ -834,3 +836,341 @@ Paste this into a new session:
   - Add auth and operator-role boundary for observability/console/release endpoints in multi-user deployments.
   - Prepare grouped commit for M3-07..M3-12 feature set and push after user confirmation.
 - resume_first_command: `git status --short`
+
+## Session Update 2026-05-11 16:19 +08:00 (Windows warning cleanup)
+- intent_domain: `system`
+- stage_id: `Production Gate`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\src\runtime`, `D:\geneagent\src\scheduler`, `D:\geneagent\tests`, `D:\geneagent\README.md`, `D:\geneagent\AGENTS.md`
+- cluster_execution_expected: `false` (local developer-experience hardening only)
+- contracts_impacted: none
+- files_changed:
+  - `D:\geneagent\.env.example`
+  - `D:\geneagent\AGENTS.md`
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\src\runtime\facade.py`
+  - `D:\geneagent\src\runtime\governance.py`
+  - `D:\geneagent\src\scheduler\base.py`
+  - `D:\geneagent\tests\conftest.py`
+  - `D:\geneagent\tests\e2e\test_v1_completion.py`
+  - `D:\geneagent\tests\integration\test_genomic_prediction_script.py`
+  - `D:\geneagent\tests\integration\test_report_generator_v2_scripts.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Diagnosed PowerShell profile warning as environment-side profile loading blocked by execution policy.
+  - [x] Documented clean Windows startup using `powershell.exe -NoProfile -ExecutionPolicy Bypass`.
+  - [x] Added UTF-8 runtime hints (`PYTHONUTF8=1`, `PYTHONIOENCODING=utf-8`) to `.env.example` and developer commands.
+  - [x] Fixed Windows GBK subprocess warning by adding `encoding="utf-8", errors="replace"` to project and test subprocess readers.
+  - [x] Verified targeted script tests and full test gate now run without GBK warning summary.
+- not_yet_done_checklist:
+  - [ ] Optional: apply a user-level PowerShell execution policy fix manually if the user wants profile scripts to load instead of using `-NoProfile`.
+  - [ ] Optional: add a small Windows bootstrap script if future workflow needs one-click environment setup.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; & .\.venv\Scripts\python.exe -m pytest -q tests/e2e/test_v1_completion.py tests/integration/test_genomic_prediction_script.py tests/integration/test_report_generator_v2_scripts.py` -> pass (`..ss....ss`, no warning summary)
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; & .\.venv\Scripts\python.exe -m compileall src tests` -> pass
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; & .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`, no warning summary)
+- gate_result: `pass`
+- known_risks:
+  - `powershell.exe -NoProfile` suppresses profile-loading noise but does not repair the user's profile execution policy globally.
+  - Git still reports LF-to-CRLF warnings on Windows; these are line-ending notices rather than runtime/test warnings.
+- next_actions:
+  - Commit this Windows warning cleanup after review.
+  - If desired, decide whether to add a dedicated Windows bootstrap script or keep the documented command-only workflow.
+- resume_first_command: `git status --short`
+
+## Session Update 2026-05-26 15:49 +08:00 (production deployment environment charter)
+- intent_domain: `system`
+- stage_id: `Audit + Memory`
+- module_owner_path: `D:\geneagent\AGENTS.md`, `D:\geneagent\docs`
+- cluster_execution_expected: `false` (documentation-only environment policy update)
+- contracts_impacted: none
+- files_changed:
+  - `D:\geneagent\AGENTS.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Replaced the old Windows-first development environment wording in `D:\geneagent\AGENTS.md`.
+  - [x] Added production deployment environment requirements for Linux HPC login/compute nodes, SLURM/PBS/SGE, POSIX storage, and in-cluster networking.
+  - [x] Added environment consistency requirements for `/` paths, bash shebangs, UTF-8, and LF line endings.
+  - [x] Added Windows usage restrictions requiring WSL2 for bioinformatics tool/scheduler validation and `core.autocrlf input`.
+- not_yet_done_checklist:
+  - [ ] Runtime tests were not rerun because this session only changed documentation policy text.
+  - [ ] Optional follow-up: align `README.md` developer environment wording with the new production-first AGENTS policy if desired.
+- verification_commands:
+  - `git status --short` -> confirmed pre-existing dirty worktree before this scoped documentation edit.
+  - `Select-String -Path AGENTS.md -Pattern '^## 开发环境|^### 生产部署环境|Windows|WSL2|开发主机' -Context 0,8` -> located the target section before editing.
+  - `Select-String -Path AGENTS.md -Pattern '^## 开发环境|^### 生产部署环境|^### 环境一致性要求|^### Windows开发注意事项|SLURM / PBS / SGE|core.autocrlf input|不能仅在PowerShell验证' -Context 0,4` -> confirmed the requested AGENTS environment policy text.
+  - `git diff --check -- AGENTS.md docs/HANDOFF.md` -> pass; Git emitted existing LF-to-CRLF line-ending warnings only.
+- gate_result: `partial` (documentation-only update; runtime gates not rerun)
+- known_risks:
+  - Existing unrelated modified files remain in the worktree and were not touched by this session.
+  - Other docs may still describe Windows-first development and can be reconciled separately.
+- next_actions:
+  - No immediate follow-up required for this documentation-only edit.
+  - If requested later, update README environment guidance to match the production deployment policy.
+- resume_first_command: `git status --short`
+
+## Session Update 2026-05-26 15:52 +08:00 (knowledge layering summary table)
+- intent_domain: `knowledge`
+- stage_id: `Local-first RAG`
+- module_owner_path: `D:\geneagent\AGENTS.md`, `D:\geneagent\docs`
+- cluster_execution_expected: `false` (documentation-only policy clarity update)
+- contracts_impacted: none
+- files_changed:
+  - `D:\geneagent\AGENTS.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added `## 知识库分层总结表` to `D:\geneagent\AGENTS.md` within the knowledge-base charter section.
+  - [x] Added a concise three-layer table for `references/*`, `.geneagent/knowledge/*`, and `references/ontology/`.
+  - [x] Added three key principles clarifying copyright-sensitive assets, shareable summaries, and local-only indexes.
+- not_yet_done_checklist:
+  - [ ] Runtime gates (`compileall` and `pytest`) were not rerun because this session changed documentation text only.
+  - [ ] Optional follow-up: mirror the same compact table in `README.md` knowledge-related docs if cross-file consistency is desired.
+- verification_commands:
+  - `rg -n "知识库搭建宪章|开发强制要求|知识库分层总结表" AGENTS.md` -> confirmed the target section and new heading anchor.
+  - `git diff --check -- AGENTS.md docs/HANDOFF.md` -> pass; Git emitted existing LF-to-CRLF line-ending warnings only.
+  - `git status --short` -> worktree remains dirty with pre-existing unrelated changes; scoped doc edits preserved.
+- gate_result: `partial` (documentation-only update; no behavior change test run)
+- known_risks:
+  - Existing line-ending warnings persist on Windows checkout and are not introduced by this change.
+  - Other docs may still present long-form knowledge-layer explanations without the same summary table.
+- next_actions:
+  - Keep this table as the concise reference and update only when knowledge-layer boundaries change.
+  - If requested, replicate this summary style in adjacent documentation pages.
+- resume_first_command: `git status --short`
+
+## Session Update 2026-05-26 16:02 +08:00 (README synced to latest environment/knowledge policy)
+- intent_domain: `system`
+- stage_id: `Audit + Memory`, `Local-first RAG`
+- module_owner_path: `D:\geneagent\README.md`, `D:\geneagent\docs`
+- cluster_execution_expected: `false` (documentation sync only)
+- contracts_impacted: none
+- files_changed:
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added `## 知识库分层总结表` to `D:\geneagent\README.md` with the same three-layer model as `AGENTS.md`.
+  - [x] Added the three key principles for copyright boundary, shareable summary boundary, and local-only indexing.
+  - [x] Updated `README.md` runtime boundary section to production-first deployment policy (`Linux HPC`, `SLURM/PBS/SGE`, POSIX, intranet-only data boundary).
+  - [x] Added Windows fallback development constraints in README (WSL2-only bio/scheduler execution, `core.autocrlf input`, WSL2 test validation).
+- not_yet_done_checklist:
+  - [ ] Runtime gates (`compileall` and `pytest`) were not rerun because this session only changed documentation.
+  - [ ] Optional follow-up: condense the `Windows PowerShell 标准启动命令` block if a strict production-only README profile is preferred.
+- verification_commands:
+  - `rg -n "开发环境|部署|Windows|WSL2|知识库|knowledge|references/|.geneagent/knowledge|knowledge_item.v2|SLURM|PBS|SGE" README.md` -> located stale sections before update.
+  - `git diff --check -- README.md docs/HANDOFF.md` -> pass; Git emitted existing LF-to-CRLF line-ending warnings only.
+  - `git status --short` -> confirmed worktree remains pre-existing dirty; scoped changes preserved.
+- gate_result: `partial` (doc-only update)
+- known_risks:
+  - Existing line-ending warnings remain in Windows checkout.
+  - README still includes Windows bootstrap commands for local onboarding; this is intentional but can be further tightened for production-only readers.
+- next_actions:
+  - Keep README environment and AGENTS environment policy aligned on future edits.
+  - If requested, add a short cross-link from README table to `docs/knowledge_update_workflow.md`.
+- resume_first_command: `git status --short`
+
+## Session Update 2026-05-26 16:26 +08:00 (README V2 completed scope sync)
+- intent_domain: `system`
+- stage_id: `Audit + Memory`
+- module_owner_path: `D:\geneagent\README.md`, `D:\geneagent\docs`
+- cluster_execution_expected: `false` (documentation sync only)
+- contracts_impacted: none
+- files_changed:
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Updated README `CLI / API 覆盖面` section from `V1.5` to `V1.5 + V2`.
+  - [x] Added V2 stable task routes (`/v2/tasks/*`) and V2 control-plane routes (`version-policy/console/observability/release`).
+  - [x] Added `V2 已完成功能（M3）` summary section with API/CLI/doc evidence points.
+  - [x] Updated roadmap wording to reflect V2 control-plane/governance already delivered and remaining expansion scope.
+- not_yet_done_checklist:
+  - [ ] Runtime gates (`compileall` and `pytest`) were not rerun because this session only changed documentation.
+  - [ ] Optional follow-up: add a compact architecture mini-table for V2 modules (`api/routes`, `runtime/governance`, `audit/observability`) if readers need module-path mapping in README.
+- verification_commands:
+  - `rg -n "CLI / API 覆盖面（V1.5 \\+ V2）|API 重点路由（V2 稳定）|API 控制平面（V2）|V2 已完成功能（M3）" README.md` -> confirmed anchors exist at expected sections.
+  - `git diff --check -- README.md docs/HANDOFF.md` -> pass; Git emitted existing LF-to-CRLF line-ending warnings only.
+  - `git status --short` -> worktree remains pre-existing dirty; scoped doc edits preserved.
+- gate_result: `partial` (documentation-only update)
+- known_risks:
+  - Existing line-ending warnings remain on Windows checkout.
+  - README now contains more route detail; any future route rename should sync this section promptly.
+- next_actions:
+  - Keep README route lists synchronized with `src/api/routes/*` and `src/cli/app.py`.
+  - If requested, add a short "V2 hardening backlog" note (auth boundary/signature checks) to distinguish delivered vs pending hardening.
+- resume_first_command: `git status --short`
+
+## Session Update 2026-05-26 17:51 +08:00 (require HANDOFF + AGENTS read before answering)
+- intent_domain: `system`
+- stage_id: `Audit + Memory`
+- module_owner_path: `D:\geneagent\AGENTS.md`, `D:\geneagent\docs`
+- cluster_execution_expected: `false` (documentation rule update only)
+- contracts_impacted: none
+- files_changed:
+  - `D:\geneagent\AGENTS.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Updated `AGENTS.md` HANDOFF protocol to require reading both `docs/HANDOFF.md` and `AGENTS.md` at session start.
+  - [x] Added explicit rule: after new window open or context compression recovery, read both files before answering any question.
+  - [x] Updated `docs/HANDOFF.md` mandatory usage policy and session start checklist to match the same requirement.
+- not_yet_done_checklist:
+  - [ ] Runtime gates (`compileall` and `pytest`) were not rerun because this session changed documentation only.
+  - [ ] Optional follow-up: mirror this "answer-before-read" rule in any external onboarding notes if they are used by teammates.
+- verification_commands:
+  - `rg -n "HANDOFF Mandatory Protocol|每次开始新会话|上下文压缩后恢复会话|回答任何问题前" AGENTS.md` -> confirmed new AGENTS rules are present.
+  - `rg -n "resumed/new-window|context compression recovery|before answering any question|Session Start Checklist" docs/HANDOFF.md` -> confirmed HANDOFF policy/checklist text is present.
+  - `git diff --check -- AGENTS.md docs/HANDOFF.md` -> pass; Git emitted existing LF-to-CRLF line-ending warnings only.
+- gate_result: `partial` (doc-only update)
+- known_risks:
+  - Existing LF-to-CRLF warnings remain in Windows working copy handling.
+  - If teammates rely on old prompts/snippets, they may still omit `AGENTS.md` until those snippets are refreshed.
+- next_actions:
+  - Enforce this rule on future resumed sessions before any response generation.
+  - Keep AGENTS/HANDOFF wording aligned when protocol text changes again.
+- resume_first_command: `git status --short`
+
+## Session Update 2026-05-26 21:30 +08:00 (GeneAgent knowledge base literature expansion)
+- intent_domain: `knowledge`
+- stage_id: `Local-first RAG`
+- module_owner_path: `D:\geneagent\references\papers`, `D:\geneagent\references\ontology`, `D:\geneagent\tests\unit\knowledge`
+- cluster_execution_expected: `false` (knowledge asset and test update only; no scheduler submit/poll path)
+- contracts_impacted: `knowledge_item.v2` usage only; no enum/API schema changes
+- files_changed:
+  - `D:\geneagent\references\papers\animal_genomics_classic_landmarks.md`
+  - `D:\geneagent\references\papers\animal_genomics_recent_high_impact_2022_2026.md`
+  - `D:\geneagent\references\papers\species_literature_index.md`
+  - `D:\geneagent\references\papers\README.md`
+  - `D:\geneagent\references\ontology\literature_curation_policy.md`
+  - `D:\geneagent\references\INDEX.md`
+  - `D:\geneagent\tests\unit\knowledge\test_literature_knowledge_pack.py`
+  - `D:\geneagent\tests\unit\knowledge\test_retrieval.py`
+  - `D:\geneagent\tests\e2e\cli\test_plan_placeholder.py`
+  - `D:\geneagent\tests\integration\api\test_task_routes.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added the public-facing `GeneAgent 知识库` curation wording and kept V1/V1.5/V2 as development-history labels only.
+  - [x] Added 42 classic animal genomics landmark cards in `references/papers/animal_genomics_classic_landmarks.md`.
+  - [x] Added 72 recent 2022-2026 animal genomics literature cards in `references/papers/animal_genomics_recent_high_impact_2022_2026.md`.
+  - [x] Added species routing index for cattle, pig, poultry, sheep/goat, and aquaculture literature retrieval.
+  - [x] Added literature curation policy covering inclusion tiers, metadata traceability, recency audit, and Git/local boundaries.
+  - [x] Updated references index and papers README to point to the new knowledge-base assets.
+  - [x] Added unit coverage for metadata parsing, doc_id uniqueness, recent-window ratio, public naming, and retrieval regression queries.
+  - [x] Replaced brittle `xqzv-404-zzzz` low-coverage test sentinel with alphabet-only `xqzv-qzrx-zzzz` because DOI-like numeric fragments can be valid literature tokens.
+- not_yet_done_checklist:
+  - [ ] Some recent cards are marked `verify before citation export`; they are retrieval/planning seeds and should be refreshed through CrossRef/PubMed/Semantic Scholar/Zotero before manuscript-grade citation output.
+  - [ ] Optional follow-up: sync accepted paper cards into Zotero collections if formal manuscript citation management is needed.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; & .\.venv\Scripts\python.exe -m pytest -q tests/unit/knowledge` -> pass (`34 passed`)
+  - `rg -n "knowledge_item\.v2:" references\papers` -> pass; confirmed new and existing paper-card metadata blocks are discoverable.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; & .\.venv\Scripts\python.exe -m compileall src tests` -> pass
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; & .\.venv\Scripts\python.exe -m pytest -q` -> pass
+  - `git diff --check -- references tests docs\HANDOFF.md` -> pass; Git emitted existing LF-to-CRLF working-copy warnings only.
+- gate_result: `pass`
+- known_risks:
+  - Several recent high-impact candidate cards intentionally avoid hard-coding unverified DOI/PMID metadata and are labelled for citation refresh.
+  - Existing worktree remains dirty with unrelated source/test/doc changes from earlier sessions; this update did not revert them.
+  - Windows line-ending warnings remain due local checkout behavior, not whitespace errors.
+- next_actions:
+  - Use the new literature policy before adding further paper cards.
+  - For manuscript/export workflows, refresh `verify before citation export` cards against CrossRef/PubMed/Semantic Scholar/Zotero.
+- resume_first_command: `git status --short`
+
+## Session Update 2026-05-27 03:23 +08:00 (references knowledge asset layer completion)
+- intent_domain: `knowledge`
+- stage_id: `Local-first RAG`, `Input Validation`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\references`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\docs`
+- cluster_execution_expected: `false` (Git-versioned knowledge assets and tests only; no scheduler submit/poll path)
+- contracts_impacted: `knowledge_item.v2` usage only; no API/CLI/Pydantic enum/schema changes
+- files_changed:
+  - `D:\geneagent\references\INDEX.md`
+  - `D:\geneagent\references\input_specs\input_bundle_contract.md`
+  - `D:\geneagent\references\input_specs\dataset-bundle-template.md`
+  - `D:\geneagent\references\qc_rules\default_qc_threshold_profile.md`
+  - `D:\geneagent\references\structure_analysis\pca_structure_interpretation.md`
+  - `D:\geneagent\references\modeling_guides\genomic_modeling_routes.md`
+  - `D:\geneagent\references\parameter_playbooks\core_parameter_playbooks.md`
+  - `D:\geneagent\references\parameter_playbooks\qc_defaults.md`
+  - `D:\geneagent\references\parameter_playbooks\pca_component_policy.md`
+  - `D:\geneagent\references\parameter_playbooks\grm_resource_baseline.md`
+  - `D:\geneagent\references\parameter_playbooks\genomic_prediction_cv_policy.md`
+  - `D:\geneagent\references\parameter_playbooks\scheduler_resource_presets.md`
+  - `D:\geneagent\references\evaluation\evaluation_metric_playbook.md`
+  - `D:\geneagent\references\evaluation\diagnostics\scheduler_error_patterns.md`
+  - `D:\geneagent\references\evaluation\diagnostics\bio_tool_error_patterns.md`
+  - `D:\geneagent\references\report_templates\report_index_v2_template.md`
+  - `D:\geneagent\references\report_templates\diagnostic_report_template.md`
+  - `D:\geneagent\references\report_templates\audit_bundle_template.md`
+  - `D:\geneagent\references\failure_cases\operational_failure_cases.md`
+  - `D:\geneagent\references\sop\grobid_pdf_ingestion_sop.md`
+  - `D:\geneagent\references\sop\knowledge_update_sop.md`
+  - `D:\geneagent\references\sop\report_review_sop.md`
+  - `D:\geneagent\references\sop\hpc_execution_sop.md`
+  - `D:\geneagent\references\ontology\knowledge_ontology_controls.md`
+  - `D:\geneagent\references\**\README.md`
+  - `D:\geneagent\tests\unit\knowledge\test_references_coverage.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Built reference coverage baseline and confirmed previous non-paper directories were mostly README/template-only.
+  - [x] Added metadata-backed input specification knowledge for input bundle, file role matrix, sample ID policy, and sidecar/path rules.
+  - [x] Added metadata-backed QC, structure analysis, modeling, parameter playbook, evaluation, report template, failure case, SOP, and ontology knowledge assets.
+  - [x] Added `knowledge_item.v2` metadata to existing dataset bundle, report templates, GROBID SOP, and scheduler/bio-tool diagnostic pattern entries.
+  - [x] Updated `references/INDEX.md` and subdirectory README files from placeholder wording to formal GeneAgent knowledge base asset indexes.
+  - [x] Added `tests/unit/knowledge/test_references_coverage.py` for full reference indexing, doc ID uniqueness, per-directory coverage, metadata presence, diagnostics indexing, retrieval regression, and raw artifact exclusion.
+  - [x] Verified `ReferenceKnowledgeIndexer(Path("references")).build()` returns `errors == []`, `doc_count=252`, and `chunk_count=252`.
+  - [x] Verified each standard `references/` subdirectory has at least 3 indexed chunks and the core directories exceed the 5-chunk floor.
+  - [x] Verified no raw PDF/TEI/index/entity-data files were added under `references/`.
+- not_yet_done_checklist:
+  - [ ] Optional follow-up: split any dense consolidated knowledge files into smaller topic-specific files if future maintainers prefer one policy per file.
+  - [ ] Optional follow-up: add a generated doc_id registry artifact only if the team wants a committed registry; current registry is enforced by tests.
+  - [ ] Existing unrelated dirty worktree files remain outside this scope and were not reverted.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; & .\.venv\Scripts\python.exe -m pytest -q tests/unit/knowledge/test_references_coverage.py` -> pass (`7 passed`)
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; & .\.venv\Scripts\python.exe -m pytest -q tests/unit/knowledge` -> pass (`41 passed`)
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; & .\.venv\Scripts\python.exe -m compileall src tests` -> pass
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; & .\.venv\Scripts\python.exe -m pytest -q` -> pass
+  - `(rg -n "knowledge_item\.v2:" references | Measure-Object).Count` -> `256`
+  - `ReferenceKnowledgeIndexer(Path("references")).build()` -> `errors=0`, `docs=252`, `chunks=252`
+  - `git diff --check -- references tests docs\HANDOFF.md` -> pass (line-ending warnings only if emitted by Git)
+- gate_result: `pass`
+- known_risks:
+  - Some guidance entries are SOP/expert-opinion operational knowledge and explicitly should not be presented as validated scientific defaults.
+  - Current worktree still contains unrelated modified source/doc files from earlier sessions; this update only targeted `references`, `tests/unit/knowledge`, and HANDOFF.
+  - `grobid_pdf_ingestion_sop.md` was rewritten in ASCII because the previous terminal view showed mojibake; the SOP intent and Git/local copyright boundary were preserved.
+- next_actions:
+  - Use `tests/unit/knowledge/test_references_coverage.py` as the required gate for future `references/` knowledge asset updates.
+  - If later committing this change, stage only `references/*`, `tests/unit/knowledge/test_references_coverage.py`, and the relevant HANDOFF hunk to avoid mixing unrelated dirty files.
+- resume_first_command: `git status --short`
+
+## Session Update 2026-05-27 08:42 +08:00 (dirty working tree cleanup by commit)
+- intent_domain: `system`
+- stage_id: `Audit + Memory`, `Local-first RAG`, `Production Gate`
+- module_owner_path: `D:\geneagent`
+- cluster_execution_expected: `false` (version-control cleanup only; no scheduler submit/poll path)
+- contracts_impacted: none
+- files_changed:
+  - `D:\geneagent\AGENTS.md`
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\.env.example`
+  - `D:\geneagent\docs`
+  - `D:\geneagent\references`
+  - `D:\geneagent\src\runtime`
+  - `D:\geneagent\src\scheduler`
+  - `D:\geneagent\tests`
+- completed_checklist:
+  - [x] Read `docs/HANDOFF.md` and `AGENTS.md` before acting on the dirty working tree.
+  - [x] Confirmed `main` was aligned with `origin/main` before cleanup and had local dirty files only.
+  - [x] Interpreted "clear dirty files" as preserving current work by committing and pushing, not discarding changes.
+  - [x] Reviewed dirty scope with `git status --short --branch`, `git diff --name-only`, and `git ls-files --others --exclude-standard`.
+  - [x] Used prior full verification evidence from this same working tree before preparing the cleanup commit.
+- not_yet_done_checklist:
+  - [ ] Final `git status --short --branch` must be checked after commit and push.
+  - [ ] No destructive discard/reset was performed.
+- verification_commands:
+  - `git status --short --branch` -> `main...origin/main` with local dirty files before cleanup.
+  - `git diff --name-only` -> listed modified tracked files.
+  - `git ls-files --others --exclude-standard` -> listed untracked files to be included in cleanup commit.
+  - Prior gate in same working tree: `python -m pytest -q`, `python -m compileall src tests` with `PYTHONPYCACHEPREFIX`, and `git diff --check -- references tests docs\HANDOFF.md` -> pass.
+- gate_result: `partial` (commit/push and final clean status still pending at time of this entry)
+- known_risks:
+  - This cleanup intentionally includes both the latest references knowledge asset work and earlier V2 documentation/runtime local changes so the working tree can become clean.
+  - Windows LF-to-CRLF warnings may still appear during Git operations; previous `diff --check` reported no whitespace errors.
+- next_actions:
+  - Stage all dirty files, create one cleanup commit, push to `origin/main`, then verify clean status.
+- resume_first_command: `git status --short --branch`

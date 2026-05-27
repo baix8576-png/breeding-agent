@@ -856,6 +856,8 @@ class BaseSchedulerAdapter(ABC):
                 check=False,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
             )
         except FileNotFoundError:
             fallback = self._resolve_windows_shell_fallback(command)
@@ -868,6 +870,8 @@ class BaseSchedulerAdapter(ABC):
                 check=False,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
             )
 
     def _resolve_windows_shell_fallback(self, command: list[str]) -> list[str] | None:

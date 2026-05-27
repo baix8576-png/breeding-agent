@@ -1,34 +1,39 @@
 # references index
 
-This directory stores the Git-tracked layer of the GeneAgent 知识库 for genetics workflow design, interpretation boundaries, report packaging, and literature-backed planning.
+This directory is the Git-versioned asset layer of the GeneAgent knowledge base. It stores copyright-safe summaries, templates, SOPs, parameter playbooks, diagnostic patterns, ontology controls, and curated paper cards.
 
-Current status:
-- Documents in this tree are copyright-safe summaries, templates, SOPs, and curated paper cards.
-- Original PDFs, extracted full text, chunks, and indexes belong under `.geneagent/knowledge/*` and are not committed.
-- Pipeline blueprints may point to these files as human-readable and retrieval-ready companions.
+Runtime-only assets such as raw PDFs, GROBID TEI, extracted full text, chunks, BM25 indexes, and embedding indexes belong under `.geneagent/knowledge/*` and are not committed.
 
-Subdirectories:
-- `input_specs/`: expected file roles, naming patterns, and dataset bundle templates.
-- `qc_rules/`: placeholder thresholds, anomaly review checklists, and QC decision notes.
-- `structure_analysis/`: PCA interpretation notes, cluster-labeling cautions, and stratification guidance.
-- `modeling_guides/`: genomic prediction route notes and model-family decision templates.
-- `evaluation/`: correlation, bias, cross-validation, subgroup validation guidance, and runtime diagnostics playbooks.
-- `report_templates/`: markdown templates for QC, structure, and genomic prediction summaries.
-- `papers/`: curated paper notes, method evidence extracts, and citation-ready summaries.
-- `sop/`: project-local SOP and execution standards used by runtime planning and review.
-- `parameter_playbooks/`: reusable parameter baselines, tuning boundaries, and model presets.
-- `failure_cases/`: postmortem-style failure records with trigger, diagnosis, and recovery actions.
-- `ontology/`: controlled vocabulary, concept mapping, and metadata schema definitions.
+## Subdirectories
 
-Diagnostics entrypoint:
+| Directory | Owner | Formal assets |
+|---|---|---|
+| `input_specs/` | `popgen_quantgen` | `input_bundle_contract.md`, `dataset-bundle-template.md` |
+| `qc_rules/` | `popgen_quantgen` | `default_qc_threshold_profile.md` |
+| `structure_analysis/` | `popgen_quantgen` | `pca_structure_interpretation.md` |
+| `modeling_guides/` | `popgen_quantgen` | `genomic_modeling_routes.md` |
+| `evaluation/` | `popgen_quantgen`, `safety_fuse`, `hpc_scheduler` | `evaluation_metric_playbook.md`, diagnostics pattern files |
+| `report_templates/` | `popgen_quantgen`, `orchestrator`, `safety_fuse` | QC, structure, genomic prediction, diagnostic, audit, and `report_index.v2` templates |
+| `papers/` | `popgen_quantgen` with metadata review by `llm_orchestrator` | core method cards, animal genomics landmark cards, recent high-impact cards, species index |
+| `sop/` | `popgen_quantgen`, `llm_orchestrator`, `hpc_scheduler` | blueprint SOPs, GROBID ingestion SOP, knowledge update SOP, report review SOP, HPC execution SOP |
+| `parameter_playbooks/` | `popgen_quantgen`, `hpc_scheduler` | QC, PCA, GRM, genomic prediction CV, scheduler resource presets |
+| `failure_cases/` | `popgen_quantgen`, `hpc_scheduler`, `safety_fuse` | operational failure cases and safe retry boundaries |
+| `ontology/` | `llm_orchestrator`, `architect` | `knowledge_item.v2`, curation policy, glossary, species naming, scope/evidence/doc ID/retrieval trace controls |
+
+## Diagnostics Entry Point
+
 - `evaluation/diagnostics/README.md`: stable markdown schema (`diagnostics_v1`) for pattern-based troubleshooting knowledge.
 - `evaluation/diagnostics/scheduler_error_patterns.md`: common SLURM/PBS submit and poll failures with executable remediation steps.
 - `evaluation/diagnostics/bio_tool_error_patterns.md`: common `plink2`/`bcftools`/`vcftools`/`gcta64` failures with executable remediation steps.
 
-Metadata standard:
-- `ontology/knowledge_item.v2.md`: required field contract for knowledge assets (`doc_id/version/species/blueprint_scope/evidence_level/source/updated_at/owner`).
+## Metadata Standard
 
-Current paper seed packs:
+- `ontology/knowledge_item.v2.md`: required field contract for formal knowledge assets (`doc_id/version/species/blueprint_scope/evidence_level/source/updated_at/owner`).
+- All formal Markdown knowledge files, except README/index/schema explainers, must include at least one `knowledge_item.v2` block under a `##` heading.
+- `doc_id` values must be globally unique.
+
+## Current Paper Seed Packs
+
 - `papers/qc_core_papers_v1.md`
 - `papers/pca_core_papers_v1.md`
 - `papers/grm_core_papers_v1.md`
@@ -37,21 +42,15 @@ Current paper seed packs:
 - `papers/animal_genomics_recent_high_impact_2022_2026.md`
 - `papers/species_literature_index.md`
 
-Literature curation policy:
+## Literature Curation Policy
+
 - `ontology/literature_curation_policy.md`
-- Public-facing name: `GeneAgent 知识库`
+- Public-facing name: `GeneAgent knowledge base`
 - Development-history labels (`V1`, `V1.5`, `V2`) must not replace the user-facing knowledge-base name.
 
-PDF ingestion SOP:
-- `sop/grobid_pdf_ingestion_sop.md`
+## Conventions
 
-Blueprint stage SOP library (M2-04):
-- `sop/qc_pipeline_stage_sop_v1.md`
-- `sop/pca_pipeline_stage_sop_v1.md`
-- `sop/grm_builder_stage_sop_v1.md`
-- `sop/genomic_prediction_stage_sop_v1.md`
-
-Conventions:
 - Keep thresholds and modeling choices explicitly marked as project-specific until validated by SOPs.
-- Reference files should explain assumptions, not hide them.
+- Reference files should explain assumptions and risk boundaries.
 - If a blueprint depends on a reference file, list the exact file path inside the blueprint asset index.
+- Do not commit raw VCF, BAM, FASTQ, FASTA, PDF, TEI, extracted full text, chunks, BM25 indexes, or embedding indexes.

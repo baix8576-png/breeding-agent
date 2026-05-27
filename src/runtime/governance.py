@@ -74,6 +74,8 @@ class GovernanceService:
                     cwd=str(root),
                     capture_output=True,
                     text=True,
+                    encoding="utf-8",
+                    errors="replace",
                     check=False,
                     timeout=max(60, int(timeout_seconds)),
                 )

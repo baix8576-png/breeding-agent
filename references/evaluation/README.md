@@ -1,23 +1,17 @@
 # evaluation
 
-Planned documentation set for benchmarking and validation.
+Owner: `popgen_quantgen`; diagnostic safety entries owned by `safety_fuse` and `hpc_scheduler`
 
-Examples:
-- prediction correlation metrics
-- bias assessment
-- cross-validation setup
-- stratified validation patterns
-- runtime diagnostics and actionable remediation playbooks
+Purpose:
+- Store validation, metric, calibration, subgroup, acceptance gate, and diagnostic evaluation guidance.
+- Support genomic prediction reporting, production gates, and failure diagnosis.
 
-Planned placeholder files:
-- `cross-validation-patterns.md`
-- `bias-and-calibration-notes.md`
-- `subgroup-validation-checklist.md`
-- `diagnostics/README.md`
-- `diagnostics/scheduler_error_patterns.md`
-- `diagnostics/bio_tool_error_patterns.md`
+Formal knowledge files:
+- `evaluation_metric_playbook.md`: cross-validation, bias/calibration, subgroup validation, metric dictionary, acceptance gate, and diagnostic evaluation policy.
+- `diagnostics/scheduler_error_patterns.md`: SLURM/PBS diagnostic patterns with `knowledge_item.v2`.
+- `diagnostics/bio_tool_error_patterns.md`: `plink2`/`bcftools`/`vcftools`/`gcta` diagnostic patterns with `knowledge_item.v2`.
 
-Usage:
-- Use these notes to align evaluation design across traits and cohorts.
-- Keep benchmark metric definitions separate from actual measured results.
-- For runtime failures, use `diagnostics/` first to map error patterns to executable fix steps.
+Maintenance notes:
+- Keep benchmark metric definitions separate from measured project results.
+- Diagnostic suggestions must not automatically trigger scheduler retries.
+- New formal Markdown files must include `knowledge_item.v2`.

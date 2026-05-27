@@ -1,18 +1,15 @@
 # qc_rules
 
-Planned documentation set for genetics QC rules and thresholds.
+Owner: `popgen_quantgen`
 
-Examples:
-- missingness guidance
-- MAF and HWE notes
-- heterozygosity checks
-- sample anomaly review guides
+Purpose:
+- Store QC threshold guidance, genotype/sample anomaly rules, and input-format cautions.
+- Support the `qc` blueprint and upstream readiness checks for PCA, GRM, and genomic prediction.
 
-Planned placeholder files:
-- `default-qc-threshold-profile.md`
-- `sample-anomaly-checklist.md`
-- `variant-exclusion-rationale-template.md`
+Formal knowledge files:
+- `default_qc_threshold_profile.md`: missingness, MAF/HWE, heterozygosity, variant exclusion, VCF/PLINK/BAM-derived input, and sample anomaly policies.
 
-Usage:
-- Keep threshold values explicitly marked as placeholder defaults.
-- Link QC decisions back to project-specific SOPs before enforcing them.
+Maintenance notes:
+- Thresholds are planning defaults unless project SOP says otherwise.
+- Expert-opinion entries must keep risk boundaries visible.
+- New formal Markdown files must include `knowledge_item.v2`.

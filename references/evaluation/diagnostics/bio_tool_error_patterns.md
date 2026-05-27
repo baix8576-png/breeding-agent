@@ -2,6 +2,18 @@
 
 ## ENTRY: plink2.missing_bfile_triplet
 
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_bio_tool_plink2_missing_bfile_triplet
+  version: v2
+  species: multi_species
+  blueprint_scope: qc
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-05-26T00:00:00Z
+  owner: popgen_quantgen
+```
+
 - pattern_id: `plink2.missing_bfile_triplet`
 - component: `tools.plink2`
 - stage: `input_validation,execution`
@@ -35,6 +47,18 @@ plink2 --bfile dataset_plink --freq --out dataset_qc_check
   2. Output log confirms expected sample and variant counts.
 
 ## ENTRY: plink2.no_variants_after_filters
+
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_bio_tool_plink2_no_variants_after_filters
+  version: v2
+  species: multi_species
+  blueprint_scope: qc
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-05-26T00:00:00Z
+  owner: popgen_quantgen
+```
 
 - pattern_id: `plink2.no_variants_after_filters`
 - component: `tools.plink2`
@@ -70,6 +94,18 @@ plink2 --bfile <prefix> --extract qc_relaxed.prune.in --make-bed --out qc_final
 
 ## ENTRY: plink2.duplicate_variant_ids
 
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_bio_tool_plink2_duplicate_variant_ids
+  version: v2
+  species: multi_species
+  blueprint_scope: qc
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-05-26T00:00:00Z
+  owner: popgen_quantgen
+```
+
 - pattern_id: `plink2.duplicate_variant_ids`
 - component: `tools.plink2`
 - stage: `input_validation,execution`
@@ -102,6 +138,18 @@ plink2 --bfile <prefix>.renamed --list-duplicate-vars ids-only suppress-first --
   2. Downstream tools consume normalized IDs without collision errors.
 
 ## ENTRY: bcftools.not_bgzip_or_missing_index
+
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_bio_tool_bcftools_not_bgzip_or_missing_index
+  version: v2
+  species: multi_species
+  blueprint_scope: qc
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-05-26T00:00:00Z
+  owner: popgen_quantgen
+```
 
 - pattern_id: `bcftools.not_bgzip_or_missing_index`
 - component: `tools.bcftools`
@@ -137,6 +185,18 @@ bcftools view -h input.vcf.gz | head
   2. Downstream region queries (`-r chr:start-end`) run successfully.
 
 ## ENTRY: bcftools.malformed_header_or_fields
+
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_bio_tool_bcftools_malformed_header_or_fields
+  version: v2
+  species: multi_species
+  blueprint_scope: qc
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-05-26T00:00:00Z
+  owner: popgen_quantgen
+```
 
 - pattern_id: `bcftools.malformed_header_or_fields`
 - component: `tools.bcftools`
@@ -174,6 +234,18 @@ bcftools index -f input.norm.vcf.gz
 
 ## ENTRY: bcftools.index_older_than_data
 
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_bio_tool_bcftools_index_older_than_data
+  version: v2
+  species: multi_species
+  blueprint_scope: qc
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-05-26T00:00:00Z
+  owner: popgen_quantgen
+```
+
 - pattern_id: `bcftools.index_older_than_data`
 - component: `tools.bcftools`
 - stage: `execution`
@@ -208,6 +280,18 @@ bcftools view -r <chr>:<start>-<end> input.vcf.gz | head
 
 ## ENTRY: vcftools.genotype_field_missing
 
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_bio_tool_vcftools_genotype_field_missing
+  version: v2
+  species: multi_species
+  blueprint_scope: qc
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-05-26T00:00:00Z
+  owner: popgen_quantgen
+```
+
 - pattern_id: `vcftools.genotype_field_missing`
 - component: `tools.vcftools`
 - stage: `input_validation,execution`
@@ -241,6 +325,18 @@ vcftools --gzvcf input.vcf.gz --freq --out vcftools_freq_check
   2. Genotype-based vcftools command completes successfully.
 
 ## ENTRY: vcftools.input_open_failed
+
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_bio_tool_vcftools_input_open_failed
+  version: v2
+  species: multi_species
+  blueprint_scope: qc
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-05-26T00:00:00Z
+  owner: popgen_quantgen
+```
 
 - pattern_id: `vcftools.input_open_failed`
 - component: `tools.vcftools`
@@ -277,6 +373,18 @@ vcftools --gzvcf /abs/path/input.vcf.gz --freq --out freq_check
 
 ## ENTRY: vcftools.empty_output_after_filtering
 
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_bio_tool_vcftools_empty_output_after_filtering
+  version: v2
+  species: multi_species
+  blueprint_scope: qc
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-05-26T00:00:00Z
+  owner: popgen_quantgen
+```
+
 - pattern_id: `vcftools.empty_output_after_filtering`
 - component: `tools.vcftools`
 - stage: `execution`
@@ -312,6 +420,18 @@ vcftools --gzvcf input.vcf.gz --maf 0.005 --max-missing 0.9 --recode --stdout | 
 
 ## ENTRY: gcta.input_file_open_failed
 
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_bio_tool_gcta_input_file_open_failed
+  version: v2
+  species: multi_species
+  blueprint_scope: grm
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-05-26T00:00:00Z
+  owner: popgen_quantgen
+```
+
 - pattern_id: `gcta.input_file_open_failed`
 - component: `tools.gcta64`
 - stage: `input_validation,execution`
@@ -345,6 +465,18 @@ gcta64 --grm <grm_prefix> --reml --pheno <pheno_file> --out reml_test
   2. GCTA command starts and writes expected log header.
 
 ## ENTRY: gcta.no_valid_phenotype
+
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_bio_tool_gcta_no_valid_phenotype
+  version: v2
+  species: multi_species
+  blueprint_scope: genomic_prediction
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-05-26T00:00:00Z
+  owner: popgen_quantgen
+```
 
 - pattern_id: `gcta.no_valid_phenotype`
 - component: `tools.gcta64`
@@ -381,6 +513,18 @@ comm -12 pheno.ids grm.ids | wc -l
   2. Intersected IDs are non-zero and match expected cohort size.
 
 ## ENTRY: gcta.id_mismatch_between_inputs
+
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_bio_tool_gcta_id_mismatch_between_inputs
+  version: v2
+  species: multi_species
+  blueprint_scope: shared
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-05-26T00:00:00Z
+  owner: popgen_quantgen
+```
 
 - pattern_id: `gcta.id_mismatch_between_inputs`
 - component: `tools.gcta64`

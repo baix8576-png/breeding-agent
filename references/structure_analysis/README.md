@@ -1,17 +1,15 @@
 # structure_analysis
 
-Planned documentation set for PCA, population structure, and stratification interpretation.
+Owner: `popgen_quantgen`
 
-Examples:
-- PCA interpretation notes
-- admixture or structure workflow references
-- kinship and relatedness explanation templates
+Purpose:
+- Store PCA, population-structure, admixture, stratification, and relatedness interpretation guidance.
+- Support the `pca` blueprint and structure-aware downstream modeling decisions.
 
-Planned placeholder files:
-- `pca-interpretation-checklist.md`
-- `cluster-labeling-cautions.md`
-- `stratification-risk-template.md`
+Formal knowledge files:
+- `pca_structure_interpretation.md`: PCA interpretation, cluster naming caution, stratification risk, admixture caution, and kinship interpretation.
 
-Usage:
-- Use these documents to frame interpretation boundaries and follow-up checks.
-- Do not auto-assign biological labels from placeholder PCA outputs.
+Maintenance notes:
+- Do not auto-assign biological labels from visual clusters.
+- Keep exploratory patterns separate from validated metadata labels.
+- New formal Markdown files must include `knowledge_item.v2`.

@@ -1,13 +1,19 @@
 # parameter_playbooks
 
+Owner: `popgen_quantgen`; scheduler entries owned by `hpc_scheduler`
+
 Purpose:
-- Store reusable parameter presets and tuning guidance for `qc / pca / grm / genomic_prediction`.
+- Store reusable parameter presets and tuning boundaries for `qc / pca / grm / genomic_prediction`.
+- Support dry-run, submit-preview, report explanation, and manual review.
 
-Recommended contents:
-- `qc_defaults.md`
-- `pca_component_policy.md`
-- `grm_resource_baseline.md`
-- `genomic_prediction_cv_policy.md`
+Formal knowledge files:
+- `core_parameter_playbooks.md`: consolidated indexed overview for core parameter policies.
+- `qc_defaults.md`: dedicated QC defaults lookup anchor.
+- `pca_component_policy.md`: dedicated PCA component policy lookup anchor.
+- `grm_resource_baseline.md`: dedicated GRM resource estimate lookup anchor.
+- `genomic_prediction_cv_policy.md`: dedicated genomic prediction CV policy lookup anchor.
+- `scheduler_resource_presets.md`: dedicated SLURM/PBS/SGE resource preset lookup anchor.
 
-Metadata:
-- New entries should follow `knowledge_item.v2` (see `references/ontology/knowledge_item.v2.md`).
+Maintenance notes:
+- Presets are not universal defaults; keep cluster and project overrides visible.
+- New formal Markdown files must include `knowledge_item.v2`.

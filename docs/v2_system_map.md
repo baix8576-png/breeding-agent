@@ -1,13 +1,16 @@
-# GeneAgent V1.5 System Map (Single Truth View)
+# GeneAgent V2 System Map (Single Truth View)
 
 ## 1) What Is Already Built
 
-GeneAgent V1.5 is not an empty skeleton. It already has an executable closed loop:
+GeneAgent V2 is the current completed stage. It inherits the V1.5 executable bioinformatics loop and adds stable API versioning, console, observability, audit export, production gate, release plan, and final review controls.
+
+V1.5 remains the historical execution-kernel baseline:
 
 - entry: CLI/API
 - planning: intent routing + 9-stage bio chain / lightweight non-bio chain
 - execution: script generation + scheduler submit/poll adapters (SLURM mainline, PBS compatible)
 - closure: artifact index + report integration + audit + memory handoff
+- V2 control plane: `/v2/*` API, console, observability, audit export, release governance
 
 ---
 
@@ -56,7 +59,7 @@ Non-bio requests follow lightweight branch:
 - command planning: `src/pipeline/execution.py`
 - input bundle validation: `src/pipeline/validators.py`
 
-V1.5 fixed bio blueprints:
+V1.5-inherited fixed bio blueprints:
 
 - `qc_pipeline` -> `scripts/qc_pipeline/run_qc_pipeline.sh`
 - `pca_pipeline` -> `scripts/pca_pipeline/run_pca_pipeline.sh`
@@ -85,7 +88,7 @@ audit and memory:
 
 ---
 
-## 3) V1.5 Acceptance Gate (Current Baseline)
+## 3) V2 Acceptance Gate (Current Stage)
 
 - build gate: `python -m compileall src tests`
 - test gate: `python -m pytest -q`
@@ -122,7 +125,7 @@ If any change cannot answer these three points, do not merge.
 
 ---
 
-## 6) M3 Additions (Now Implemented)
+## 6) V2 Control Plane Additions (M3, Implemented)
 
 - M3-04 audit bundle one-click export:
   - runtime export entry: `src/runtime/facade.py` (`export_audit_bundle`)

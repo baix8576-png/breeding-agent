@@ -1,7 +1,15 @@
 # ontology
 
+Owner: `llm_orchestrator`; contract-sensitive entries reviewed by `architect`
+
 Purpose:
-- Store controlled vocabulary, concept mappings, and schema definitions for knowledge assets.
+- Store controlled vocabulary, concept mappings, metadata schemas, and retrieval trace rules for GeneAgent knowledge assets.
 
 Current standards:
 - `knowledge_item.v2.md`: required metadata fields for reference assets consumed by retrieval and orchestration.
+- `literature_curation_policy.md`: paper-card curation policy and public `GeneAgent knowledge base` naming rule.
+- `knowledge_ontology_controls.md`: terminology glossary, species naming table, blueprint scope vocabulary, evidence level strategy, doc ID registry policy, and retrieval trace schema.
+
+Maintenance notes:
+- Do not add new `blueprint_scope`, `evidence_level`, or `source` values in Markdown without updating contracts and tests.
+- New formal Markdown files must include `knowledge_item.v2`, except schema explainer files such as `knowledge_item.v2.md`.

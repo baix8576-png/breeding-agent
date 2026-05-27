@@ -1,18 +1,15 @@
 # modeling_guides
 
-Planned documentation set for quantitative genetics modeling paths.
+Owner: `popgen_quantgen`
 
-Examples:
-- GBLUP guidance
-- ssGBLUP guidance
-- Bayesian model notes
-- trait-specific evaluation caveats
+Purpose:
+- Store quantitative-genetics modeling guidance for GBLUP, ssGBLUP, Bayesian/ML alternatives, effect design, phenotype type, and deployment boundaries.
+- Support the `genomic_prediction` blueprint and model-family routing.
 
-Planned placeholder files:
-- `genomic-prediction-route-template.md`
-- `model-family-decision-tree.md`
-- `fixed-random-effect-checklist.md`
+Formal knowledge files:
+- `genomic_modeling_routes.md`: GBLUP route, ssGBLUP boundary, Bayesian/ML route, fixed/random effect checklist, phenotype type guide, and deployment boundary.
 
-Usage:
-- Use these notes to document model-family choice and unresolved assumptions.
-- Do not claim validated predictive performance from placeholder workflows.
+Maintenance notes:
+- Do not claim predictive performance from placeholder outputs.
+- Keep model choice tied to validation design and data readiness.
+- New formal Markdown files must include `knowledge_item.v2`.

@@ -2,6 +2,18 @@
 
 ## ENTRY: slurm.account_partition_mismatch
 
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_scheduler_slurm_account_partition_mismatch
+  version: v2
+  species: multi_species
+  blueprint_scope: shared
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-05-26T00:00:00Z
+  owner: hpc_scheduler
+```
+
 - pattern_id: `slurm.account_partition_mismatch`
 - component: `scheduler.slurm`
 - stage: `submit`
@@ -35,6 +47,18 @@ sbatch -A <valid_account> -p <valid_partition> job.slurm
   2. `squeue -j <job_id>` shows `PD` or `R` instead of immediate rejection.
 
 ## ENTRY: slurm.qos_or_resource_limit
+
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_scheduler_slurm_qos_or_resource_limit
+  version: v2
+  species: multi_species
+  blueprint_scope: shared
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-05-26T00:00:00Z
+  owner: hpc_scheduler
+```
 
 - pattern_id: `slurm.qos_or_resource_limit`
 - component: `scheduler.slurm`
@@ -72,6 +96,18 @@ sbatch -p <partition_name> --cpus-per-task=4 --mem=16G --time=04:00:00 job.slurm
 
 ## ENTRY: slurm.node_constraint_unavailable
 
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_scheduler_slurm_node_constraint_unavailable
+  version: v2
+  species: multi_species
+  blueprint_scope: shared
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-05-26T00:00:00Z
+  owner: hpc_scheduler
+```
+
 - pattern_id: `slurm.node_constraint_unavailable`
 - component: `scheduler.slurm`
 - stage: `submit`
@@ -105,6 +141,18 @@ sbatch -p <gpu_partition> --gres=gpu:1 job.slurm
   2. `scontrol show job <job_id>` confirms expected partition and allocated resources.
 
 ## ENTRY: pbs.unknown_queue
+
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_scheduler_pbs_unknown_queue
+  version: v2
+  species: multi_species
+  blueprint_scope: shared
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-05-26T00:00:00Z
+  owner: hpc_scheduler
+```
 
 - pattern_id: `pbs.unknown_queue`
 - component: `scheduler.pbs`
@@ -140,6 +188,18 @@ qsub -q <valid_queue> job.pbs
 
 ## ENTRY: pbs.resource_limit_exceeded
 
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_scheduler_pbs_resource_limit_exceeded
+  version: v2
+  species: multi_species
+  blueprint_scope: shared
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-05-26T00:00:00Z
+  owner: hpc_scheduler
+```
+
 - pattern_id: `pbs.resource_limit_exceeded`
 - component: `scheduler.pbs`
 - stage: `submit`
@@ -172,6 +232,18 @@ qsub -q <queue_name> -l select=1:ncpus=8:mem=32gb -l walltime=08:00:00 job.pbs
   2. `qstat -f <job_id>` reports requested resources exactly as expected.
 
 ## ENTRY: pbs.hold_or_permission_denied
+
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_scheduler_pbs_hold_or_permission_denied
+  version: v2
+  species: multi_species
+  blueprint_scope: shared
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-05-26T00:00:00Z
+  owner: hpc_scheduler
+```
 
 - pattern_id: `pbs.hold_or_permission_denied`
 - component: `scheduler.pbs`

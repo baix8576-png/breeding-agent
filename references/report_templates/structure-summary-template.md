@@ -1,5 +1,19 @@
 # structure summary template
 
+## Structure summary template metadata
+
+```yaml
+knowledge_item.v2:
+  doc_id: template_structure_summary
+  version: v2
+  species: multi_species
+  blueprint_scope: pca
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-05-26T00:00:00Z
+  owner: popgen_quantgen
+```
+
 Sections:
 - dataset basis
 - pruning assumptions

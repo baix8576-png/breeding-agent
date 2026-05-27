@@ -14,7 +14,8 @@
 ## HANDOFF Mandatory Protocol (强制)
 - `docs/HANDOFF.md` 是跨会话连续性与防幻觉协议的唯一落盘入口。
 - 以下场景必须执行 HANDOFF 更新：`每次阶段任务完成`、`背景压缩前`、`开启新窗口前`。
-- 每次开始新会话时，必须先读取 `docs/HANDOFF.md`，再执行 `git status --short` 与关键文件核验后继续开发。
+- 每次开始新会话时，必须先读取 `docs/HANDOFF.md` 与 `AGENTS.md`，再执行 `git status --short` 与关键文件核验后继续开发。
+- 每次开启新窗口或上下文压缩后恢复会话时，在回答任何问题前，必须先完整阅读 `docs/HANDOFF.md` 与 `AGENTS.md`。
 - 如 HANDOFF 记录与代码现状冲突，以 `AGENTS.md` + 实际代码/命令输出为准，并立即修正 HANDOFF。
 - 每次 HANDOFF 更新必须包含最小字段：`intent_domain / stage_id / module_owner_path / cluster_execution_expected / contracts_impacted / verification_commands / gate_result / next_actions`。
 - 标记“阶段任务已完成”前，必须先完成同会话 HANDOFF 更新；未更新 HANDOFF 视为未完成。
@@ -126,6 +127,20 @@
    - `.geneagent/knowledge/indexes/bm25/`：关键词/BM25 索引。
    - `.geneagent/knowledge/indexes/embeddings/`：embedding 向量索引。
    - `.geneagent/knowledge/indexes/manifest.json`：索引版本、构建时间、模型名、chunk 数量与来源清单。
+
+## 知识库分层总结表
+
+| 层级 | 路径 | 内容 | 版本控制 | 用途 |
+|---|---|---|---|---|
+| **Git版本化知识资产** | `references/*` | 文献卡片、SOP、参数手册、失败案例 | ✅ Git跟踪 | 团队协作、可审查、可复现 |
+| **本地运行知识库** | `.geneagent/knowledge/*` | 原始PDF、GROBID解析、切块、索引 | ❌ 本地生成 | 检索、摄取、私有缓存 |
+| **知识元信息** | `references/ontology/` | `knowledge_item.v2` schema、术语表 | ✅ Git跟踪 | 元数据规范、可追溯性 |
+
+**关键原则**：
+- 版权受限 -> 本地库
+- 可共享摘要 -> Git版本化
+- 检索索引 -> 本地构建，不提交
+
 4. 原始 PDF 的处理规则：
    - 受版权保护或来源不明确的 PDF 默认不得提交到 GitHub。
    - PDF 可保存在本地运行知识库，并通过 `doc_id` 与 `references/papers/*` 文献卡片关联。
@@ -166,17 +181,17 @@
 ## 防偏离执行协议（强制）
 1. 所有开发任务在编码前必须形成最小“变更卡片”（可写在 PR 描述或任务记录）：
    - `intent_domain`（`bioinformatics/system/knowledge`）
-   - `stage_id`（至少一个，来自 V1.5 标准执行链）
+   - `stage_id`（至少一个，来自 V2 标准执行链；V1.5 为继承基线）
    - `module_owner_path`（本次主变更目录）
    - `cluster_execution_expected`（`true/false`）
    - `contracts_impacted`（受影响契约对象）
-2. 任何变更若不能映射到 V1.5 执行链的明确阶段，不得合并。
+2. 任何变更若不能映射到 V2 执行链的明确阶段，不得合并；V1.5 执行链仅作为继承基线与兼容说明。
 3. 任何 `non-bio` 变更不得引入调度脚本生成、真实提交或轮询路径。
 4. 涉及调度能力的变更必须同时检查 `SLURM/PBS` 语义一致性，至少覆盖 `submit/poll/recovery` 其中两项测试。
 5. 涉及报告闭环的变更必须保持 `artifact/report_index/audit/memory` 四者可追溯链路完整。
-6. 行为变化必须同步更新文档真相源：`README.md`、`AGENTS.md`、`docs/v1_5_system_map.md` 至少一处。
+6. 行为变化必须同步更新文档真相源：`README.md`、`AGENTS.md`、`docs/v2_system_map.md` 至少一处。
 
-## V1.5 关键对象最低字段约束（强制）
+## V2 关键对象最低字段约束（继承 V1.5 基线，强制）
 1. `RunContext` 必须包含：`task_id / run_id / session_id / working_directory`。
 2. `PipelineSpec` 必须包含：`name / blueprint_key / analysis_targets / stage_contract / artifact_contract`。
 3. `SubmissionPreview` 必须包含：`mode / cluster_execution_enabled / command / gate_decision / artifacts`。
@@ -210,13 +225,13 @@
 3. 任一 gate 标记 `not_ready` 时，不得合并到主分支。
 
 ## 项目目标与范围
-- `业务目标`：当前阶段聚焦 geneagent `V1.5` 可用闭环，让用户可在 Windows PowerShell + 本地开发环境完成“`request_text + working_directory + InputBundle` -> 任务分流 -> 输入校验 -> 蓝图选择 -> dry-run/submit/poll -> Artifact/Report -> Audit/Memory”的稳定流程；核心仍是动物生信与育种场景中的 `qc / pca / grm / genomic_prediction` 四条主链，以及非生信请求的轻量回答支路。
-- `版本范围`：V1 为已完成基线；V1.5 作为当前行为真相源，覆盖报告增强（含 `report_generator` 与 `report_index`）、工具 manifest 体系化、PBS 与 SLURM 对齐的提交/轮询/恢复语义、知识检索补强（含外部回退门禁）与诊断能力增强；V2 再考虑插件化工具生态、更完整记忆系统、Web UI 与更广泛的多组学模板。V1.5 明确不做的内容包括：全功能 Web 产品、完整插件市场、超出当前蓝图集合的广义算法库、原始大数据入库、以及平行目录式版本分叉。
-- `优先级`：必须持续守住的是输入契约、蓝图路由、真实调度闭环、结果索引/报告/审计落盘、非生信轻量支路“明确不进集群”、最小测试矩阵和 README/AGENTS 对齐；可延期的是 Web UI 与超出四蓝图的扩展算法模板；明确不做的是新建平行源码目录、把核心逻辑留在 `scripts/`、在 V1.5 内引入未验证的复杂多组学链路、以及将原始实体数据提交进仓库。
+- `业务目标`：当前阶段为 geneagent `V2`，以 V1.5 核心执行闭环为基线，让用户在生产部署边界内完成“`request_text + working_directory + InputBundle` -> 任务分流 -> 输入校验 -> 蓝图选择 -> dry-run/submit/poll -> Artifact/Report -> Audit/Memory -> V2 控制平面/治理”的稳定流程；核心仍是动物生信与育种场景中的 `qc / pca / grm / genomic_prediction` 四条主链，以及非生信请求的轻量回答支路。
+- `版本范围`：V1 为早期基础闭环；V1.5 为通向 V2 的过渡增强基线，沉淀报告增强、工具 manifest、PBS/SLURM 调度语义、知识检索、诊断、安全门与 audit/memory 闭环；V2 为当前完成阶段，包含 V1.5 核心闭环，并补齐稳定 `/v2/*` API、console、observability、audit export、production gate、release plan、final review 等控制平面与治理能力。V2 hardening / V2.x expansion 再聚焦插件化工具生态、更完整记忆系统、更广泛多组学模板、生产级权限与签名边界。
+- `优先级`：必须持续守住的是输入契约、蓝图路由、真实调度闭环、结果索引/报告/审计落盘、非生信轻量支路“明确不进集群”、V2 控制平面可追溯性、最小测试矩阵和 README/AGENTS 对齐；可延期的是插件化生态、更广泛多组学模板、生产级权限与签名硬化；明确不做的是新建平行源码目录、把核心逻辑留在 `scripts/`、在 V2 内引入未验证的复杂多组学链路、以及将原始实体数据提交进仓库。
 - `验收标准`：功能验收要求 `python -m pytest -q` 全绿，`python -m compileall src tests` 通过；CLI 覆盖 `plan / report / diagnostic / dry-run / submit-preview / submit / poll-explain`，API 覆盖 `/tasks/draft-plan /tasks/report /tasks/diagnostic /tasks/dry-run /tasks/submit-preview /tasks/submit /tasks/poll-explain`；bio 主链可走 dry-run/submit/poll，non-bio 请求必须走轻量支路并显式“不进集群（不生成调度脚本、不触发 submit/poll）”；`qc / pca / grm / genomic_prediction` 四条主链都能输出结构化计划、脚本与产物索引（含 `report_index`）。
 
-## V1.5 标准执行链（强制）
-生信主链固定为：
+## V2 标准执行链（继承 V1.5 核心闭环，强制）
+生信主链固定继承 V1.5 九阶段闭环：
 - Intake：自然语言请求标准化，产出 `task_id / run_id / session_id`
 - Intent + Scope：识别 `bioinformatics / system / knowledge`
 - Input Validation：把原始路径归一化成 `InputBundle`，检查 VCF/PLINK/BAM/表型/协变量/谱系一致性
@@ -226,6 +241,7 @@
 - Execution：生成 Bash wrapper 与 scheduler script，执行提交、轮询、失败恢复
 - Artifact + Report：收集结果、图表、日志，生成报告索引与解释摘要
 - Audit + Memory：保存输入摘要、规划摘要、提交命令、job id、日志路径、人工确认记录
+- V2 Control Plane：通过 `/v2/*` API、console、observability、audit export、production gate、release plan、final review 提供稳定治理与运维入口
 
 非生信请求固定走轻量支路：
 - `intake -> local retrieval -> answer blueprint -> safety review if needed`
@@ -273,14 +289,16 @@
 - `tests/*`：优先路由到 `test_eval`。
 
 ## 构建/测试/评审约束
-- 当前阶段按 V1.5 范围交付并持续收敛行为真相源；新增能力需在既有模块边界内增量实现，并同步补齐测试与安全门校验。
+- 当前阶段按 V2 范围交付；V1.5 作为核心执行闭环基线保留。新增能力需在既有模块边界内增量实现，并同步补齐测试与安全门校验。
 - 任何新增模块必须先有 skill 或 agent 职责归属，再进入实现阶段。
 - 所有变更必须通过“角色内自检 + 跨角色最小复核”。
 - `architect` 检查架构边界与接口一致性。
 - `safety_fuse` 检查数据边界、熔断与高风险操作门禁。
 - `test_eval` 检查可测性、回归点与验收标准是否可执行。
 - 当前推荐命令：
-- `Build: python -m compileall src tests`
+- `Windows clean shell: powershell.exe -NoProfile -ExecutionPolicy Bypass`
+- `Encoding: $env:PYTHONUTF8="1"; $env:PYTHONIOENCODING="utf-8"`
+- `Build: $env:PYTHONPYCACHEPREFIX="D:\geneagent\pycache_temp"; python -m compileall src tests`
 - `Lint: 当前未纳入强制门禁；若启用，使用 ruff check src tests`
 - `Test: python -m pytest -q`
 - `Test Matrix: python -m pytest -q tests/unit tests/integration tests/e2e`
@@ -317,9 +335,20 @@
 - 发现边界冲突时优先停更对齐，再继续实现，避免并行错误扩散。
 
 ## 开发环境
-- 默认开发主机：Windows 10/11 + PowerShell + WSL2（混合模式）。
-- 代码编辑、Python、pytest、脚本预览与调度模拟采用 Windows + WSL2 混合开发流程：Windows 负责本地工程管理与入口操作，WSL 负责 bash 与类 Linux 工具链验证。
-- WSL2 为推荐协同环境；Windows 原生链路保留为兼容与回退路径。
-- 本地开发目录默认使用 Windows 工作区，例如 `D:\geneagent`。
-- 虚拟环境默认使用 Windows 目录结构：`.venv\Scripts\python.exe` 与 `.venv\Scripts\Activate.ps1`。
-- 生产执行边界仍然是 Linux 集群登录节点与计算节点；Windows 仅作为本地开发与调试环境，不作为最终生产执行环境。
+
+### 生产部署环境
+- **主要部署平台**：Linux HPC集群（登录节点 + 计算节点）
+- **队列系统**：SLURM / PBS / SGE
+- **文件系统**：POSIX兼容，支持大文件和高并发I/O
+- **网络访问**：内网环境，数据不出集群
+
+### 环境一致性要求
+- 路径分隔符统一使用 `/`（避免Windows `\` 兼容问题）
+- 脚本shebang统一使用 `#!/usr/bin/env bash`
+- 编码统一使用 UTF-8
+- 换行符统一使用 LF（不使用CRLF）
+
+### Windows开发注意事项（如必须使用）
+- 必须通过WSL2执行所有生信工具调用和调度脚本
+- 使用Git配置：`git config --global core.autocrlf input`
+- 测试时必须在WSL2环境验证，不能仅在PowerShell验证

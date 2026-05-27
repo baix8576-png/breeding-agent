@@ -1,5 +1,19 @@
 # dataset bundle template
 
+## Dataset bundle template contract
+
+```yaml
+knowledge_item.v2:
+  doc_id: input_dataset_bundle_template
+  version: v2
+  species: multi_species
+  blueprint_scope: shared
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-05-26T00:00:00Z
+  owner: popgen_quantgen
+```
+
 Use this template to describe the local files supplied to a genetics analysis request.
 
 Suggested fields:
