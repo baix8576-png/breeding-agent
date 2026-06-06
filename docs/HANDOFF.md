@@ -2877,3 +2877,32 @@ Paste this into a new session:
   - Consider adding a future `domain_scope` Pydantic field only after references assets and report consumers are ready for a second metadata migration.
   - Keep active goal open until all planned knowledge modules are content-complete and verified.
 - resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-06 21:11 +08:00 (repo cleanup and publication)
+- intent_domain: `system`
+- stage_id: `Audit + Memory`, `V2 Control Plane`
+- module_owner_path: `D:\geneagent`
+- cluster_execution_expected: `false`; this was repository cleanup, verification, commit, and push work only.
+- contracts_impacted:
+  - No runtime or knowledge contracts changed in this publication step.
+  - The stage records the already-merged knowledge scope alignment and remote execution cleanup as a published baseline.
+- completed_checklist:
+  - [x] Verified the current knowledge/doc regression subset still passes before final publication.
+  - [x] Committed the cleanup and alignment batch as `0a589c9` with message `feat: unify knowledge modules and remote execution workflows`.
+  - [x] Pushed `main` to `origin/main` for `ssh://git@ssh.github.com:443/baix8576-png/breeding-agent.git`.
+  - [x] Confirmed the worktree was clean immediately before adding this handoff publication entry.
+- not_yet_done_checklist:
+  - [ ] Continue the next stage of knowledge expansion and script refinement if new dirty files or scope mismatches appear.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\contracts\test_knowledge.py tests\unit\knowledge tests\unit\test_documentation_alignment.py` -> pass.
+  - `git status --short --branch` -> clean before this handoff update.
+  - `git push origin main` -> succeeded, updated `origin/main` from `d040e95` to `0a589c9`.
+- gate_result: `pass`
+- known_risks:
+  - The repository already contains a broad, intentional refactor; future stages should continue to validate scope before adding new files.
+  - Windows line-ending warnings remain a tooling nuisance in `git add`/`git diff`, but they did not block the publication step.
+- next_actions:
+  - Resume work from the published knowledge-module baseline if follow-on edits are needed.
+  - Keep future cleanup or content-expansion stages recorded in checklist form before closing them.
+  - Re-run the appropriate regression slice before any further publication.
+- resume_first_command: `git status --short --branch`
