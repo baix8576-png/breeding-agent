@@ -14,6 +14,11 @@ from knowledge.retrieval import (
     RetrievalBundle,
     RetrievalDocument,
 )
+from knowledge.source_fetcher import (
+    KnowledgeSourceFetcher,
+    SourceFetchEntry,
+    SourceFetchReport,
+)
 
 __all__ = [
     "ExternalKnowledgeRetriever",
@@ -24,8 +29,11 @@ __all__ = [
     "KnowledgeLoadResult",
     "KnowledgeResolver",
     "KnowledgeSearchHit",
+    "KnowledgeSourceFetcher",
     "LocalKnowledgeRetriever",
     "ReferenceKnowledgeIndexer",
     "RetrievalBundle",
     "RetrievalDocument",
+    "SourceFetchEntry",
+    "SourceFetchReport",
 ]

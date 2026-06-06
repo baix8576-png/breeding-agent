@@ -3,7 +3,7 @@
 Owner: `popgen_quantgen`; scheduler entries owned by `hpc_scheduler`
 
 Purpose:
-- Store reusable parameter presets and tuning boundaries for `qc / pca / grm / genomic_prediction`.
+- Store reusable parameter presets and tuning boundaries for `qc / pca / grm / gwas / genomic_prediction` compatibility blueprints and their scientific-domain scripts.
 - Support dry-run, submit-preview, report explanation, and manual review.
 
 Formal knowledge files:

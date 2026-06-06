@@ -5,10 +5,10 @@ import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SCRIPT = ROOT / "scripts" / "genomic_prediction" / "run_genomic_prediction.sh"
+SCRIPT = ROOT / "scripts" / "quantitative_genetics" / "run_breeding_value_prediction.sh"
 
 
-def test_genomic_prediction_script_fails_when_no_analysis_step_executes(
+def test_breeding_value_prediction_script_fails_when_no_analysis_step_executes(
     tmp_path: Path,
     bash_executable: str,
 ) -> None:
@@ -28,13 +28,13 @@ def test_genomic_prediction_script_fails_when_no_analysis_step_executes(
             "--norc",
             SCRIPT.as_posix(),
             "--workdir",
-            str(tmp_path),
+            tmp_path.as_posix(),
             "--input-root",
-            str(input_root),
+            input_root.as_posix(),
             "--plink-prefix",
-            str(plink_prefix),
+            plink_prefix.as_posix(),
             "--phenotype",
-            str(phenotype),
+            phenotype.as_posix(),
             "--analysis-targets",
             "unsupported_target",
         ],
@@ -48,4 +48,4 @@ def test_genomic_prediction_script_fails_when_no_analysis_step_executes(
 
     output = f"{result.stdout}{result.stderr}".replace("\x00", "")
     assert result.returncode != 0
-    assert "No genomic prediction step executed" in output
+    assert "No breeding value prediction step executed" in output

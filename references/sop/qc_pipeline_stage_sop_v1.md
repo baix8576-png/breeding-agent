@@ -5,7 +5,7 @@ knowledge_item.v2:
   doc_id: "sop_qc_pipeline_stage_v1"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "qc"
+  blueprint_scope: genotype_processing
   evidence_level: "sop"
   source: "sop"
   updated_at: "2026-05-09T15:10:00+08:00"
@@ -14,7 +14,7 @@ knowledge_item.v2:
 
 ## Purpose
 - Standardize stage-by-stage operation for `qc_pipeline`.
-- Keep execution behavior aligned with `scripts/qc_pipeline/run_qc_pipeline.sh` and runtime contracts.
+- Keep execution behavior aligned with `scripts/genotype_processing/run_genotype_qc.sh` and runtime contracts.
 
 ## Stage: dataset_inventory
 

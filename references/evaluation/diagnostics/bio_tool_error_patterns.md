@@ -7,7 +7,7 @@ knowledge_item.v2:
   doc_id: diagnostic_bio_tool_plink2_missing_bfile_triplet
   version: v2
   species: multi_species
-  blueprint_scope: qc
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z
@@ -53,7 +53,7 @@ knowledge_item.v2:
   doc_id: diagnostic_bio_tool_plink2_no_variants_after_filters
   version: v2
   species: multi_species
-  blueprint_scope: qc
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z
@@ -99,7 +99,7 @@ knowledge_item.v2:
   doc_id: diagnostic_bio_tool_plink2_duplicate_variant_ids
   version: v2
   species: multi_species
-  blueprint_scope: qc
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z
@@ -144,7 +144,7 @@ knowledge_item.v2:
   doc_id: diagnostic_bio_tool_bcftools_not_bgzip_or_missing_index
   version: v2
   species: multi_species
-  blueprint_scope: qc
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z
@@ -191,7 +191,7 @@ knowledge_item.v2:
   doc_id: diagnostic_bio_tool_bcftools_malformed_header_or_fields
   version: v2
   species: multi_species
-  blueprint_scope: qc
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z
@@ -239,7 +239,7 @@ knowledge_item.v2:
   doc_id: diagnostic_bio_tool_bcftools_index_older_than_data
   version: v2
   species: multi_species
-  blueprint_scope: qc
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z
@@ -285,7 +285,7 @@ knowledge_item.v2:
   doc_id: diagnostic_bio_tool_vcftools_genotype_field_missing
   version: v2
   species: multi_species
-  blueprint_scope: qc
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z
@@ -331,7 +331,7 @@ knowledge_item.v2:
   doc_id: diagnostic_bio_tool_vcftools_input_open_failed
   version: v2
   species: multi_species
-  blueprint_scope: qc
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z
@@ -378,7 +378,7 @@ knowledge_item.v2:
   doc_id: diagnostic_bio_tool_vcftools_empty_output_after_filtering
   version: v2
   species: multi_species
-  blueprint_scope: qc
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z
@@ -425,7 +425,7 @@ knowledge_item.v2:
   doc_id: diagnostic_bio_tool_gcta_input_file_open_failed
   version: v2
   species: multi_species
-  blueprint_scope: grm
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z
@@ -471,7 +471,7 @@ knowledge_item.v2:
   doc_id: diagnostic_bio_tool_gcta_no_valid_phenotype
   version: v2
   species: multi_species
-  blueprint_scope: genomic_prediction
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z
@@ -519,7 +519,7 @@ knowledge_item.v2:
   doc_id: diagnostic_bio_tool_gcta_id_mismatch_between_inputs
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z

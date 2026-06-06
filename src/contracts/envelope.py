@@ -7,6 +7,7 @@ from enum import Enum
 from pydantic import BaseModel, Field
 
 from contracts.api import RequestIdentity
+from contracts.common import ExecutionMode
 from contracts.validation import InputBundle
 
 
@@ -35,6 +36,10 @@ class RuntimeRequestEnvelopeV2(BaseModel):
     dry_run_completed: bool = False
     approval: dict[str, object] | None = None
     outbound_payload: dict[str, object] | None = None
+    execution_mode: ExecutionMode | None = None
+    remote_profile_name: str | None = None
+    watch: bool = False
+    auto_continue: bool | None = None
     metadata: dict[str, object] = Field(default_factory=dict)
 
     def resolved_working_directory(self) -> str | None:

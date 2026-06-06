@@ -24,12 +24,12 @@ def test_envelope_mapper_for_draft_plan_preserves_input_bundle() -> None:
 def test_envelope_mapper_for_dry_run_preserves_command() -> None:
     payload = DryRunRequest(
         request_text="Dry-run PCA",
-        command=["bash", "scripts/pca_pipeline/run_pca_pipeline.sh"],
+        command=["bash", "scripts/population_genetics/run_population_structure_diversity.sh"],
     )
     envelope = envelope_from_dry_run(payload)
 
     assert envelope.intent.value == "dry_run"
-    assert envelope.command == ["bash", "scripts/pca_pipeline/run_pca_pipeline.sh"]
+    assert envelope.command == ["bash", "scripts/population_genetics/run_population_structure_diversity.sh"]
 
 
 def test_envelope_mapper_for_submit_preserves_gate_flags() -> None:

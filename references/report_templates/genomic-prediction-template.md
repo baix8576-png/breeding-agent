@@ -7,7 +7,7 @@ knowledge_item.v2:
   doc_id: template_genomic_prediction_report
   version: v2
   species: multi_species
-  blueprint_scope: genomic_prediction
+  blueprint_scope: reporting_audit
   evidence_level: sop
   source: sop
   updated_at: 2026-05-26T00:00:00Z

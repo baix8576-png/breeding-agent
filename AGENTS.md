@@ -81,7 +81,7 @@
    - 不存放 SOP、规则表、模板正文等静态资料。
 6. `references/`：
    - 负责领域文档、参考资料、静态知识、SOP、模板、输入规范、本地私有知识库资产。
-   - 当前标准子目录包括：`input_specs/`、`qc_rules/`、`structure_analysis/`、`modeling_guides/`、`evaluation/`、`report_templates/`、`papers/`、`sop/`、`parameter_playbooks/`、`failure_cases/`、`ontology/`。
+   - 当前标准子目录包括：`analysis_domains/`、`input_specs/`、`qc_rules/`、`structure_analysis/`、`modeling_guides/`、`evaluation/`、`report_templates/`、`papers/`、`sop/`、`parameter_playbooks/`、`failure_cases/`、`ontology/`。
    - 禁止在 `references/` 中写入运行日志、中间产物、原始大数据文件。
 7. `src/memory/`：
    - 负责短期记忆、工作记忆、长期记忆、对话上下文、历史记录、记忆读写与 handoff。
@@ -104,7 +104,7 @@
 14. `scripts/*`：
     - 仅用于可独立执行的流程驱动器、演示入口、批量任务入口、人工调试入口。
     - `scripts/` 必须是薄入口，核心逻辑必须回收至 `src/` 对应模块。
-    - 当前固定子目录：`qc_pipeline/`、`pca_pipeline/`、`grm_builder/`、`genomic_prediction/`、`report_generator/`。
+    - 当前固定子目录：`genotype_processing/`、`population_genetics/`、`quantitative_genetics/`、`association_mapping/`、`reporting_audit/`。
 15. `tests/*`：
     - 采用 `unit/`、`integration/`、`e2e/` 分层。
     - 测试应尽量镜像 `src/` 的稳定边界；新增模块必须同步新增最小测试覆盖或回归测试。
@@ -114,11 +114,12 @@
    - Git 版本化知识资产固定存放在 `references/*`，用于长期审查、协作、PR diff、方法边界沉淀和可复现摘要。
    - 本地运行知识库固定存放在 `.geneagent/knowledge/*`，用于保存原始 PDF、GROBID 解析结果、全文切块、BM25/embedding 索引和私有缓存。
 2. `references/*` 必须保存可共享、可审查、体积小、版权风险低的内容：
+   - `references/analysis_domains/`：动物遗传育种生信科学域入口，维护专业 `domain_scope`、方法族与当前执行蓝图的映射。
    - `references/papers/`：文献卡片、方法证据摘要、引用链接、DOI/PMID、适用边界、参数建议、风险。
    - `references/sop/`：项目 SOP、GROBID 摄取 SOP、分析执行标准、报告审查标准。
-   - `references/parameter_playbooks/`：`qc / pca / grm / genomic_prediction` 参数基线、调参边界、物种/数据类型差异。
+   - `references/parameter_playbooks/`：执行蓝图与科学域共用的参数基线、调参边界、物种/数据类型差异。
    - `references/failure_cases/`：调度失败、生信工具失败、数据一致性失败与可执行修复建议。
-   - `references/ontology/`：术语表、物种名、本体映射、`knowledge_item.v2`、chunk/schema 定义。
+   - `references/ontology/`：术语表、物种名、本体映射、`domain_scope` 词表、`knowledge_item.v2`、chunk/schema 定义。
 3. `.geneagent/knowledge/*` 是运行期知识库，不进入 Git 版本控制：
    - `.geneagent/knowledge/raw_pdfs/`：本地原始 PDF 与受版权限制文献。
    - `.geneagent/knowledge/grobid_tei/`：GROBID 产出的 TEI XML。
@@ -134,7 +135,7 @@
 |---|---|---|---|---|
 | **Git版本化知识资产** | `references/*` | 文献卡片、SOP、参数手册、失败案例 | ✅ Git跟踪 | 团队协作、可审查、可复现 |
 | **本地运行知识库** | `.geneagent/knowledge/*` | 原始PDF、GROBID解析、切块、索引 | ❌ 本地生成 | 检索、摄取、私有缓存 |
-| **知识元信息** | `references/ontology/` | `knowledge_item.v2` schema、术语表 | ✅ Git跟踪 | 元数据规范、可追溯性 |
+| **知识元信息** | `references/ontology/` | `knowledge_item.v2` schema、`domain_scope`词表、术语表 | ✅ Git跟踪 | 元数据规范、可追溯性 |
 
 **关键原则**：
 - 版权受限 -> 本地库
@@ -149,8 +150,11 @@
    - 必填字段：`doc_id / version / species / blueprint_scope / evidence_level / source / updated_at / owner`。
    - 面向检索的 chunk 还必须包含：`chunk_id / doc_id / source_path / section / page_or_anchor / text / updated_at`。
    - 任一知识条目缺少 `doc_id`、`blueprint_scope` 或 `evidence_level`，不得进入正式检索索引。
+   - `blueprint_scope` 服务当前知识/执行模块索引，正式值为 `knowledge_governance / genotype_processing / population_genetics / quantitative_genetics / association_mapping / reporting_audit`；旧值 `qc / pca / grm / genomic_prediction / shared` 仅允许作为代码兼容别名，不得继续写入正式 `references/*` 元数据。
+   - `domain_scope` 服务动物遗传育种专业科学域分类，当前作为 `references/ontology/domain_scope_vocab.md` 中的策展/检索约定维护；未升级为 Pydantic 必填字段前，不得把它当成 `knowledge_item.v2` 的强制元数据字段。
 6. GeneAgent 的知识检索必须采用 hybrid retrieval：
    - metadata filter 先约束 `species / blueprint_scope / evidence_level / source`。
+   - `domain_scope` 当前作为文档级检索线索和报告解释维度；如需进入强制 metadata filter，必须同步升级契约、索引器、references 元数据和测试。
    - BM25/关键词检索用于工具名、参数、报错、PMID/DOI、软件版本和精确术语。
    - embedding 检索用于语义问题、方法边界、风险解释和跨文档综合。
    - rerank 可在召回后执行，但输出必须保留命中文档、chunk、页码/section、命中理由和置信度。
@@ -225,10 +229,10 @@
 3. 任一 gate 标记 `not_ready` 时，不得合并到主分支。
 
 ## 项目目标与范围
-- `业务目标`：当前阶段为 geneagent `V2`，以 V1.5 核心执行闭环为基线，让用户在生产部署边界内完成“`request_text + working_directory + InputBundle` -> 任务分流 -> 输入校验 -> 蓝图选择 -> dry-run/submit/poll -> Artifact/Report -> Audit/Memory -> V2 控制平面/治理”的稳定流程；核心仍是动物生信与育种场景中的 `qc / pca / grm / genomic_prediction` 四条主链，以及非生信请求的轻量回答支路。
+- `业务目标`：当前阶段为 geneagent `V2`，以 V1.5 核心执行闭环为基线，让用户在生产部署边界内完成“`request_text + working_directory + InputBundle` -> 任务分流 -> 输入校验 -> 蓝图选择 -> dry-run/submit/poll -> Artifact/Report -> Audit/Memory -> V2 控制平面/治理”的稳定流程；当前自动执行入口按动物遗传育种生信专业域组织为 `genotype_processing / population_genetics / quantitative_genetics / association_mapping / reporting_audit`，并保留 `qc_pipeline / pca_pipeline / grm_builder / genomic_prediction` 等兼容蓝图 key；非生信请求走轻量回答支路。执行蓝图入口不是 GeneAgent 知识库的科学分类；知识库科学分类以 `domain_scope` 和 `references/analysis_domains/` 为准。
 - `版本范围`：V1 为早期基础闭环；V1.5 为通向 V2 的过渡增强基线，沉淀报告增强、工具 manifest、PBS/SLURM 调度语义、知识检索、诊断、安全门与 audit/memory 闭环；V2 为当前完成阶段，包含 V1.5 核心闭环，并补齐稳定 `/v2/*` API、console、observability、audit export、production gate、release plan、final review 等控制平面与治理能力。V2 hardening / V2.x expansion 再聚焦插件化工具生态、更完整记忆系统、更广泛多组学模板、生产级权限与签名边界。
 - `优先级`：必须持续守住的是输入契约、蓝图路由、真实调度闭环、结果索引/报告/审计落盘、非生信轻量支路“明确不进集群”、V2 控制平面可追溯性、最小测试矩阵和 README/AGENTS 对齐；可延期的是插件化生态、更广泛多组学模板、生产级权限与签名硬化；明确不做的是新建平行源码目录、把核心逻辑留在 `scripts/`、在 V2 内引入未验证的复杂多组学链路、以及将原始实体数据提交进仓库。
-- `验收标准`：功能验收要求 `python -m pytest -q` 全绿，`python -m compileall src tests` 通过；CLI 覆盖 `plan / report / diagnostic / dry-run / submit-preview / submit / poll-explain`，API 覆盖 `/tasks/draft-plan /tasks/report /tasks/diagnostic /tasks/dry-run /tasks/submit-preview /tasks/submit /tasks/poll-explain`；bio 主链可走 dry-run/submit/poll，non-bio 请求必须走轻量支路并显式“不进集群（不生成调度脚本、不触发 submit/poll）”；`qc / pca / grm / genomic_prediction` 四条主链都能输出结构化计划、脚本与产物索引（含 `report_index`）。
+- `验收标准`：功能验收要求 `python -m pytest -q` 全绿，`python -m compileall src tests` 通过；CLI 覆盖 `plan / report / diagnostic / dry-run / submit-preview / submit / poll-explain`，API 覆盖 `/tasks/draft-plan /tasks/report /tasks/diagnostic /tasks/dry-run /tasks/submit-preview /tasks/submit /tasks/poll-explain`；bio 主链可走 dry-run/submit/poll，non-bio 请求必须走轻量支路并显式“不进集群（不生成调度脚本、不触发 submit/poll）”；`qc / pca / grm / gwas / genomic_prediction` 兼容蓝图都能输出结构化计划、脚本与产物索引（含 `report_index`）。
 
 ## V2 标准执行链（继承 V1.5 核心闭环，强制）
 生信主链固定继承 V1.5 九阶段闭环：
@@ -236,7 +240,7 @@
 - Intent + Scope：识别 `bioinformatics / system / knowledge`
 - Input Validation：把原始路径归一化成 `InputBundle`，检查 VCF/PLINK/BAM/表型/协变量/谱系一致性
 - Local-first RAG：优先检索 `references/*`、本地 SOP、模板和历史规范；仅在门禁通过且本地覆盖不足时走外部回退
-- Blueprint Selection：把请求严格绑定到 `qc / pca / grm / genomic_prediction` 之一，输出阶段清单与产物契约
+- Blueprint Selection：把可自动执行的生信请求严格绑定到 `qc / pca / grm / gwas / genomic_prediction` 之一，输出阶段清单与产物契约；知识检索与报告解释不得把兼容执行链误当作完整科学域分类。
 - Resource + Safety Gate：资源估算、dry-run 预览、人工确认项、熔断条件
 - Execution：生成 Bash wrapper 与 scheduler script，执行提交、轮询、失败恢复
 - Artifact + Report：收集结果、图表、日志，生成报告索引与解释摘要
@@ -270,11 +274,12 @@
 - `src/scheduler/*`：优先路由到 `hpc_scheduler`。
 - `src/safety/*`：优先路由到 `safety_fuse`。
 - `src/audit/*`：优先路由到 `orchestrator`。
-- `scripts/qc_pipeline/*`：优先路由到 `popgen_quantgen`。
-- `scripts/pca_pipeline/*`：优先路由到 `popgen_quantgen`。
-- `scripts/grm_builder/*`：优先路由到 `popgen_quantgen`。
-- `scripts/genomic_prediction/*`：优先路由到 `popgen_quantgen`。
-- `scripts/report_generator/*`：优先路由到 `popgen_quantgen`。
+- `scripts/genotype_processing/*`：优先路由到 `popgen_quantgen`。
+- `scripts/population_genetics/*`：优先路由到 `popgen_quantgen`。
+- `scripts/quantitative_genetics/*`：优先路由到 `popgen_quantgen`。
+- `scripts/association_mapping/*`：优先路由到 `popgen_quantgen`。
+- `scripts/reporting_audit/*`：优先路由到 `popgen_quantgen`。
+- `references/analysis_domains/*`：优先路由到 `popgen_quantgen`，由 `llm_orchestrator` 复核检索可用性，涉及 `domain_scope` 或执行链映射时由 `architect` 复核。
 - `references/input_specs/*`：优先路由到 `popgen_quantgen`。
 - `references/qc_rules/*`：优先路由到 `popgen_quantgen`。
 - `references/structure_analysis/*`：优先路由到 `popgen_quantgen`。
@@ -337,8 +342,8 @@
 ## 开发环境
 
 ### 生产部署环境
-- **主要部署平台**：Linux HPC集群（登录节点 + 计算节点）
-- **队列系统**：SLURM / PBS / SGE
+- **主要执行平台**：普通 Linux 服务器（PC Agent 通过 SSH 控制）与 Linux HPC集群（登录节点 + 计算节点）
+- **队列系统**：普通服务器使用 SSH + bash/nohup 后台执行；HPC 可使用 SLURM / PBS / SGE
 - **文件系统**：POSIX兼容，支持大文件和高并发I/O
 - **网络访问**：内网环境，数据不出集群
 
@@ -352,3 +357,26 @@
 - 必须通过WSL2执行所有生信工具调用和调度脚本
 - 使用Git配置：`git config --global core.autocrlf input`
 - 测试时必须在WSL2环境验证，不能仅在PowerShell验证
+
+## Trusted Remote Execution Policy (Current)
+- Default safe startup mode is `local_preview`: no real scheduler submit is issued until the operator explicitly enables trusted remote execution.
+- Primary ordinary-server delivery mode is `ssh_shell_trusted` only when `GENEAGENT_EXECUTION_MODE=ssh_shell_trusted` and `GENEAGENT_SCHEDULER_REAL_EXECUTION_ENABLED=true` are both configured after `remote-check` passes.
+- HPC/SLURM delivery mode is `ssh_slurm_trusted` only when `GENEAGENT_EXECUTION_MODE=ssh_slurm_trusted` and `GENEAGENT_SCHEDULER_REAL_EXECUTION_ENABLED=true` are both configured after `remote-check` passes.
+- `ssh_shell_trusted` runs remote Bash wrappers through SSH + nohup and tracks `state/pid`, `state/done`, `state/failed`, and logs under the configured remote work root.
+- `ssh_shell_trusted` may only write inside the configured `GENEAGENT_HPC_WORK_ROOT`; when `GENEAGENT_REMOTE_ALLOWED_WRITE_ROOTS` is set, that work root must also stay under the operator-owned allowlist such as `/data2/<user>`.
+- For the current 96-core / 1 TB ordinary server, ordinary-server safety caps default to `GENEAGENT_REMOTE_SHELL_CPU_CAP=32`, `GENEAGENT_REMOTE_SHELL_MEMORY_GB_CAP=256`, `GENEAGENT_REMOTE_SHELL_WALLTIME_CAP=24:00:00`, and `GENEAGENT_REMOTE_SHELL_MAX_CONCURRENT_RUNS=2`; real submit must be blocked before SSH materialization if a plan exceeds them.
+- Generated ordinary-server `run.sh` must export common thread-limit variables and apply CPU-time/memory `ulimit` guards when `GENEAGENT_REMOTE_SHELL_PROCESS_LIMITS_ENABLED=true`.
+- `ssh_slurm_trusted` with real execution disabled must return a synthetic planning handle and must not call `sbatch`.
+- `manual_sbase` is a manual fallback only. It may generate a copyable SBASE submit card, but the operator submits through the web workbench.
+- `hpc_local` is reserved for running the Agent on an HPC login node when explicitly configured.
+- GeneAgent must not store passwords, private keys, real private IP addresses, or raw credentials in contracts, tracked docs, tracked state, example env files, logs, reports, or audit records.
+- Password-account login is allowed through two explicit local-only modes:
+  - `control_master`: `remote-session-open` may prompt the operator for the server password through OpenSSH, but GeneAgent must not receive, print, store, or replay that password.
+  - `password_env`: only when the operator explicitly enables it, the server password may be stored in the local ignored `.env` as `GENEAGENT_HPC_SSH_PASSWORD`; it must never be committed, serialized, printed, copied to run state, or included in remote scripts/logs.
+- Remote commands must use SSH batch mode (`ssh -o BatchMode=yes`) for `batch` and `control_master` modes; `password_env` uses the in-process Paramiko client and must keep the password out of command arguments, stdout/stderr, state, and logs.
+- Local run state must stay local under `GENEAGENT_LOCAL_STATE_ROOT` / `.geneagent/runs/*`; do not write remote `/data2/...` or `/cluster/...` paths into Windows local directories.
+- Trusted automation may auto-create log/state directories inside the configured remote work root, retry transient SSH/SLURM failures, generate safe sidecars, and continue completed stages after output validation.
+- Trusted automation must trip a breaker for delete/overwrite results, sample filtering changes, resource-cap bypass, path boundary violations, unknown tools, repeated failures, lost shell PID without state sentinels, or data egress.
+- Xshell/WinSCP/SBASE are manual operation fallbacks only; GeneAgent must not automate GUI login dialogs or web-console clicks for production execution.
+- Ordinary Linux servers do not provide queue-side CPU/memory/walltime enforcement; GeneAgent resource caps are pre-submit gates plus script-level process guards in `ssh_shell_trusted`.
+- Non-bio branches remain outside cluster execution regardless of execution mode.

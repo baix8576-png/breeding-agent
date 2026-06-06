@@ -19,7 +19,7 @@ def test_reference_indexer_parses_paper_cards_into_knowledge_chunks() -> None:
 
     first_chunk = result.chunks[0]
     assert first_chunk.doc_id == "paper_grm_vanraden_2008"
-    assert first_chunk.blueprint_scope == BlueprintScope.GRM
+    assert first_chunk.blueprint_scope == BlueprintScope.QUANTITATIVE_GENETICS
     assert first_chunk.evidence_level == EvidenceLevel.PEER_REVIEWED
     assert first_chunk.source_path == "references/papers/grm_core_papers_v1.md"
     assert first_chunk.page_or_anchor.startswith("#grm-01")
@@ -33,7 +33,7 @@ def test_hybrid_index_returns_bm25_embedding_and_traceable_hits() -> None:
 
     hits = index.search(
         "VanRaden genomic relationship matrix GBLUP",
-        blueprint_scope=BlueprintScope.GRM,
+        blueprint_scope=BlueprintScope.QUANTITATIVE_GENETICS,
         limit=3,
     )
 
@@ -46,3 +46,18 @@ def test_hybrid_index_returns_bm25_embedding_and_traceable_hits() -> None:
     assert top_hit.confidence > 0
     assert any(reason.startswith("bm25_match:") for reason in top_hit.hit_reasons)
     assert any(reason.startswith("embedding_overlap:") for reason in top_hit.hit_reasons)
+
+
+def test_hybrid_index_accepts_legacy_scope_filter_as_compatibility_alias() -> None:
+    index = ReferenceKnowledgeIndexer(Path("references")).build_index(
+        paths=[Path("references/papers/grm_core_papers_v1.md")]
+    )
+
+    hits = index.search(
+        "VanRaden genomic relationship matrix GBLUP",
+        blueprint_scope="grm",
+        limit=3,
+    )
+
+    assert hits
+    assert hits[0].chunk.blueprint_scope == BlueprintScope.QUANTITATIVE_GENETICS

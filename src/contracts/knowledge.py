@@ -8,14 +8,24 @@ from enum import Enum
 from pydantic import BaseModel, Field, field_validator
 
 
+_LEGACY_BLUEPRINT_SCOPE_ALIASES = {
+    "qc": "genotype_processing",
+    "pca": "population_genetics",
+    "grm": "quantitative_genetics",
+    "genomic_prediction": "quantitative_genetics",
+    "shared": "knowledge_governance",
+}
+
+
 class BlueprintScope(str, Enum):
     """Supported blueprint scopes for knowledge assets."""
 
-    QC = "qc"
-    PCA = "pca"
-    GRM = "grm"
-    GENOMIC_PREDICTION = "genomic_prediction"
-    SHARED = "shared"
+    KNOWLEDGE_GOVERNANCE = "knowledge_governance"
+    GENOTYPE_PROCESSING = "genotype_processing"
+    POPULATION_GENETICS = "population_genetics"
+    QUANTITATIVE_GENETICS = "quantitative_genetics"
+    ASSOCIATION_MAPPING = "association_mapping"
+    REPORTING_AUDIT = "reporting_audit"
 
 
 class EvidenceLevel(str, Enum):
@@ -51,6 +61,11 @@ class KnowledgeItemV2(BaseModel):
     updated_at: datetime
     owner: str = Field(min_length=2)
 
+    @field_validator("blueprint_scope", mode="before")
+    @classmethod
+    def _normalize_blueprint_scope(cls, value: object) -> object:
+        return normalize_blueprint_scope_value(value)
+
     @field_validator("doc_id", "version", "species", "owner")
     @classmethod
     def _strip_and_validate(cls, value: str) -> str:
@@ -78,6 +93,11 @@ class KnowledgeChunk(BaseModel):
     keywords: list[str] = Field(default_factory=list)
     embedding_model: str | None = None
 
+    @field_validator("blueprint_scope", mode="before")
+    @classmethod
+    def _normalize_blueprint_scope(cls, value: object) -> object:
+        return normalize_blueprint_scope_value(value)
+
     @field_validator(
         "chunk_id",
         "doc_id",
@@ -94,6 +114,17 @@ class KnowledgeChunk(BaseModel):
         if not normalized:
             raise ValueError("must not be empty")
         return normalized
+
+
+def normalize_blueprint_scope_value(value: object) -> object:
+    """Normalize legacy scope labels to the current knowledge module scope vocabulary."""
+
+    if isinstance(value, BlueprintScope):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip()
+        return _LEGACY_BLUEPRINT_SCOPE_ALIASES.get(normalized, normalized)
+    return value
 
 
 class KnowledgeIndexManifest(BaseModel):

@@ -18,7 +18,7 @@ Current implementation references:
 ## Integration Steps
 1. Define or update pack payload:
 - Add or edit blueprint payload in `src/pipeline/packs/builtin_blueprints.py`.
-- Keep canonical keys aligned with `qc/pca/grm/genomic_prediction`.
+- Keep canonical keys aligned with `qc/pca/grm/gwas/genomic_prediction` compatibility routing.
 
 2. Register pack:
 - Ensure registry alias resolution maps user intents and legacy names to the canonical pack.
@@ -42,4 +42,3 @@ Current implementation references:
 - [ ] Old blueprint outputs remain behavior-equivalent.
 - [ ] Pack tests and baseline pipeline tests are all green.
 - [ ] No core workflow logic leaked into `scripts/*`.
-

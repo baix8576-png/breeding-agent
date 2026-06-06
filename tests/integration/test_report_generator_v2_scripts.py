@@ -6,7 +6,7 @@ import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[2]
-BUILD_INDEX_SCRIPT = ROOT / "scripts" / "report_generator" / "build_result_index.sh"
+BUILD_INDEX_SCRIPT = ROOT / "scripts" / "reporting_audit" / "build_result_index.sh"
 
 
 def test_build_result_index_emits_v2_required_keys(
@@ -44,9 +44,9 @@ def test_build_result_index_emits_v2_required_keys(
             "--norc",
             BUILD_INDEX_SCRIPT.as_posix(),
             "--workdir",
-            str(workdir),
+            workdir.as_posix(),
             "--results-root",
-            str(results_root),
+            results_root.as_posix(),
             "--pipeline",
             "qc_pipeline",
             "--task-id",
@@ -60,19 +60,19 @@ def test_build_result_index_emits_v2_required_keys(
             "--submit-command",
             "sbatch logs/job.sbatch.sh",
             "--scheduler-script",
-            str(scheduler_script),
+            scheduler_script.as_posix(),
             "--wrapper",
-            str(wrapper_script),
+            wrapper_script.as_posix(),
             "--stdout-path",
-            str(stdout_log),
+            stdout_log.as_posix(),
             "--stderr-path",
-            str(stderr_log),
+            stderr_log.as_posix(),
             "--audit-path",
-            str(audit_record),
+            audit_record.as_posix(),
             "--log-path",
-            str(stderr_log),
+            stderr_log.as_posix(),
             "--output",
-            str(output_path),
+            output_path.as_posix(),
             "--force",
         ],
         cwd=ROOT,
@@ -94,7 +94,7 @@ def test_build_result_index_emits_v2_required_keys(
     assert "diagnostics" in payload
     assert "traceability" in payload
     assert "summary" in payload
-    assert set(payload["blueprint_summary"]).issuperset({"qc", "pca", "grm", "genomic_prediction"})
+    assert set(payload["blueprint_summary"]).issuperset({"qc", "pca", "grm", "gwas", "genomic_prediction"})
     assert payload["diagnostics"]["status"] == "failed"
     assert payload["diagnostics"]["failure_tasks"] == ["12345"]
 

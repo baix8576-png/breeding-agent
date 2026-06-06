@@ -33,6 +33,11 @@ _PACK_TESTS = {
         integration_paths=["tests/integration/api/test_task_routes.py"],
         e2e_paths=["tests/e2e/test_v1_completion.py"],
     ),
+    "association_mapping_gwas": PipelinePackTestSpec(
+        unit_paths=["tests/unit/pipeline/test_pipeline_execution.py", "tests/unit/pipeline/test_packs.py"],
+        integration_paths=["tests/integration/test_analysis_script_templates.py"],
+        e2e_paths=["tests/e2e/test_v1_completion.py"],
+    ),
     "genomic_prediction": PipelinePackTestSpec(
         unit_paths=["tests/unit/pipeline/test_pipeline_execution.py", "tests/unit/pipeline/test_packs.py"],
         integration_paths=["tests/integration/test_genomic_prediction_script.py"],
@@ -41,10 +46,11 @@ _PACK_TESTS = {
 }
 
 _PACK_SCRIPT_ENTRYPOINT = {
-    "qc_pipeline": "scripts/qc_pipeline/run_qc_pipeline.sh",
-    "pca_pipeline": "scripts/pca_pipeline/run_pca_pipeline.sh",
-    "grm_builder": "scripts/grm_builder/run_grm_builder.sh",
-    "genomic_prediction": "scripts/genomic_prediction/run_genomic_prediction.sh",
+    "qc_pipeline": "scripts/genotype_processing/run_genotype_qc.sh",
+    "pca_pipeline": "scripts/population_genetics/run_population_structure_diversity.sh",
+    "grm_builder": "scripts/quantitative_genetics/run_relationship_matrix.sh",
+    "association_mapping_gwas": "scripts/association_mapping/run_gwas.sh",
+    "genomic_prediction": "scripts/quantitative_genetics/run_breeding_value_prediction.sh",
 }
 
 

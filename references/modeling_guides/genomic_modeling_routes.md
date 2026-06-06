@@ -7,7 +7,7 @@ knowledge_item.v2:
   doc_id: modeling_gblup_route_guide
   version: v2
   species: multi_species
-  blueprint_scope: genomic_prediction
+  blueprint_scope: quantitative_genetics
   evidence_level: expert_opinion
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -30,7 +30,7 @@ knowledge_item.v2:
   doc_id: modeling_ssgblup_boundary_guide
   version: v2
   species: multi_species
-  blueprint_scope: genomic_prediction
+  blueprint_scope: quantitative_genetics
   evidence_level: expert_opinion
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -54,7 +54,7 @@ knowledge_item.v2:
   doc_id: modeling_bayesian_ml_route_guide
   version: v2
   species: multi_species
-  blueprint_scope: genomic_prediction
+  blueprint_scope: quantitative_genetics
   evidence_level: expert_opinion
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -78,7 +78,7 @@ knowledge_item.v2:
   doc_id: modeling_fixed_random_effect_checklist
   version: v2
   species: multi_species
-  blueprint_scope: genomic_prediction
+  blueprint_scope: quantitative_genetics
   evidence_level: sop
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -102,7 +102,7 @@ knowledge_item.v2:
   doc_id: modeling_phenotype_type_guide
   version: v2
   species: multi_species
-  blueprint_scope: genomic_prediction
+  blueprint_scope: quantitative_genetics
   evidence_level: expert_opinion
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -126,7 +126,7 @@ knowledge_item.v2:
   doc_id: modeling_prediction_deployment_boundary
   version: v2
   species: multi_species
-  blueprint_scope: genomic_prediction
+  blueprint_scope: quantitative_genetics
   evidence_level: expert_opinion
   source: sop
   updated_at: 2026-05-26T00:00:00Z

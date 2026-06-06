@@ -25,6 +25,12 @@ PIPELINE_CATALOG = {
         "matrix_qc",
         "grm_package",
     ],
+    "association_mapping_gwas": [
+        "cohort_alignment",
+        "association_model",
+        "gwas_scan",
+        "gwas_report",
+    ],
     "genomic_prediction": [
         "cohort_alignment",
         "relationship_selection",
@@ -37,12 +43,18 @@ PIPELINE_CATALOG = {
 PIPELINE_ALIASES = {
     "population_structure": "pca_pipeline",
     "grm_construction": "grm_builder",
+    "relationship_matrix": "grm_builder",
+    "association_mapping": "association_mapping_gwas",
+    "gwas": "association_mapping_gwas",
+    "gwas_qtl": "association_mapping_gwas",
+    "breeding_value_prediction": "genomic_prediction",
     "genomic_selection": "genomic_prediction",
 }
 
 PIPELINE_FOCUS = {
-    "qc_pipeline": "Input sanity checks and quality-control execution for genotype-driven analysis.",
-    "pca_pipeline": "Population structure exploration and stratification-aware review.",
-    "grm_builder": "Relationship matrix construction and artifact packaging.",
-    "genomic_prediction": "Quantitative genetics workflow for prediction and breeding-value reporting.",
+    "qc_pipeline": "Compatibility blueprint for genotype-processing QC and input sanity checks.",
+    "pca_pipeline": "Compatibility blueprint for population-structure and diversity review.",
+    "grm_builder": "Compatibility blueprint for relationship-matrix construction and packaging.",
+    "association_mapping_gwas": "Association mapping workflow for PLINK2 GWAS scans and report packaging.",
+    "genomic_prediction": "Quantitative genetics workflow for breeding-value prediction and validation.",
 }

@@ -6,11 +6,12 @@ from pipeline import build_blueprint
 from pipeline.packs import build_pipeline_pack, list_pipeline_packs, validate_pipeline_pack_tests
 
 
-def test_pipeline_pack_registry_exposes_four_v15_canonical_packs() -> None:
+def test_pipeline_pack_registry_exposes_scientific_domain_packs() -> None:
     assert set(list_pipeline_packs()) == {
         "qc_pipeline",
         "pca_pipeline",
         "grm_builder",
+        "association_mapping_gwas",
         "genomic_prediction",
     }
 

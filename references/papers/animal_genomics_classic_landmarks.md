@@ -1,6 +1,6 @@
 # Animal Genomics Classic Landmark Papers
 
-This pack complements the existing `qc/pca/grm/genomic_prediction` seed packs. It stores durable landmark evidence for GeneAgent knowledge retrieval without duplicating every already-indexed core card.
+This pack complements the existing `qc/pca/grm/genomic_prediction` seed packs and the separated association-mapping domain. It stores durable landmark evidence for GeneAgent knowledge retrieval without duplicating every already-indexed core card.
 
 ## CLASSIC-01 Fisher 1918 infinitesimal model
 ```yaml
@@ -8,7 +8,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_fisher_1918"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -28,7 +28,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_wright_1931"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -48,7 +48,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_lush_1937"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "expert_opinion"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -68,7 +68,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_henderson_1975_mme"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -88,7 +88,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_henderson_1984_linear_models"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "expert_opinion"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -108,7 +108,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_falconer_mackay_1996"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "expert_opinion"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -128,7 +128,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_lander_botstein_1989"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -148,7 +148,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_churchill_doerge_1994"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -168,7 +168,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_pritchard_structure_2000"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -188,7 +188,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_patterson_2006_pca"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -208,7 +208,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_price_2006_eigenstrat"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -228,7 +228,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_alexander_admixture_2009"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -248,7 +248,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_weir_cockerham_1984"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -268,7 +268,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_nei_1972_distance"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -288,7 +288,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_hill_weir_1988_ld"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "qc"
+  blueprint_scope: genotype_processing
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -308,7 +308,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_sabeti_2002_ehh"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -328,7 +328,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_voight_2006_ihs"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -348,7 +348,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_pickrell_2009_selection"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -368,7 +368,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_mcquillan_2008_roh"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "qc"
+  blueprint_scope: genotype_processing
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -388,7 +388,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_purcell_plink_2007"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "qc"
+  blueprint_scope: genotype_processing
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -408,7 +408,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_chang_plink_2015"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "qc"
+  blueprint_scope: genotype_processing
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -428,7 +428,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_danecek_vcftools_2011"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "qc"
+  blueprint_scope: genotype_processing
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -448,7 +448,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_li_samtools_2009"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "qc"
+  blueprint_scope: genotype_processing
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -468,7 +468,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_danecek_bcftools_2021"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "qc"
+  blueprint_scope: genotype_processing
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -488,7 +488,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_browning_beagle_2018"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "qc"
+  blueprint_scope: genotype_processing
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -508,7 +508,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_howie_impute_2009"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "qc"
+  blueprint_scope: genotype_processing
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -528,7 +528,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_yang_2010_common_snps"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "grm"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -548,7 +548,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_yang_gcta_2011"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "grm"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -568,7 +568,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_daetwyler_2008_accuracy"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -588,7 +588,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_goddard_hayes_2007"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -608,7 +608,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_aguilar_2010_ssgblup"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -628,7 +628,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_legarra_2009_relationship_matrix"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "grm"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -648,7 +648,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_misztal_2013_ssgblup"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -668,7 +668,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_gianola_2006_bayes"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -688,7 +688,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_tibshirani_1996_lasso"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -708,7 +708,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_breiman_2001_random_forest"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -728,7 +728,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_kuhn_caret_2008"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -748,7 +748,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_benjamini_hochberg_1995"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -768,7 +768,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_storey_2003_qvalue"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -788,7 +788,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_li_durbin_bwa_2009"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "qc"
+  blueprint_scope: genotype_processing
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -808,7 +808,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_mckenna_gatk_2010"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "qc"
+  blueprint_scope: genotype_processing
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"
@@ -828,7 +828,7 @@ knowledge_item.v2:
   doc_id: "paper_classic_browning_2007_phase"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "qc"
+  blueprint_scope: genotype_processing
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:00:00+08:00"

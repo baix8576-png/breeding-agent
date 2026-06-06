@@ -13,6 +13,8 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 
+os.environ.setdefault("GENEAGENT_ENV_FILE", "none")
+
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 

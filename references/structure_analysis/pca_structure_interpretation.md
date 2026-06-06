@@ -7,7 +7,7 @@ knowledge_item.v2:
   doc_id: structure_pca_interpretation_policy
   version: v2
   species: multi_species
-  blueprint_scope: pca
+  blueprint_scope: population_genetics
   evidence_level: expert_opinion
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -31,7 +31,7 @@ knowledge_item.v2:
   doc_id: structure_cluster_labeling_caution
   version: v2
   species: multi_species
-  blueprint_scope: pca
+  blueprint_scope: population_genetics
   evidence_level: expert_opinion
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -54,7 +54,7 @@ knowledge_item.v2:
   doc_id: structure_stratification_risk_policy
   version: v2
   species: multi_species
-  blueprint_scope: pca
+  blueprint_scope: population_genetics
   evidence_level: expert_opinion
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -78,7 +78,7 @@ knowledge_item.v2:
   doc_id: structure_admixture_caution_policy
   version: v2
   species: multi_species
-  blueprint_scope: pca
+  blueprint_scope: population_genetics
   evidence_level: expert_opinion
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -102,7 +102,7 @@ knowledge_item.v2:
   doc_id: structure_relatedness_kinship_interpretation
   version: v2
   species: multi_species
-  blueprint_scope: grm
+  blueprint_scope: population_genetics
   evidence_level: expert_opinion
   source: sop
   updated_at: 2026-05-26T00:00:00Z

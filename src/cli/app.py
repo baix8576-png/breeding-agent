@@ -1,15 +1,20 @@
-"""Typer-based CLI entrypoint for GeneAgent V1 workflows."""
+"""Typer-based CLI entrypoint for GeneAgent V2 workflows."""
 
 from __future__ import annotations
 
 import json
 import shutil
+import shlex
+import subprocess
+from pathlib import Path
 
 import typer
 from rich.console import Console
 from scheduler.base import SchedulerExecutionError
+from scheduler.remote import SshControlMasterManager
 
 from contracts.api import RequestIdentity
+from contracts.common import ExecutionMode, SshAuthMode
 from contracts.validation import InputBundle, InputBundleEntry
 from runtime.bootstrap import create_application_context
 
@@ -219,6 +224,14 @@ def submit_preview(
     task_id: str | None = None,
     run_id: str | None = None,
     session_id: str | None = None,
+    execution_mode: ExecutionMode | None = typer.Option(
+        None,
+        "--execution-mode",
+        help="Execution mode: local_preview, manual_sbase, ssh_shell_trusted, ssh_slurm_trusted, or hpc_local.",
+    ),
+    remote_profile_name: str | None = typer.Option(None, "--remote-profile-name"),
+    watch: bool = typer.Option(False, "--watch/--no-watch"),
+    auto_continue: bool | None = typer.Option(None, "--auto-continue/--no-auto-continue"),
     input_entry: list[str] | None = typer.Option(
         None,
         "--input-entry",
@@ -258,6 +271,10 @@ def submit_preview(
             approved_at=approval_time,
         ),
         outbound_payload=_build_outbound_payload(outbound_field),
+        execution_mode=execution_mode,
+        remote_profile_name=remote_profile_name,
+        watch=watch,
+        auto_continue=auto_continue,
     )
     console.print_json(json.dumps(submission.model_dump(mode="json")))
 
@@ -270,6 +287,14 @@ def submit(
     task_id: str | None = None,
     run_id: str | None = None,
     session_id: str | None = None,
+    execution_mode: ExecutionMode | None = typer.Option(
+        None,
+        "--execution-mode",
+        help="Execution mode: local_preview, manual_sbase, ssh_shell_trusted, ssh_slurm_trusted, or hpc_local.",
+    ),
+    remote_profile_name: str | None = typer.Option(None, "--remote-profile-name"),
+    watch: bool = typer.Option(False, "--watch/--no-watch"),
+    auto_continue: bool | None = typer.Option(None, "--auto-continue/--no-auto-continue"),
     input_entry: list[str] | None = typer.Option(
         None,
         "--input-entry",
@@ -310,6 +335,10 @@ def submit(
                 approved_at=approval_time,
             ),
             outbound_payload=_build_outbound_payload(outbound_field),
+            execution_mode=execution_mode,
+            remote_profile_name=remote_profile_name,
+            watch=watch,
+            auto_continue=auto_continue,
         )
     except PermissionError as error:
         console.print_json(json.dumps({"error": str(error), "gate": "blocked_or_confirmation_required"}))
@@ -337,6 +366,381 @@ def poll_explain(job_id: str) -> None:
     context = create_application_context()
     poll = context.facade.explain_poll_state(job_id=job_id)
     console.print_json(json.dumps(poll.model_dump(mode="json")))
+
+
+@app.command("remote-check")
+def remote_check(
+    execution_mode: ExecutionMode | None = typer.Option(
+        None,
+        "--execution-mode",
+        help="Execution mode to check.",
+    ),
+    remote_profile_name: str | None = typer.Option(None, "--remote-profile-name"),
+) -> None:
+    """Check SSH shell or SSH/SLURM readiness for trusted remote execution."""
+
+    context = create_application_context()
+    payload = context.facade.remote_check(
+        execution_mode=execution_mode,
+        remote_profile_name=remote_profile_name,
+    )
+    console.print_json(json.dumps(payload.model_dump(mode="json")))
+
+
+@app.command("remote-session-open")
+def remote_session_open(
+    remote_profile_name: str | None = typer.Option(None, "--remote-profile-name"),
+    print_command: bool = typer.Option(False, "--print-command"),
+) -> None:
+    """Open an operator-authenticated SSH control session for password-based login."""
+
+    context = create_application_context()
+    profile = context.settings.remote_execution_profile(profile_name=remote_profile_name)
+    manager = SshControlMasterManager(profile=profile)
+    command = manager.open_command()
+    if print_command:
+        console.print_json(json.dumps(_remote_session_payload("open", profile, command)))
+        return
+    result = manager.open()
+    payload = _remote_session_payload(
+        "open",
+        profile,
+        command,
+        returncode=result.returncode,
+        stdout=getattr(result, "stdout", None),
+        stderr=getattr(result, "stderr", None),
+    )
+    console.print_json(json.dumps(payload))
+    if result.returncode != 0:
+        raise typer.Exit(code=result.returncode)
+
+
+@app.command("remote-session-check")
+def remote_session_check(
+    remote_profile_name: str | None = typer.Option(None, "--remote-profile-name"),
+    print_command: bool = typer.Option(False, "--print-command"),
+) -> None:
+    """Check whether the SSH control session is alive."""
+
+    context = create_application_context()
+    profile = context.settings.remote_execution_profile(profile_name=remote_profile_name)
+    manager = SshControlMasterManager(profile=profile)
+    command = manager.check_command()
+    if print_command:
+        console.print_json(json.dumps(_remote_session_payload("check", profile, command)))
+        return
+    result = manager.check()
+    payload = _remote_session_payload(
+        "check",
+        profile,
+        command,
+        returncode=result.returncode,
+        stdout=result.stdout,
+        stderr=result.stderr,
+    )
+    console.print_json(json.dumps(payload))
+    if result.returncode != 0:
+        raise typer.Exit(code=result.returncode)
+
+
+@app.command("remote-session-close")
+def remote_session_close(
+    remote_profile_name: str | None = typer.Option(None, "--remote-profile-name"),
+    print_command: bool = typer.Option(False, "--print-command"),
+) -> None:
+    """Close the SSH control session."""
+
+    context = create_application_context()
+    profile = context.settings.remote_execution_profile(profile_name=remote_profile_name)
+    manager = SshControlMasterManager(profile=profile)
+    command = manager.close_command()
+    if print_command:
+        console.print_json(json.dumps(_remote_session_payload("close", profile, command)))
+        return
+    result = manager.close()
+    payload = _remote_session_payload(
+        "close",
+        profile,
+        command,
+        returncode=result.returncode,
+        stdout=result.stdout,
+        stderr=result.stderr,
+    )
+    console.print_json(json.dumps(payload))
+    if result.returncode != 0:
+        raise typer.Exit(code=result.returncode)
+
+
+@app.command("remote-session-smoke")
+def remote_session_smoke(
+    remote_profile_name: str | None = typer.Option(None, "--remote-profile-name"),
+    task_id: str | None = typer.Option(None, "--task-id"),
+    run_id: str | None = typer.Option(None, "--run-id"),
+    open_session: bool = typer.Option(
+        True,
+        "--open-session/--no-open-session",
+        help="Open the SSH control session through OpenSSH if no live session is found.",
+    ),
+    print_command: bool = typer.Option(False, "--print-command"),
+) -> None:
+    """Run the ordinary-server smoke flow through an operator-authenticated SSH session."""
+
+    context = create_application_context()
+    profile = context.settings.remote_execution_profile(profile_name=remote_profile_name)
+    manager = SshControlMasterManager(profile=profile)
+    if profile.ssh_auth_mode != SshAuthMode.CONTROL_MASTER:
+        payload = {
+            "action": "remote-session-smoke",
+            "auth_mode": profile.ssh_auth_mode.value,
+            "session_ready": False,
+            "submitted": False,
+            "messages": ["remote_session_smoke_requires_control_master_auth_mode"],
+        }
+        console.print_json(json.dumps(payload))
+        raise typer.Exit(code=1)
+
+    try:
+        open_command = manager.open_command()
+        check_command = manager.check_command()
+    except ValueError as error:
+        payload = {
+            "action": "remote-session-smoke",
+            "profile_name": profile.profile_name,
+            "auth_mode": profile.ssh_auth_mode.value,
+            "session_ready": False,
+            "submitted": False,
+            "messages": ["remote_ssh_target_not_configured", str(error)],
+        }
+        console.print_json(json.dumps(payload))
+        raise typer.Exit(code=1) from error
+
+    next_commands = [
+        "remote-check --execution-mode ssh_shell_trusted",
+        _remote_smoke_command_text(task_id=task_id, run_id=run_id),
+    ]
+    if print_command:
+        payload = {
+            "action": "remote-session-smoke",
+            "profile_name": profile.profile_name,
+            "auth_mode": profile.ssh_auth_mode.value,
+            "ssh_target": profile.ssh_target,
+            "control_path": profile.ssh_control_path,
+            "open_command": open_command,
+            "open_command_text": shlex.join(open_command),
+            "check_command": check_command,
+            "check_command_text": shlex.join(check_command),
+            "next_commands": next_commands,
+        }
+        console.print_json(json.dumps(payload))
+        return
+
+    messages: list[str] = []
+    first_check = manager.check()
+    session_ready = first_check.returncode == 0
+    open_payload: dict[str, object] | None = None
+    if not session_ready and open_session:
+        open_result = manager.open()
+        open_payload = {
+            "returncode": open_result.returncode,
+            "stdout": getattr(open_result, "stdout", None),
+            "stderr": getattr(open_result, "stderr", None),
+        }
+        messages.append("ssh_control_session_open_attempted")
+    final_check = manager.check()
+    session_ready = final_check.returncode == 0
+    if not session_ready:
+        payload = {
+            "action": "remote-session-smoke",
+            "profile_name": profile.profile_name,
+            "auth_mode": profile.ssh_auth_mode.value,
+            "session_ready": False,
+            "submitted": False,
+            "open": open_payload,
+            "check": {
+                "returncode": final_check.returncode,
+                "stdout": final_check.stdout,
+                "stderr": final_check.stderr,
+            },
+            "messages": [*messages, "ssh_control_session_not_ready"],
+        }
+        console.print_json(json.dumps(payload))
+        raise typer.Exit(code=1)
+
+    remote_check_payload = context.facade.remote_check(
+        execution_mode=ExecutionMode.SSH_SHELL_TRUSTED,
+        remote_profile_name=remote_profile_name,
+    )
+    if not remote_check_payload.safe_for_submit:
+        payload = {
+            "action": "remote-session-smoke",
+            "profile_name": profile.profile_name,
+            "auth_mode": profile.ssh_auth_mode.value,
+            "session_ready": True,
+            "submitted": False,
+            "remote_check": remote_check_payload.model_dump(mode="json"),
+            "messages": [*messages, "remote_check_not_safe_for_submit"],
+        }
+        console.print_json(json.dumps(payload))
+        raise typer.Exit(code=1)
+
+    smoke_payload = context.facade.remote_smoke(
+        execution_mode=ExecutionMode.SSH_SHELL_TRUSTED,
+        remote_profile_name=remote_profile_name,
+        task_id=task_id,
+        run_id=run_id,
+    )
+    payload = {
+        "action": "remote-session-smoke",
+        "profile_name": profile.profile_name,
+        "auth_mode": profile.ssh_auth_mode.value,
+        "session_ready": True,
+        "submitted": smoke_payload.submitted,
+        "remote_check": remote_check_payload.model_dump(mode="json"),
+        "smoke": smoke_payload.model_dump(mode="json"),
+        "messages": messages,
+    }
+    console.print_json(json.dumps(payload))
+    if not smoke_payload.submitted:
+        raise typer.Exit(code=1)
+
+
+@app.command("remote-session-doctor")
+def remote_session_doctor(
+    remote_profile_name: str | None = typer.Option(None, "--remote-profile-name"),
+    skip_ssh_probe: bool = typer.Option(
+        False,
+        "--skip-ssh-probe",
+        help="Skip the local `ssh -G` capability probe; no remote connection is attempted either way.",
+    ),
+) -> None:
+    """Check local readiness for the operator-authenticated ordinary-server flow."""
+
+    context = create_application_context()
+    profile = context.settings.remote_execution_profile(profile_name=remote_profile_name)
+    payload = _remote_session_doctor_payload(
+        context=context,
+        profile=profile,
+        skip_ssh_probe=skip_ssh_probe,
+    )
+    console.print_json(json.dumps(payload))
+    if not payload["ready_for_auth"]:
+        raise typer.Exit(code=1)
+
+
+@app.command("remote-password-set")
+def remote_password_set(
+    env_file: Path = typer.Option(Path(".env"), "--env-file", help="Local ignored dotenv file to update."),
+    password: str = typer.Option(
+        ...,
+        prompt="Server SSH password",
+        hide_input=True,
+        help="Prompted value; prefer interactive input instead of passing this on the command line.",
+    ),
+) -> None:
+    """Store the operator-approved SSH password only in the local ignored .env file."""
+
+    if not password:
+        console.print_json(
+            json.dumps(
+                {
+                    "action": "remote-password-set",
+                    "password_configured": False,
+                    "messages": ["empty_password_refused"],
+                }
+            )
+        )
+        raise typer.Exit(code=1)
+    _upsert_env_file(
+        env_file,
+        {
+            "GENEAGENT_HPC_SSH_AUTH_MODE": SshAuthMode.PASSWORD_ENV.value,
+            "GENEAGENT_HPC_SSH_PASSWORD": password,
+        },
+    )
+    console.print_json(
+        json.dumps(
+            {
+                "action": "remote-password-set",
+                "env_file": str(env_file),
+                "auth_mode": SshAuthMode.PASSWORD_ENV.value,
+                "password_configured": True,
+                "messages": ["password_saved_to_local_ignored_env"],
+            }
+        )
+    )
+
+
+@app.command("remote-smoke")
+def remote_smoke(
+    execution_mode: ExecutionMode | None = typer.Option(
+        ExecutionMode.SSH_SHELL_TRUSTED,
+        "--execution-mode",
+        help="Execution mode for the harmless remote smoke task.",
+    ),
+    remote_profile_name: str | None = typer.Option(None, "--remote-profile-name"),
+    task_id: str | None = typer.Option(None, "--task-id"),
+    run_id: str | None = typer.Option(None, "--run-id"),
+) -> None:
+    """Submit one fixed harmless remote command after remote-check passes."""
+
+    context = create_application_context()
+    try:
+        payload = context.facade.remote_smoke(
+            execution_mode=execution_mode,
+            remote_profile_name=remote_profile_name,
+            task_id=task_id,
+            run_id=run_id,
+        )
+    except SchedulerExecutionError as error:
+        console.print_json(
+            json.dumps(
+                {
+                    "submitted": False,
+                    "error": str(error),
+                    "command": error.command,
+                    "stdout": error.stdout,
+                    "stderr": error.stderr,
+                    "attempts": error.attempts,
+                }
+            )
+        )
+        raise typer.Exit(code=1) from error
+    console.print_json(json.dumps(payload.model_dump(mode="json")))
+    if not payload.submitted:
+        raise typer.Exit(code=1)
+
+
+@app.command("watch-run")
+def watch_run(
+    task_id: str = typer.Option(..., "--task-id"),
+    run_id: str = typer.Option(..., "--run-id"),
+) -> None:
+    """Watch a persisted trusted run state."""
+
+    context = create_application_context()
+    try:
+        payload = context.facade.watch_run(task_id=task_id, run_id=run_id)
+    except FileNotFoundError as error:
+        console.print_json(json.dumps({"error": "run_state_not_found", "detail": str(error)}))
+        raise typer.Exit(code=1) from error
+    console.print_json(json.dumps(payload.model_dump(mode="json")))
+
+
+@app.command("resume-run")
+def resume_run(
+    task_id: str = typer.Option(..., "--task-id"),
+    run_id: str = typer.Option(..., "--run-id"),
+    auto_continue: bool | None = typer.Option(None, "--auto-continue/--no-auto-continue"),
+) -> None:
+    """Resume a persisted trusted run state."""
+
+    context = create_application_context()
+    try:
+        payload = context.facade.resume_run(task_id=task_id, run_id=run_id, auto_continue=auto_continue)
+    except FileNotFoundError as error:
+        console.print_json(json.dumps({"error": "run_state_not_found", "detail": str(error)}))
+        raise typer.Exit(code=1) from error
+    console.print_json(json.dumps(payload.model_dump(mode="json")))
 
 
 @app.command("audit-export")
@@ -467,9 +871,249 @@ def final_review(working_directory: str | None = None) -> None:
 
 
 def _scheduler_command_set(scheduler: str) -> list[str]:
+    if scheduler.lower() == "shell":
+        return ["bash", "nohup", "ps", "kill"]
     if scheduler.lower() == "pbs":
         return ["qsub", "qstat"]
     return ["sbatch", "squeue", "sacct"]
+
+
+def _remote_session_payload(
+    action: str,
+    profile,
+    command: list[str],
+    *,
+    returncode: int | None = None,
+    stdout: str | None = None,
+    stderr: str | None = None,
+) -> dict[str, object]:
+    return {
+        "action": action,
+        "profile_name": profile.profile_name,
+        "auth_mode": profile.ssh_auth_mode.value,
+        "ssh_target": profile.ssh_target,
+        "control_path": profile.ssh_control_path,
+        "command": command,
+        "command_text": shlex.join(command),
+        "returncode": returncode,
+        "stdout": stdout,
+        "stderr": stderr,
+    }
+
+
+def _remote_smoke_command_text(*, task_id: str | None, run_id: str | None) -> str:
+    command = ["remote-smoke"]
+    if task_id:
+        command.extend(["--task-id", task_id])
+    if run_id:
+        command.extend(["--run-id", run_id])
+    return shlex.join(command)
+
+
+def _remote_session_doctor_payload(*, context, profile, skip_ssh_probe: bool) -> dict[str, object]:
+    messages: list[str] = []
+    checks: dict[str, bool | None] = {}
+
+    checks["execution_mode_ssh_shell_trusted"] = context.settings.execution_mode == ExecutionMode.SSH_SHELL_TRUSTED
+    checks["real_execution_enabled"] = context.settings.scheduler_real_execution_enabled
+    checks["ssh_auth_mode_control_master"] = profile.ssh_auth_mode == SshAuthMode.CONTROL_MASTER
+    checks["ssh_auth_mode_password_env"] = profile.ssh_auth_mode == SshAuthMode.PASSWORD_ENV
+    checks["ssh_password_configured"] = profile.ssh_password_configured
+    checks["ssh_target_configured"] = bool(profile.ssh_target)
+    checks["remote_work_root_configured"] = bool(profile.work_root)
+    checks["control_path_configured"] = bool(profile.ssh_control_path)
+
+    ssh_binary_path = shutil.which(profile.ssh_binary)
+    if ssh_binary_path is None:
+        candidate = Path(profile.ssh_binary).expanduser()
+        if candidate.exists():
+            ssh_binary_path = str(candidate)
+    checks["ssh_binary_available"] = ssh_binary_path is not None
+
+    control_dir = None
+    if profile.ssh_control_path:
+        control_dir = str(Path(profile.ssh_control_path).expanduser().parent)
+    control_dir_check = _control_dir_writable(profile.ssh_control_path)
+    checks["control_dir_writable"] = bool(control_dir_check["ok"])
+
+    ssh_probe: dict[str, object] = {"skipped": skip_ssh_probe}
+    checks["ssh_config_probe_ok"] = None
+    if not skip_ssh_probe:
+        ssh_probe = _probe_ssh_config(profile=profile)
+        checks["ssh_config_probe_ok"] = bool(ssh_probe.get("ok"))
+
+    if not checks["execution_mode_ssh_shell_trusted"]:
+        messages.append("execution_mode_not_ssh_shell_trusted")
+    if not checks["real_execution_enabled"]:
+        messages.append("scheduler_real_execution_disabled")
+    if not (checks["ssh_auth_mode_control_master"] or checks["ssh_auth_mode_password_env"]):
+        messages.append("ssh_auth_mode_not_control_master_or_password_env")
+    if checks["ssh_auth_mode_password_env"] and not checks["ssh_password_configured"]:
+        messages.append("ssh_password_not_configured")
+    if not checks["ssh_target_configured"]:
+        messages.append("remote_ssh_target_not_configured")
+    if not checks["remote_work_root_configured"]:
+        messages.append("remote_work_root_not_configured")
+    if checks["ssh_auth_mode_control_master"] and not checks["control_path_configured"]:
+        messages.append("ssh_control_path_not_configured")
+    if not checks["ssh_binary_available"]:
+        messages.append("ssh_binary_not_found")
+    if checks["ssh_auth_mode_control_master"] and not checks["control_dir_writable"]:
+        messages.append("ssh_control_dir_not_writable")
+    if checks["ssh_config_probe_ok"] is False:
+        messages.append("ssh_config_probe_failed")
+
+    ready_for_control_session = all(
+        checks[name] is True
+        for name in [
+            "ssh_auth_mode_control_master",
+            "ssh_target_configured",
+            "remote_work_root_configured",
+            "control_path_configured",
+            "ssh_binary_available",
+            "control_dir_writable",
+        ]
+    )
+    ready_for_password_auth = all(
+        checks[name] is True
+        for name in [
+            "ssh_auth_mode_password_env",
+            "ssh_password_configured",
+            "ssh_target_configured",
+            "remote_work_root_configured",
+        ]
+    )
+    ready_for_auth = ready_for_control_session or ready_for_password_auth
+    ready_for_real_smoke = bool(
+        ready_for_auth
+        and checks["execution_mode_ssh_shell_trusted"]
+        and checks["real_execution_enabled"]
+    )
+    recommended_command = "fix reported messages, then rerun remote-session-doctor"
+    if ready_for_real_smoke and profile.ssh_auth_mode == SshAuthMode.PASSWORD_ENV:
+        recommended_command = "remote-smoke --task-id task-smoke-001 --run-id run-smoke-001"
+    elif ready_for_real_smoke:
+        recommended_command = "remote-session-smoke --open-session --task-id task-smoke-001 --run-id run-smoke-001"
+    return {
+        "action": "remote-session-doctor",
+        "profile_name": profile.profile_name,
+        "auth_mode": profile.ssh_auth_mode.value,
+        "ssh_target": profile.ssh_target,
+        "remote_work_root": profile.work_root,
+        "control_path": profile.ssh_control_path,
+        "control_dir": control_dir,
+        "ssh_binary": profile.ssh_binary,
+        "ssh_binary_path": ssh_binary_path,
+        "checks": checks,
+        "control_dir_check": control_dir_check,
+        "ssh_probe": ssh_probe,
+        "ready_for_control_session": ready_for_control_session,
+        "ready_for_password_auth": ready_for_password_auth,
+        "ready_for_auth": ready_for_auth,
+        "ready_for_real_smoke": ready_for_real_smoke,
+        "remediation": _remote_session_doctor_remediation(messages),
+        "recommended_next_command": recommended_command,
+        "messages": messages,
+    }
+
+
+def _remote_session_doctor_remediation(messages: list[str]) -> list[str]:
+    remediation: list[str] = []
+    if "ssh_control_dir_not_writable" in messages:
+        remediation.append(
+            "Set GENEAGENT_HPC_SSH_CONTROL_PATH to a user-writable local path, for example %TEMP%\\geneagent_ssh\\default.sock on Windows."
+        )
+        remediation.append("Alternatively set GENEAGENT_LOCAL_STATE_ROOT to a user-writable directory and rerun remote-session-doctor.")
+    if "ssh_auth_mode_not_control_master_or_password_env" in messages:
+        remediation.append(
+            "Set GENEAGENT_HPC_SSH_AUTH_MODE=control_master for operator-entered OpenSSH login, or password_env for local ignored .env password login."
+        )
+    if "ssh_password_not_configured" in messages:
+        remediation.append("Set GENEAGENT_HPC_SSH_PASSWORD only in the local ignored .env file; never commit it.")
+    if "execution_mode_not_ssh_shell_trusted" in messages:
+        remediation.append("Set GENEAGENT_EXECUTION_MODE=ssh_shell_trusted for ordinary Linux server execution.")
+    if "scheduler_real_execution_disabled" in messages:
+        remediation.append("Set GENEAGENT_SCHEDULER_REAL_EXECUTION_ENABLED=true only when you are ready for the guarded smoke submit.")
+    if "remote_ssh_target_not_configured" in messages:
+        remediation.append("Set GENEAGENT_HPC_HOST and GENEAGENT_HPC_USER in the local ignored .env file.")
+    if "ssh_binary_not_found" in messages:
+        remediation.append("Install OpenSSH Client or set GENEAGENT_HPC_SSH_BINARY to the ssh executable path.")
+    return remediation
+
+
+def _upsert_env_file(env_file: Path, updates: dict[str, str]) -> None:
+    lines: list[str] = []
+    if env_file.exists():
+        lines = env_file.read_text(encoding="utf-8").splitlines()
+    seen: set[str] = set()
+    updated_lines: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        matched_key = None
+        if stripped and not stripped.startswith("#") and "=" in line:
+            matched_key = line.split("=", 1)[0].strip()
+        if matched_key in updates:
+            updated_lines.append(f"{matched_key}={updates[matched_key]}")
+            seen.add(matched_key)
+            continue
+        updated_lines.append(line)
+    for key, value in updates.items():
+        if key not in seen:
+            updated_lines.append(f"{key}={value}")
+    env_file.parent.mkdir(parents=True, exist_ok=True)
+    env_file.write_text("\n".join(updated_lines) + "\n", encoding="utf-8")
+
+
+def _control_dir_writable(control_path: str | None) -> dict[str, object]:
+    if not control_path:
+        return {"ok": False, "error": "missing_control_path"}
+    directory = Path(control_path).expanduser().parent
+    probe = directory / ".geneagent_write_probe"
+    try:
+        directory.mkdir(parents=True, exist_ok=True)
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink(missing_ok=True)
+    except OSError as error:
+        return {
+            "ok": False,
+            "path": str(directory),
+            "error": f"{error.__class__.__name__}: {error}",
+        }
+    return {"ok": True, "path": str(directory)}
+
+
+def _probe_ssh_config(*, profile) -> dict[str, object]:
+    if not profile.ssh_target:
+        return {"skipped": False, "ok": False, "reason": "missing_ssh_target"}
+    command = [profile.ssh_binary, "-G", profile.ssh_target]
+    try:
+        result = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=max(1, min(profile.connect_timeout_seconds, 10)),
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        return {
+            "skipped": False,
+            "ok": False,
+            "command_text": shlex.join(command),
+            "error": str(error),
+        }
+    output = result.stdout.lower()
+    return {
+        "skipped": False,
+        "ok": result.returncode == 0,
+        "command_text": shlex.join(command),
+        "returncode": result.returncode,
+        "supports_control_master": "controlmaster" in output,
+        "supports_control_path": "controlpath" in output,
+        "supports_control_persist": "controlpersist" in output,
+        "stderr": result.stderr,
+    }
 
 
 def _build_cli_input_bundle(

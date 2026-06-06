@@ -4,8 +4,21 @@ import json
 from pathlib import Path
 import subprocess
 
+import pytest
+
 from contracts.api import RequestIdentity
+from contracts.common import ExecutionMode, JobState, SchedulerKind
+from contracts.execution import JobHandle, RunContext
 from runtime.bootstrap import create_application_context
+from runtime.settings import Settings, get_settings
+
+
+@pytest.fixture(autouse=True)
+def isolate_local_state_root(tmp_path, monkeypatch):
+    monkeypatch.setenv("GENEAGENT_LOCAL_STATE_ROOT", str(tmp_path / ".geneagent_state"))
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
 
 
 def test_non_bio_dry_run_skips_scheduler_script_generation() -> None:
@@ -38,6 +51,51 @@ def test_non_bio_dry_run_skips_scheduler_script_generation() -> None:
     assert submission.runtime_lifecycle["current_stage"] == "completed"
 
 
+def test_non_bio_submit_with_trusted_mode_does_not_enter_scheduler_flow(monkeypatch, tmp_path) -> None:
+    context = create_application_context(
+        settings=Settings(
+            execution_mode=ExecutionMode.LOCAL_PREVIEW,
+            hpc_host="server.example.org",
+            hpc_user="alice",
+            hpc_work_root="/data2/alice/geneagent_runs",
+            local_state_root=str(tmp_path / ".geneagent"),
+        )
+    )
+
+    def forbidden_scheduler_flow(**_kwargs):
+        raise AssertionError("non-bio branch must not build scheduler execution flow")
+
+    monkeypatch.setattr(context.facade, "_scheduler_for_execution_mode", forbidden_scheduler_flow)
+    monkeypatch.setattr(context.facade, "_execution_working_directory", forbidden_scheduler_flow)
+
+    submission = context.facade.submit(
+        request_text="Summarize local SOP checkpoints for data redaction",
+        dry_run_completed=True,
+        execution_mode=ExecutionMode.SSH_SHELL_TRUSTED,
+        watch=True,
+        auto_continue=True,
+        identity=RequestIdentity(
+            task_id="task-runtime-nonbio-trusted-001",
+            run_id="run-runtime-nonbio-trusted-001",
+            working_directory="/cluster/work/sheep",
+        ),
+    )
+
+    assert submission.execution_mode == ExecutionMode.LOCAL_PREVIEW
+    assert submission.remote_profile_name is None
+    assert submission.cluster_execution_enabled is False
+    assert submission.command == []
+    assert submission.scheduler_script_path is None
+    assert submission.wrapper_path is None
+    assert submission.run_state is None
+    assert submission.run_state_path is None
+    assert submission.job_handle.job_id.startswith("SKIPPED-NONBIO-")
+    assert submission.artifacts is not None
+    assert submission.artifacts.report_generator_status == "skipped_non_bio"
+    assert submission.runtime_lifecycle is not None
+    assert submission.runtime_lifecycle["runtime_path"] == "non_bio_lightweight"
+
+
 def test_bio_submit_preview_exposes_wrapper_poll_and_recovery_fields() -> None:
     context = create_application_context()
 
@@ -55,7 +113,9 @@ def test_bio_submit_preview_exposes_wrapper_poll_and_recovery_fields() -> None:
     assert submission.cluster_execution_enabled is True
     assert submission.run_context.task_id == "task-runtime-submit-001"
     assert submission.command[0] == "bash"
-    assert submission.command[1].replace("\\", "/").endswith("scripts/pca_pipeline/run_pca_pipeline.sh")
+    assert submission.command[1].replace("\\", "/").endswith(
+        "scripts/population_genetics/run_population_structure_diversity.sh"
+    )
     assert submission.scheduler_script_path is not None
     assert submission.scheduler_script_path.endswith(".sbatch.sh")
     assert submission.wrapper_path is not None
@@ -74,6 +134,45 @@ def test_bio_submit_preview_exposes_wrapper_poll_and_recovery_fields() -> None:
     assert submission.artifacts.memory_handoff_summary is not None
     assert submission.runtime_lifecycle is not None
     assert submission.runtime_lifecycle["runtime_path"] == "bio_main_chain"
+
+
+def test_per_request_remote_shell_preview_uses_configured_caps_and_surfaces_blocker(tmp_path) -> None:
+    context = create_application_context(
+        settings=Settings(
+            execution_mode=ExecutionMode.LOCAL_PREVIEW,
+            scheduler_real_execution_enabled=True,
+            hpc_host="server.example.org",
+            hpc_user="alice",
+            hpc_work_root="/data2/alice/geneagent_runs",
+            remote_allowed_write_roots=["/data2/alice"],
+            remote_shell_cpu_cap=2,
+            remote_shell_memory_gb_cap=4,
+            remote_shell_walltime_cap="00:30:00",
+            remote_shell_max_concurrent_runs=1,
+            local_state_root=str(tmp_path / ".geneagent"),
+        )
+    )
+
+    submission = context.facade.build_submit_preview(
+        request_text="Prepare submit preview for sheep PCA workflow",
+        dry_run_completed=True,
+        execution_mode=ExecutionMode.SSH_SHELL_TRUSTED,
+        identity=RequestIdentity(
+            task_id="task-runtime-shell-cap-001",
+            run_id="run-runtime-shell-cap-001",
+            working_directory=str(tmp_path / "local_workdir"),
+        ),
+    )
+
+    assert submission.execution_mode == ExecutionMode.SSH_SHELL_TRUSTED
+    assert "# remote_cpu_cap: 2" in submission.script_preview
+    assert "# remote_memory_gb_cap: 4" in submission.script_preview
+    assert "# remote_walltime_cap: 00:30:00" in submission.script_preview
+    assert submission.gate_status == "quota_blocked"
+    assert submission.gate_decision == "block"
+    assert any("shell_cpu_cap_exceeded" in item for item in submission.circuit_break_conditions)
+    assert submission.run_state is not None
+    assert submission.run_state.next_action == "resource cap blocked; adjust request or configured caps before submit"
 
 
 def test_poll_explanation_returns_structured_failed_state() -> None:
@@ -106,6 +205,57 @@ def test_bio_submit_returns_submit_mode_handle_when_real_execution_disabled() ->
     assert submission.job_handle.job_id.startswith("PLAN-SLURM-")
     assert submission.job_handle.state.value == "draft"
     assert submission.scheduler_script_path is not None
+
+
+def test_bio_submit_watch_flag_polls_and_returns_latest_run_state(tmp_path) -> None:
+    context = create_application_context(
+        settings=Settings(
+            execution_mode=ExecutionMode.SSH_SLURM_TRUSTED,
+            local_state_root=str(tmp_path / ".geneagent"),
+        )
+    )
+    poll_calls: list[str] = []
+
+    def fake_submit(**kwargs) -> JobHandle:
+        return JobHandle(
+            run_context=RunContext(
+                task_id=kwargs["task_id"],
+                run_id=kwargs["run_id"],
+                working_directory=kwargs["working_directory"],
+            ),
+            scheduler=SchedulerKind.SLURM,
+            job_id="12345",
+            state=JobState.QUEUED,
+            stdout_path=str(tmp_path / "stdout.log"),
+            stderr_path=str(tmp_path / "stderr.log"),
+        )
+
+    def fake_poll(job_id: str) -> JobState:
+        poll_calls.append(job_id)
+        return JobState.COMPLETED
+
+    context.scheduler.submit = fake_submit
+    context.scheduler.poll = fake_poll
+
+    submission = context.facade.submit(
+        request_text="Submit sheep PCA workflow and watch initial scheduler state",
+        dry_run_completed=True,
+        watch=True,
+        execution_mode=ExecutionMode.SSH_SLURM_TRUSTED,
+        identity=RequestIdentity(
+            task_id="task-runtime-submit-watch-001",
+            run_id="run-runtime-submit-watch-001",
+            working_directory=str(tmp_path / "remote_like_workdir"),
+        ),
+    )
+
+    assert poll_calls == ["12345"]
+    assert submission.run_state is not None
+    assert submission.run_state.status == JobState.COMPLETED
+    assert submission.run_state.auto_continue_ready is True
+    assert submission.run_state_path is not None
+    state_payload = json.loads(Path(submission.run_state_path).read_text(encoding="utf-8"))
+    assert state_payload["status"] == "completed"
 
 
 def test_bio_dry_run_prefers_report_generator_artifacts_when_available(tmp_path, monkeypatch) -> None:

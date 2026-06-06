@@ -8,7 +8,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_farmgtex_project_2025"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -28,7 +28,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_piggtex_2024"
   version: "v2"
   species: "sus_scrofa"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -48,7 +48,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_chickengtex_2025"
   version: "v2"
   species: "gallus_gallus"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -68,7 +68,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_cattle_single_cell_atlas_2025"
   version: "v2"
   species: "bos_taurus"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -88,7 +88,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_cattle_regulatory_atlas_2022"
   version: "v2"
   species: "bos_taurus"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -108,7 +108,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_bovine_pangenome_sv_2022"
   version: "v2"
   species: "bos_taurus"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -128,7 +128,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_indicine_cattle_diversity_2023"
   version: "v2"
   species: "bos_indicus"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -148,7 +148,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_domestic_animal_pangenome_review_2023"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -168,7 +168,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_cattle_graph_genome_2022"
   version: "v2"
   species: "bos_taurus"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -188,7 +188,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_cattle_immune_variation_2023"
   version: "v2"
   species: "bos_taurus"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -208,7 +208,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_cattle_fertility_mqtl_2024"
   version: "v2"
   species: "bos_taurus"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -228,7 +228,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_ruminant_t2t_y_2024"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -248,7 +248,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_cattle_erv_gwas_2024"
   version: "v2"
   species: "bos_taurus"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -268,7 +268,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_hybrid_pig_allele_specific_2024"
   version: "v2"
   species: "sus_scrofa"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -288,7 +288,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_pig_pangenome_selection_2023"
   version: "v2"
   species: "sus_scrofa"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -308,7 +308,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_yak_sv_adaptation_2023"
   version: "v2"
   species: "bos_grunniens"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -328,7 +328,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_sheep_pangenome_tail_2023"
   version: "v2"
   species: "ovis_aries"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -348,7 +348,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_sheep_regulatory_atlas_2024"
   version: "v2"
   species: "ovis_aries"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -368,7 +368,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_goat_pangenome_diversity_2023"
   version: "v2"
   species: "capra_hircus"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -388,7 +388,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_chicken_pangenome_sv_2023"
   version: "v2"
   species: "gallus_gallus"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -408,7 +408,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_duck_pangenome_domestication_2023"
   version: "v2"
   species: "anas_platyrhynchos"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -428,7 +428,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_fish_pangenome_aquaculture_2024"
   version: "v2"
   species: "aquaculture_multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -448,7 +448,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_salmon_genomic_selection_2022"
   version: "v2"
   species: "salmo_salar"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -468,7 +468,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_tilapia_genomic_selection_2023"
   version: "v2"
   species: "oreochromis_niloticus"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -488,7 +488,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_shrimp_genomic_selection_2024"
   version: "v2"
   species: "litopenaeus_vannamei"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -508,7 +508,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_dairy_genomic_prediction_review_2022"
   version: "v2"
   species: "bos_taurus"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -528,7 +528,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_beef_genomic_prediction_benchmark_2023"
   version: "v2"
   species: "bos_taurus"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -548,7 +548,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_pig_genomic_prediction_review_2022"
   version: "v2"
   species: "sus_scrofa"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -568,7 +568,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_poultry_genomic_prediction_review_2023"
   version: "v2"
   species: "gallus_gallus"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -588,7 +588,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_sheep_genomic_prediction_benchmark_2022"
   version: "v2"
   species: "ovis_aries"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -608,7 +608,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_goat_genomic_prediction_benchmark_2024"
   version: "v2"
   species: "capra_hircus"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -628,7 +628,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_wgs_prediction_dairy_2023"
   version: "v2"
   species: "bos_taurus"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -648,7 +648,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_wgs_prediction_pig_2024"
   version: "v2"
   species: "sus_scrofa"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -668,7 +668,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_multibreed_prediction_2022"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -688,7 +688,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_multitrait_prediction_2023"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -708,7 +708,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_deep_learning_prediction_livestock_2024"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -728,7 +728,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_bayesian_prediction_benchmark_2022"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -748,7 +748,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_dominance_prediction_2023"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -768,7 +768,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_disease_resistance_prediction_2024"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -788,7 +788,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_fertility_prediction_2023"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -808,7 +808,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_feed_efficiency_prediction_2022"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -828,7 +828,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_methane_prediction_2024"
   version: "v2"
   species: "bos_taurus"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -848,7 +848,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_cattle_gwas_complex_traits_2022"
   version: "v2"
   species: "bos_taurus"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -868,7 +868,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_pig_gwas_complex_traits_2023"
   version: "v2"
   species: "sus_scrofa"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -888,7 +888,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_poultry_gwas_complex_traits_2023"
   version: "v2"
   species: "gallus_gallus"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -908,7 +908,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_small_ruminant_gwas_2024"
   version: "v2"
   species: "small_ruminants"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -928,7 +928,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_livestock_qtl_database_2022"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -948,7 +948,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_livestock_fine_mapping_2024"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -968,7 +968,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_livestock_eqtl_integration_2023"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -988,7 +988,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_livestock_single_cell_review_2022"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1008,7 +1008,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_pig_single_cell_atlas_2023"
   version: "v2"
   species: "sus_scrofa"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1028,7 +1028,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_chicken_single_cell_atlas_2024"
   version: "v2"
   species: "gallus_gallus"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1048,7 +1048,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_sheep_single_cell_atlas_2024"
   version: "v2"
   species: "ovis_aries"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1068,7 +1068,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_multiomics_breeding_review_2023"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1088,7 +1088,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_livestock_epigenomics_review_2022"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1108,7 +1108,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_cattle_climate_adaptation_2023"
   version: "v2"
   species: "bos_taurus"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1128,7 +1128,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_cattle_heat_tolerance_2024"
   version: "v2"
   species: "bos_taurus"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1148,7 +1148,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_pig_adaptation_genomics_2023"
   version: "v2"
   species: "sus_scrofa"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1168,7 +1168,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_chicken_domestication_genomics_2022"
   version: "v2"
   species: "gallus_gallus"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1188,7 +1188,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_small_ruminant_adaptation_2023"
   version: "v2"
   species: "small_ruminants"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1208,7 +1208,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_livestock_imputation_benchmark_2022"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "qc"
+  blueprint_scope: genotype_processing
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1228,7 +1228,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_lowpass_imputation_cattle_2023"
   version: "v2"
   species: "bos_taurus"
-  blueprint_scope: "qc"
+  blueprint_scope: genotype_processing
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1248,7 +1248,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_lowpass_imputation_pig_2024"
   version: "v2"
   species: "sus_scrofa"
-  blueprint_scope: "qc"
+  blueprint_scope: genotype_processing
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1268,7 +1268,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_livestock_phasing_benchmark_2023"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "qc"
+  blueprint_scope: genotype_processing
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1288,7 +1288,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_livestock_roh_benchmark_2022"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "qc"
+  blueprint_scope: genotype_processing
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1308,7 +1308,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_livestock_ld_decay_2023"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "qc"
+  blueprint_scope: genotype_processing
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1328,7 +1328,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_livestock_effective_population_size_2024"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1348,7 +1348,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_livestock_selection_signature_review_2022"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1368,7 +1368,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_livestock_structural_variation_review_2023"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1388,7 +1388,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_livestock_graph_genome_methods_2024"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1408,7 +1408,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_livestock_ai_genomics_review_2025"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"
@@ -1428,7 +1428,7 @@ knowledge_item.v2:
   doc_id: "paper_recent_livestock_knowledge_graph_2025"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
   updated_at: "2026-05-26T20:10:00+08:00"

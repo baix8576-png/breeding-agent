@@ -1,12 +1,21 @@
 import json
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from cli.app import app
 from runtime.settings import get_settings
 
 runner = CliRunner()
+
+
+@pytest.fixture(autouse=True)
+def isolate_local_state_root(tmp_path, monkeypatch):
+    monkeypatch.setenv("GENEAGENT_LOCAL_STATE_ROOT", str(tmp_path / ".geneagent_state"))
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
 
 
 def test_cli_plan_command_returns_structured_plan_with_tracking_ids() -> None:

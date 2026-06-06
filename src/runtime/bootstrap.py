@@ -1,4 +1,4 @@
-"""Dependency wiring for the GeneAgent V1 runtime."""
+"""Dependency wiring for the GeneAgent V2 runtime."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from audit.store import FileAuditStore
-from contracts.common import SchedulerKind
+from contracts.common import ExecutionMode, SchedulerKind
 from knowledge.retrieval import KnowledgeResolver
 from memory.stores import MemoryCoordinator
 from orchestration.service import OrchestratorService
@@ -15,6 +15,8 @@ from safety.circuit_breaker import CircuitBreaker
 from safety.gates import SafetyGateService
 from scheduler.base import BaseSchedulerAdapter
 from scheduler.pbs import PbsSchedulerAdapter
+from scheduler.remote import RemoteSlurmSchedulerAdapter
+from scheduler.ssh_shell import RemoteShellSchedulerAdapter
 from scheduler.resource_estimator import ConservativeResourceEstimator
 from scheduler.slurm import SlurmSchedulerAdapter
 from runtime.facade import ApplicationFacade
@@ -103,6 +105,23 @@ def _build_scheduler(settings: Settings) -> BaseSchedulerAdapter:
         "current_active_jobs": settings.scheduler_current_active_jobs,
     }
     kind = settings.scheduler_type
+    if settings.execution_mode == ExecutionMode.SSH_SHELL_TRUSTED:
+        return RemoteShellSchedulerAdapter(
+            profile=settings.remote_execution_profile(),
+            local_cache_root=Path(settings.local_state_root),
+            remote_cpu_cap=settings.remote_shell_cpu_cap,
+            remote_memory_gb_cap=settings.remote_shell_memory_gb_cap,
+            remote_walltime_cap=settings.remote_shell_walltime_cap,
+            remote_max_concurrent_runs=settings.remote_shell_max_concurrent_runs,
+            process_limits_enabled=settings.remote_shell_process_limits_enabled,
+            **scheduler_kwargs,
+        )
+    if settings.execution_mode == ExecutionMode.SSH_SLURM_TRUSTED and kind == SchedulerKind.SLURM:
+        return RemoteSlurmSchedulerAdapter(
+            profile=settings.remote_execution_profile(),
+            local_cache_root=Path(settings.local_state_root),
+            **scheduler_kwargs,
+        )
     if kind == SchedulerKind.PBS:
         return PbsSchedulerAdapter(**scheduler_kwargs)
     return SlurmSchedulerAdapter(**scheduler_kwargs)

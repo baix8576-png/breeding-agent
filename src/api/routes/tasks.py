@@ -1,4 +1,4 @@
-"""Task planning and execution endpoints for GeneAgent V1."""
+"""Task planning and execution endpoints for GeneAgent V2."""
 
 from __future__ import annotations
 
@@ -10,11 +10,14 @@ from contracts.api import (
     DraftPlanRequest,
     DryRunRequest,
     PollExplainRequest,
+    RemoteCheckRequest,
     ReportPreviewRequest,
+    ResumeRunRequest,
     ReviewActionRequest,
     SubmitRequest,
     SubmitPreviewRequest,
     ValidateInputsRequest,
+    WatchRunRequest,
 )
 from runtime.bootstrap import create_application_context
 from runtime.compat import (
@@ -141,6 +144,10 @@ def submit_preview(payload: SubmitPreviewRequest) -> dict[str, object]:
         input_bundle=envelope.input_bundle,
         approval=envelope.approval,
         outbound_payload=envelope.outbound_payload,
+        execution_mode=envelope.execution_mode,
+        remote_profile_name=envelope.remote_profile_name,
+        watch=envelope.watch,
+        auto_continue=envelope.auto_continue,
     )
     return {"submission": submission.model_dump(mode="json")}
 
@@ -160,6 +167,10 @@ def submit(payload: SubmitRequest) -> dict[str, object]:
             input_bundle=envelope.input_bundle,
             approval=envelope.approval,
             outbound_payload=envelope.outbound_payload,
+            execution_mode=envelope.execution_mode,
+            remote_profile_name=envelope.remote_profile_name,
+            watch=envelope.watch,
+            auto_continue=envelope.auto_continue,
         )
     except PermissionError as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
@@ -175,6 +186,46 @@ def submit(payload: SubmitRequest) -> dict[str, object]:
             },
         ) from error
     return {"submission": submission.model_dump(mode="json")}
+
+
+@router.post("/remote-check")
+def remote_check(payload: RemoteCheckRequest) -> dict[str, object]:
+    """Check configured SSH/SLURM readiness for trusted remote execution."""
+
+    context = create_application_context()
+    result = context.facade.remote_check(
+        execution_mode=payload.execution_mode,
+        remote_profile_name=payload.remote_profile_name,
+    )
+    return {"remote_check": result.model_dump(mode="json")}
+
+
+@router.post("/watch-run")
+def watch_run(payload: WatchRunRequest) -> dict[str, object]:
+    """Watch a persisted trusted run state and update its local state file."""
+
+    context = create_application_context()
+    try:
+        state = context.facade.watch_run(task_id=payload.task_id, run_id=payload.run_id)
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    return {"run_state": state.model_dump(mode="json")}
+
+
+@router.post("/resume-run")
+def resume_run(payload: ResumeRunRequest) -> dict[str, object]:
+    """Resume a persisted trusted run state after interruption."""
+
+    context = create_application_context()
+    try:
+        state = context.facade.resume_run(
+            task_id=payload.task_id,
+            run_id=payload.run_id,
+            auto_continue=payload.auto_continue,
+        )
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    return {"run_state": state.model_dump(mode="json")}
 
 
 @router.post("/poll-explain")

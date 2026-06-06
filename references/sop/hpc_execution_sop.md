@@ -7,7 +7,7 @@ knowledge_item.v2:
   doc_id: sop_hpc_dry_run_before_submit
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: reporting_audit
   evidence_level: sop
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -23,7 +23,7 @@ knowledge_item.v2:
   doc_id: sop_hpc_scheduler_portability
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: reporting_audit
   evidence_level: sop
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -39,7 +39,7 @@ knowledge_item.v2:
   doc_id: sop_hpc_safe_retry_policy
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: reporting_audit
   evidence_level: sop
   source: sop
   updated_at: 2026-05-26T00:00:00Z

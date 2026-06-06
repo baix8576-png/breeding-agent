@@ -106,6 +106,20 @@ def test_blueprint_selection_binds_grm_and_genomic_prediction_keys() -> None:
     assert "model_blueprint" in genomic_plan.pipeline_spec.stage_contract
 
 
+def test_blueprint_selection_routes_gwas_to_association_mapping() -> None:
+    context = create_application_context()
+
+    gwas_plan = context.orchestrator.draft_plan(
+        UserRequest(text="Run GWAS association mapping with phenotype and covariates"),
+        run_context=RunContext(task_id="task-orch-gwas-001", run_id="run-orch-gwas-001"),
+    )
+
+    assert gwas_plan.pipeline_spec is not None
+    assert gwas_plan.pipeline_spec.blueprint_key == "gwas"
+    assert gwas_plan.pipeline_spec.name == "association_mapping_gwas"
+    assert "gwas_scan" in gwas_plan.pipeline_spec.stage_contract
+
+
 def test_draft_plan_cross_run_handoff_hits_same_project_history() -> None:
     context = create_application_context()
     shared_workdir = "/cluster/work/sheep/shared-project"

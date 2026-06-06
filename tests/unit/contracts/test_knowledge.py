@@ -20,7 +20,7 @@ def test_knowledge_item_v2_accepts_required_fields() -> None:
         doc_id="paper_qc_missingness_2026_001",
         version="v2",
         species="sus_scrofa",
-        blueprint_scope=BlueprintScope.QC,
+        blueprint_scope=BlueprintScope.GENOTYPE_PROCESSING,
         evidence_level=EvidenceLevel.PEER_REVIEWED,
         source=KnowledgeSource.PAPER,
         updated_at="2026-05-09T12:00:00+08:00",
@@ -30,11 +30,37 @@ def test_knowledge_item_v2_accepts_required_fields() -> None:
     assert item.doc_id == "paper_qc_missingness_2026_001"
     assert item.version == "v2"
     assert item.species == "sus_scrofa"
-    assert item.blueprint_scope == BlueprintScope.QC
+    assert item.blueprint_scope == BlueprintScope.GENOTYPE_PROCESSING
     assert item.evidence_level == EvidenceLevel.PEER_REVIEWED
     assert item.source == KnowledgeSource.PAPER
     assert isinstance(item.updated_at, datetime)
     assert item.owner == "popgen_quantgen"
+
+
+def test_blueprint_scope_values_align_to_current_knowledge_modules() -> None:
+    assert {scope.value for scope in BlueprintScope} == {
+        "knowledge_governance",
+        "genotype_processing",
+        "population_genetics",
+        "quantitative_genetics",
+        "association_mapping",
+        "reporting_audit",
+    }
+
+
+def test_knowledge_item_v2_normalizes_legacy_blueprint_scope_values() -> None:
+    item = KnowledgeItemV2(
+        doc_id="legacy_grm_scope_001",
+        version="v2",
+        species="multi_species",
+        blueprint_scope="grm",
+        evidence_level=EvidenceLevel.SOP,
+        source=KnowledgeSource.SOP,
+        updated_at="2026-05-09T12:00:00+08:00",
+        owner="architect",
+    )
+
+    assert item.blueprint_scope == BlueprintScope.QUANTITATIVE_GENETICS
 
 
 def test_knowledge_item_v2_requires_source_field() -> None:
@@ -43,7 +69,7 @@ def test_knowledge_item_v2_requires_source_field() -> None:
             doc_id="sop_cluster_submission_001",
             version="v2",
             species="bos_taurus",
-            blueprint_scope=BlueprintScope.SHARED,
+            blueprint_scope=BlueprintScope.REPORTING_AUDIT,
             evidence_level=EvidenceLevel.SOP,
             updated_at="2026-05-09T12:00:00+08:00",
             owner="llm_orchestrator",
@@ -69,7 +95,7 @@ def test_knowledge_chunk_preserves_traceability_fields() -> None:
         chunk_id="paper_grm_vanraden_2008::grm-01",
         doc_id="paper_grm_vanraden_2008",
         source_path="references/papers/grm_core_papers_v1.md",
-        blueprint_scope="grm",
+        blueprint_scope="quantitative_genetics",
         species="multi_species",
         evidence_level="peer_reviewed",
         source="paper",
@@ -83,7 +109,7 @@ def test_knowledge_chunk_preserves_traceability_fields() -> None:
     )
 
     assert chunk.doc_id == "paper_grm_vanraden_2008"
-    assert chunk.blueprint_scope == BlueprintScope.GRM
+    assert chunk.blueprint_scope == BlueprintScope.QUANTITATIVE_GENETICS
     assert chunk.evidence_level == EvidenceLevel.PEER_REVIEWED
     assert chunk.source == KnowledgeSource.PAPER
     assert chunk.page_or_anchor.startswith("#grm-01")

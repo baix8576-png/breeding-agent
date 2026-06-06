@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from contracts.common import ExecutionMode
 from contracts.validation import InputBundle
 
 
@@ -79,6 +80,10 @@ class SubmitPreviewRequest(BaseModel):
     input_bundle: InputBundle | None = None
     approval: ManualApprovalRequest | None = None
     outbound_payload: dict[str, object] | None = None
+    execution_mode: ExecutionMode | None = None
+    remote_profile_name: str | None = None
+    watch: bool = False
+    auto_continue: bool | None = None
     identity: RequestIdentity = Field(default_factory=RequestIdentity)
 
 
@@ -91,7 +96,33 @@ class SubmitRequest(BaseModel):
     input_bundle: InputBundle | None = None
     approval: ManualApprovalRequest | None = None
     outbound_payload: dict[str, object] | None = None
+    execution_mode: ExecutionMode | None = None
+    remote_profile_name: str | None = None
+    watch: bool = False
+    auto_continue: bool | None = None
     identity: RequestIdentity = Field(default_factory=RequestIdentity)
+
+
+class RemoteCheckRequest(BaseModel):
+    """Payload for checking remote SSH/SLURM/tool readiness."""
+
+    execution_mode: ExecutionMode | None = None
+    remote_profile_name: str | None = None
+
+
+class WatchRunRequest(BaseModel):
+    """Payload for watching a persisted trusted run state."""
+
+    task_id: str
+    run_id: str
+
+
+class ResumeRunRequest(BaseModel):
+    """Payload for resuming a persisted trusted run state."""
+
+    task_id: str
+    run_id: str
+    auto_continue: bool | None = None
 
 
 class ReportPreviewRequest(BaseModel):

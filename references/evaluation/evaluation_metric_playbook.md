@@ -7,7 +7,7 @@ knowledge_item.v2:
   doc_id: evaluation_cross_validation_patterns
   version: v2
   species: multi_species
-  blueprint_scope: genomic_prediction
+  blueprint_scope: quantitative_genetics
   evidence_level: expert_opinion
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -32,7 +32,7 @@ knowledge_item.v2:
   doc_id: evaluation_bias_calibration_notes
   version: v2
   species: multi_species
-  blueprint_scope: genomic_prediction
+  blueprint_scope: quantitative_genetics
   evidence_level: expert_opinion
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -56,7 +56,7 @@ knowledge_item.v2:
   doc_id: evaluation_subgroup_validation_policy
   version: v2
   species: multi_species
-  blueprint_scope: genomic_prediction
+  blueprint_scope: quantitative_genetics
   evidence_level: expert_opinion
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -80,7 +80,7 @@ knowledge_item.v2:
   doc_id: evaluation_prediction_metric_dictionary
   version: v2
   species: multi_species
-  blueprint_scope: genomic_prediction
+  blueprint_scope: quantitative_genetics
   evidence_level: sop
   source: ontology
   updated_at: 2026-05-26T00:00:00Z
@@ -104,7 +104,7 @@ knowledge_item.v2:
   doc_id: evaluation_acceptance_gate_policy
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: quantitative_genetics
   evidence_level: sop
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -130,7 +130,7 @@ knowledge_item.v2:
   doc_id: evaluation_diagnostic_policy
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: quantitative_genetics
   evidence_level: sop
   source: sop
   updated_at: 2026-05-26T00:00:00Z

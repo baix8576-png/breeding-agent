@@ -111,6 +111,7 @@ class WorkflowComposer:
         "qc": "qc_pipeline",
         "pca": "pca_pipeline",
         "grm": "grm_builder",
+        "gwas": "association_mapping_gwas",
         "genomic_prediction": "genomic_prediction",
     }
 
@@ -219,8 +220,8 @@ class WorkflowComposer:
                 title="Blueprint Selection",
                 owner="popgen_quantgen",
                 objective=(
-                    "Bind request to one blueprint among qc/pca/grm/genomic_prediction and emit stage and artifact"
-                    " contracts."
+                    "Bind request to one blueprint among qc/pca/grm/gwas/genomic_prediction and emit stage and"
+                    " artifact contracts."
                 ),
                 inputs=["intent_domain", "scope_statement", "retrieval_context", "validation_snapshot"],
                 outputs=["selected_blueprint", "stage_contract", "artifact_contract"],
@@ -392,7 +393,12 @@ class WorkflowComposer:
         if "qc" in targets or any(token in joined for token in {"qc", "quality control", "input validation"}):
             return "qc"
 
-        if targets.intersection({"genomic_prediction", "bayesian_prediction", "breeding_value_prediction", "heritability", "gwas"}) or any(
+        if targets.intersection({"gwas", "association_mapping", "association_mapping_gwas"}) or any(
+            token in joined for token in {"gwas", "association mapping", "genome-wide association"}
+        ):
+            return "gwas"
+
+        if targets.intersection({"genomic_prediction", "bayesian_prediction", "breeding_value_prediction", "heritability"}) or any(
             token in joined
             for token in {
                 "genomic prediction",

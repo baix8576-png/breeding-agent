@@ -418,7 +418,12 @@ class BaseSchedulerAdapter(ABC):
         workdir = path_cls(working_directory)
         script_dir = workdir / ".geneagent" / "scheduler"
         log_dir = workdir / "logs"
-        extension = "sbatch" if self.kind == SchedulerKind.SLURM else "pbs"
+        extension_by_kind = {
+            SchedulerKind.SLURM: "sbatch",
+            SchedulerKind.PBS: "pbs",
+            SchedulerKind.SHELL: "shell",
+        }
+        extension = extension_by_kind.get(self.kind, self.kind.value)
         return SchedulerPaths(
             working_directory=str(workdir),
             script_path=str(script_dir / f"{safe_job_name}.{extension}.sh"),
@@ -445,7 +450,7 @@ class BaseSchedulerAdapter(ABC):
         if resources.conservative_default:
             hints.append("Resource request still uses conservative defaults from the estimator.")
         if self._real_execution_enabled:
-            hints.append("Scheduler real execution is enabled; submit() may call sbatch/qsub.")
+            hints.append("Real execution is enabled; submit() may call the configured execution backend.")
         else:
             hints.append("Submission remains plan-only until scheduler real execution is enabled.")
         if resolved_atomic_tools:
@@ -622,7 +627,7 @@ class BaseSchedulerAdapter(ABC):
             warnings.append("No real scheduler command will be executed from this adapter.")
             warnings.append("Job identifiers are synthetic and suitable only for dry-run or planning flows.")
         else:
-            warnings.append("Real scheduler execution is enabled; submit() may issue sbatch/qsub.")
+            warnings.append("Real execution is enabled; submit() may issue backend commands.")
             warnings.append(
                 f"Transient submit failures will auto-retry up to {self._retry_max_attempts} attempts."
             )

@@ -7,7 +7,7 @@ knowledge_item.v2:
   doc_id: sop_report_review_traceability
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: reporting_audit
   evidence_level: sop
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -23,7 +23,7 @@ knowledge_item.v2:
   doc_id: sop_report_interpretation_boundary
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: reporting_audit
   evidence_level: sop
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -39,7 +39,7 @@ knowledge_item.v2:
   doc_id: sop_report_signoff_checklist
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: reporting_audit
   evidence_level: sop
   source: sop
   updated_at: 2026-05-26T00:00:00Z

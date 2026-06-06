@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
-from contracts.common import GateDecision, JobState, RiskLevel, RoleOutputHeader, SchedulerKind, TaskDomain
+from contracts.common import ExecutionMode, GateDecision, JobState, RiskLevel, RoleOutputHeader, SchedulerKind, TaskDomain
+from contracts.remote_execution import ManualSubmitCard, RemoteCheckResult, RunState
 from contracts.tasks import ResourceEstimate, UserRequest
 from contracts.validation import InputBundle, ValidationReport
 
@@ -132,6 +133,8 @@ class SubmissionPreview(BaseModel):
 
     run_context: RunContext
     mode: str = "dry-run"
+    execution_mode: ExecutionMode = ExecutionMode.LOCAL_PREVIEW
+    remote_profile_name: str | None = None
     cluster_execution_enabled: bool = True
     working_directory: str
     command: list[str] = Field(default_factory=list)
@@ -152,6 +155,10 @@ class SubmissionPreview(BaseModel):
     input_validation: ValidationReport | None = None
     runtime_lifecycle: dict[str, object] | None = None
     explanation_layer: dict[str, object] | None = None
+    manual_submit_card: ManualSubmitCard | None = None
+    remote_check_summary: RemoteCheckResult | None = None
+    run_state_path: str | None = None
+    run_state: RunState | None = None
 
 
 class AuditBundleItem(BaseModel):

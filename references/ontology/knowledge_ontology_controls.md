@@ -7,7 +7,7 @@ knowledge_item.v2:
   doc_id: ontology_terminology_glossary
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: knowledge_governance
   evidence_level: sop
   source: ontology
   updated_at: 2026-05-26T00:00:00Z
@@ -25,7 +25,7 @@ knowledge_item.v2:
   doc_id: ontology_species_naming_table
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: knowledge_governance
   evidence_level: sop
   source: ontology
   updated_at: 2026-05-26T00:00:00Z
@@ -51,23 +51,24 @@ knowledge_item.v2:
   doc_id: ontology_blueprint_scope_vocabulary
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: knowledge_governance
   evidence_level: sop
   source: ontology
   updated_at: 2026-05-26T00:00:00Z
   owner: architect
 ```
 
-Allowed `blueprint_scope` values are `qc`, `pca`, `grm`, `genomic_prediction`, and `shared`. These labels route knowledge into the V2 standard execution chain inherited from the V1.5 core loop.
+Allowed `blueprint_scope` values are `knowledge_governance`, `genotype_processing`, `population_genetics`, `quantitative_genetics`, `association_mapping`, and `reporting_audit`. These labels route knowledge into the current GeneAgent knowledge and execution-module layout.
 
 Scope rules:
-- `qc`: genotype and sample quality control.
-- `pca`: structure analysis and PC interpretation.
-- `grm`: genomic relationship matrix construction and relatedness.
-- `genomic_prediction`: prediction model planning, execution, and evaluation.
-- `shared`: cross-cutting contracts, scheduler, reports, audit, ontology, and safety.
+- `knowledge_governance`: ontology, metadata contracts, source-fetch policy, literature curation, and knowledge QA.
+- `genotype_processing`: input readiness, sample/variant QC, VCF/PLINK/BAM-derived normalization, phasing, and imputation boundaries.
+- `population_genetics`: population structure, diversity, inbreeding, ROH, LD, and selection-signature knowledge.
+- `quantitative_genetics`: relationship matrices, variance components, heritability, genomic prediction, and breeding-value evaluation.
+- `association_mapping`: GWAS, QTL, fine mapping, candidate-region interpretation, and functional annotation used for locus interpretation.
+- `reporting_audit`: execution safety, diagnostics, report templates, result indexing, audit bundles, and recovery policy.
 
-Do not create new scope names in Markdown assets without changing the contract enum and tests.
+Legacy labels `qc`, `pca`, `grm`, `genomic_prediction`, and `shared` are accepted by code only as compatibility aliases and must not be used as formal `references/*` metadata.
 
 ## Evidence level strategy
 
@@ -76,7 +77,7 @@ knowledge_item.v2:
   doc_id: ontology_evidence_level_strategy
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: knowledge_governance
   evidence_level: sop
   source: ontology
   updated_at: 2026-05-26T00:00:00Z
@@ -101,7 +102,7 @@ knowledge_item.v2:
   doc_id: ontology_doc_id_registry_policy
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: knowledge_governance
   evidence_level: sop
   source: ontology
   updated_at: 2026-05-26T00:00:00Z
@@ -124,7 +125,7 @@ knowledge_item.v2:
   doc_id: ontology_retrieval_trace_schema
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: knowledge_governance
   evidence_level: sop
   source: ontology
   updated_at: 2026-05-26T00:00:00Z

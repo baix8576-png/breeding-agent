@@ -7,7 +7,7 @@ knowledge_item.v2:
   doc_id: input_dataset_bundle_template
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: genotype_processing
   evidence_level: sop
   source: sop
   updated_at: 2026-05-26T00:00:00Z

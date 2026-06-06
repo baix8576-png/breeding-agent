@@ -34,7 +34,7 @@ def test_atomic_resource_estimate_aggregates_tool_bundle() -> None:
 def test_submission_plan_embeds_atomic_failure_mapping_and_retry_guidance() -> None:
     adapter = SlurmSchedulerAdapter()
     plan = adapter.build_submission_plan(
-        command=["bash", "scripts/pca_pipeline/run_pca_pipeline.sh"],
+        command=["bash", "scripts/population_genetics/run_population_structure_diversity.sh"],
         working_directory="/cluster/work/demo",
         resources=ResourceEstimate(cpus=4, memory_gb=16, walltime="01:00:00"),
         task_id="task-atomic-001",

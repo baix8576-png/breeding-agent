@@ -7,7 +7,7 @@ knowledge_item.v2:
   doc_id: failure_scheduler_account_partition_mismatch
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z
@@ -31,7 +31,7 @@ knowledge_item.v2:
   doc_id: failure_bio_tool_missing_sidecar
   version: v2
   species: multi_species
-  blueprint_scope: qc
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z
@@ -54,7 +54,7 @@ knowledge_item.v2:
   doc_id: failure_id_sample_consistency
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z
@@ -78,7 +78,7 @@ knowledge_item.v2:
   doc_id: failure_report_traceability_missing
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z
@@ -102,7 +102,7 @@ knowledge_item.v2:
   doc_id: failure_knowledge_retrieval_gap
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z
@@ -126,7 +126,7 @@ knowledge_item.v2:
   doc_id: failure_raw_data_boundary_violation
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z

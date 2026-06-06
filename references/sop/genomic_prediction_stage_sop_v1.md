@@ -5,7 +5,7 @@ knowledge_item.v2:
   doc_id: "sop_genomic_prediction_stage_v1"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "genomic_prediction"
+  blueprint_scope: quantitative_genetics
   evidence_level: "sop"
   source: "sop"
   updated_at: "2026-05-09T15:10:00+08:00"
@@ -14,7 +14,8 @@ knowledge_item.v2:
 
 ## Purpose
 - Standardize stage-by-stage operation for `genomic_prediction`.
-- Keep behavior aligned with `scripts/genomic_prediction/run_genomic_prediction.sh`.
+- Keep behavior aligned with `scripts/quantitative_genetics/run_breeding_value_prediction.sh`.
+- GWAS association mapping is handled separately by `scripts/association_mapping/run_gwas.sh`.
 
 ## Stage: cohort_alignment
 
@@ -28,7 +29,7 @@ knowledge_item.v2:
 - Recommended cohort size >= 50 for baseline model diagnostics.
 
 ### Default Parameters
-- `analysis_targets=gwas,heritability,genomic_prediction`
+- `analysis_targets=heritability,genomic_prediction`
 - Auto-discovery fallback:
 - phenotype filename patterns: `*pheno*` or `*trait*`
 - VCF to PLINK conversion via `plink2 --vcf --make-bed` when needed
@@ -55,8 +56,8 @@ knowledge_item.v2:
 - Default backbone note:
 - GBLUP-compatible path using GCTA REML + random-effect prediction
 - Optional routes:
-- PLINK2 GWAS (`--glm hide-covar --allow-no-sex`)
 - ssGBLUP/Bayes pathways require explicit manual opt-in and supporting assets
+- GWAS is not part of this wrapper; use `association_mapping_gwas` for first-pass PLINK2 `--glm`.
 - Output note:
 - `results/prediction/model_family.md`
 
@@ -79,8 +80,6 @@ knowledge_item.v2:
 ### Default Parameters
 - Model specification output:
 - `results/prediction/model_spec.json`
-- GWAS default command block:
-- `plink2 --glm hide-covar --allow-no-sex`
 - GCTA default command block:
 - `gcta64 --make-grm`
 - `gcta64 --reml --reml-pred-rand`
@@ -90,7 +89,7 @@ knowledge_item.v2:
 ### Manual Confirmation Points
 - Confirm fixed/random effects are documented before execution.
 - Confirm fallback behavior if `heritability.indi.blp` is missing.
-- Confirm GWAS outputs are indexed and not over-interpreted.
+- Confirm association-mapping outputs, if needed, are produced by the separate GWAS workflow and not hidden in this prediction report.
 
 ### Disable Conditions
 - No execution step succeeds for requested targets.
@@ -135,7 +134,6 @@ knowledge_item.v2:
 - `results/prediction/cohort_alignment.json`
 - `results/prediction/model_family.md`
 - `results/prediction/model_spec.json`
-- `results/prediction/gwas/README.md`
 - `results/prediction/predictions.tsv`
 - `results/prediction/validation_plan.md`
 - `results/prediction/metrics.tsv`

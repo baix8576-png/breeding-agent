@@ -8,13 +8,13 @@ knowledge_item.v2:
   doc_id: "policy_literature_curation_scope"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "sop"
   source: "ontology"
   updated_at: "2026-05-26T20:20:00+08:00"
   owner: "llm_orchestrator"
 ```
-- Public name: `GeneAgent 知识库` / `GeneAgent knowledge base`.
+- Public name: `GeneAgent 鐭ヨ瘑搴揱 / `GeneAgent knowledge base`.
 - Version words such as V1, V1.5, and V2 are development history only; they are not user-facing knowledge-base names.
 - `knowledge_item.v2` remains the metadata schema version and is not a product-stage label.
 - Paper-card files under `references/papers/*` store copyright-safe summaries, not original PDFs.
@@ -25,7 +25,7 @@ knowledge_item.v2:
   doc_id: "policy_literature_inclusion_tiers"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "sop"
   source: "ontology"
   updated_at: "2026-05-26T20:20:00+08:00"
@@ -42,7 +42,7 @@ knowledge_item.v2:
   doc_id: "policy_literature_metadata_traceability"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "sop"
   source: "ontology"
   updated_at: "2026-05-26T20:20:00+08:00"
@@ -59,7 +59,7 @@ knowledge_item.v2:
   doc_id: "policy_literature_recency_audit"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "sop"
   source: "ontology"
   updated_at: "2026-05-26T20:20:00+08:00"
@@ -76,7 +76,7 @@ knowledge_item.v2:
   doc_id: "policy_literature_local_git_boundary"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "sop"
   source: "ontology"
   updated_at: "2026-05-26T20:20:00+08:00"

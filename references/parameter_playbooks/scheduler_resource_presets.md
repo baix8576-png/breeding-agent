@@ -7,7 +7,7 @@ knowledge_item.v2:
   doc_id: playbook_scheduler_resource_presets_file
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: reporting_audit
   evidence_level: sop
   source: parameter_playbook
   updated_at: 2026-05-26T00:00:00Z

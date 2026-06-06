@@ -1174,3 +1174,1706 @@ Paste this into a new session:
 - next_actions:
   - Stage all dirty files, create one cleanup commit, push to `origin/main`, then verify clean status.
 - resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-06 16:26 +08:00 (knowledge completion module map and safe source fetcher foundation)
+- intent_domain: `knowledge`
+- stage_id: `Local-first RAG`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\references\ontology`, `D:\geneagent\src\knowledge`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`; this was local knowledge-asset planning and safe local source-fetch tooling only. No SSH, SLURM, shell, bio tool, or external source download was executed.
+- contracts_impacted:
+  - No Pydantic contract fields changed.
+  - Added a non-contract knowledge helper interface: `KnowledgeSourceFetcher`, `SourceFetchEntry`, and `SourceFetchReport`.
+  - Added formal `knowledge_item.v2` ontology chunks for knowledge-completion scope, module order, literature batches, ingestion boundary, and acceptance gates.
+- files_changed:
+  - `D:\geneagent\references\ontology\knowledge_completion_modules.md`
+  - `D:\geneagent\references\INDEX.md`
+  - `D:\geneagent\references\ontology\README.md`
+  - `D:\geneagent\src\knowledge\source_fetcher.py`
+  - `D:\geneagent\src\knowledge\__init__.py`
+  - `D:\geneagent\tests\unit\knowledge\test_references_coverage.py`
+  - `D:\geneagent\tests\unit\knowledge\test_source_fetcher.py`
+  - `D:\geneagent\docs\superpowers\plans\2026-06-06-knowledge-completion.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added a formal `references/ontology/knowledge_completion_modules.md` knowledge asset that divides the GeneAgent knowledge base into small modules M01-M15.
+  - [x] Defined module order, dependency gates, literature batch groups L01-L08, source-fetch boundaries, and acceptance gates for completing the knowledge base one module at a time.
+  - [x] Added retrieval regression coverage requiring the new ontology module-map chunks to enter `ReferenceKnowledgeIndexer`.
+  - [x] Verified the module-map test failed first because the required `ontology_knowledge_completion_*` doc IDs were absent, then passed after adding the asset.
+  - [x] Added `KnowledgeSourceFetcher` for JSON manifest-driven local downloads into `.geneagent/knowledge/raw_pdfs`, `.geneagent/knowledge/source_docs`, and `.geneagent/knowledge/fetch_reports`.
+  - [x] Added tests proving the fetcher downloads only `open_access` / `public_document` sources, skips restricted sources, rejects unsafe output names, rejects `references` as a local runtime root, and refuses checksum-mismatched payloads without writing files.
+  - [x] Added a Superpowers implementation plan at `docs/superpowers/plans/2026-06-06-knowledge-completion.md` so later sessions can continue module-by-module.
+- not_yet_done_checklist:
+  - [ ] The full knowledge base is not yet complete; M02-M15 still need detailed content expansion following the module map.
+  - [ ] No real PDFs or external documents were downloaded in this stage; batch fetcher behavior was validated with mocked payloads only.
+  - [ ] The source fetcher is currently a Python helper; CLI/API entrypoints for operator-run fetch manifests can be added later if requested.
+  - [ ] Literature batches still need DOI/PMID/publisher verification before adding new paper cards beyond the existing seed packs.
+  - [ ] Worktree remains dirty from multiple prior stages; preserve unrelated changes and do not attribute all dirty files to this knowledge stage.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py::test_knowledge_completion_module_map_enters_reference_index` -> first failed as expected because the five `ontology_knowledge_completion_*` doc IDs were absent.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py::test_knowledge_completion_module_map_enters_reference_index tests\unit\knowledge\test_references_coverage.py::test_reference_layer_retrieval_queries_cover_major_topics` -> pass after adding the ontology asset.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_source_fetcher.py` -> first errored with `ModuleNotFoundError: No module named 'knowledge.source_fetcher'`, then passed after implementation (`4 passed`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_source_fetcher.py tests\unit\knowledge\test_references_coverage.py` -> pass (`18 passed`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge` -> pass (`53 passed`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests shown in pytest progress output).
+  - `git diff --check -- references\ontology\knowledge_completion_modules.md references\INDEX.md references\ontology\README.md src\knowledge\source_fetcher.py src\knowledge\__init__.py tests\unit\knowledge\test_references_coverage.py tests\unit\knowledge\test_source_fetcher.py docs\superpowers\plans\2026-06-06-knowledge-completion.md` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `pass`
+- known_risks:
+  - The module map is a governance and execution plan, not a claim that every module is already content-complete.
+  - `KnowledgeSourceFetcher` deliberately skips restricted/unknown-license sources and does not perform DOI metadata verification by itself.
+  - Actual literature expansion should use fresh metadata verification because 2022-2026 paper status and publisher pages may change over time.
+- next_actions:
+  - Start M02 input bundle and sample identity expansion, then run the knowledge gate after that module only.
+  - Add an optional CLI command for source fetch manifests only after deciding the operator-facing workflow and safety prompts.
+  - Use the L01-L08 literature batches to add paper cards in small reviewable groups, never committing raw PDFs or full-text extractions.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-05-27 20:45 +08:00 (trusted remote execution implementation)
+- intent_domain: `system`
+- stage_id: `Resource + Safety Gate`, `Execution`, `Artifact + Report`, `Audit + Memory`, `V2 Control Plane`
+- module_owner_path: `D:\geneagent\src\contracts`, `D:\geneagent\src\scheduler`, `D:\geneagent\src\runtime`, `D:\geneagent\src\safety`, `D:\geneagent\src\api`, `D:\geneagent\src\cli`, `D:\geneagent\tests`
+- cluster_execution_expected: `true` for bio submit/poll paths in `ssh_slurm_trusted` / `hpc_local`; `false` for `manual_sbase` Agent-side submit and all non-bio branches.
+- contracts_impacted:
+  - `ExecutionMode`
+  - `AutoRepairLevel`
+  - `RemoteExecutionProfile`
+  - `ManualSubmitCard`
+  - `RemoteCheckResult`
+  - `RunState`
+  - `RunStageRecord`
+  - `SubmitPreviewRequest`
+  - `SubmitRequest`
+  - `SubmissionPreview`
+- files_changed:
+  - `D:\geneagent\.env.example`
+  - `D:\geneagent\AGENTS.md`
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\docs\v2_system_map.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+  - `D:\geneagent\src\contracts\common.py`
+  - `D:\geneagent\src\contracts\remote_execution.py`
+  - `D:\geneagent\src\contracts\api.py`
+  - `D:\geneagent\src\contracts\execution.py`
+  - `D:\geneagent\src\contracts\envelope.py`
+  - `D:\geneagent\src\contracts\__init__.py`
+  - `D:\geneagent\src\scheduler\remote.py`
+  - `D:\geneagent\src\runtime\settings.py`
+  - `D:\geneagent\src\runtime\bootstrap.py`
+  - `D:\geneagent\src\runtime\compat.py`
+  - `D:\geneagent\src\runtime\facade.py`
+  - `D:\geneagent\src\runtime\run_state.py`
+  - `D:\geneagent\src\runtime\automation.py`
+  - `D:\geneagent\src\safety\automation_policy.py`
+  - `D:\geneagent\src\api\routes\tasks.py`
+  - `D:\geneagent\src\cli\app.py`
+  - `D:\geneagent\tests\unit\scheduler\test_remote_slurm.py`
+  - `D:\geneagent\tests\unit\runtime\test_remote_execution_state.py`
+  - `D:\geneagent\tests\unit\runtime\test_trusted_automation.py`
+  - `D:\geneagent\tests\unit\safety\test_automation_policy.py`
+  - `D:\geneagent\tests\integration\api\test_remote_execution_routes.py`
+  - `D:\geneagent\tests\e2e\cli\test_remote_execution_cli.py`
+  - `D:\geneagent\tests\unit\contracts\test_execution.py`
+  - `D:\geneagent\tests\unit\runtime\test_settings.py`
+- completed_checklist:
+  - [x] Added public execution mode and auto-repair-level enums.
+  - [x] Added remote execution contracts without password/private-key fields and with `extra=forbid` profile validation.
+  - [x] Added `ssh_slurm_trusted` settings and `.env.example` placeholders without committing real host/IP/credentials.
+  - [x] Added SSH batch-mode command runner and remote SLURM adapter with remote script materialization and local-only idempotency cache.
+  - [x] Added manual SBASE submit card generation for `manual_sbase`.
+  - [x] Added local run-state persistence under `GENEAGENT_LOCAL_STATE_ROOT` with state contracts for watch/resume.
+  - [x] Added trusted automation controller for submit/watch/resume state transitions.
+  - [x] Added automation safety policy that allows low-risk repairs and blocks destructive, boundary-crossing, data-egress, unknown-tool, resource-cap, and repeated-failure actions.
+  - [x] Extended runtime facade, CLI, and API with `remote-check`, `watch-run`, `resume-run`, and submit execution-mode parameters.
+  - [x] Confirmed non-bio submit/dry-run branches remain outside cluster execution.
+  - [x] Updated README, AGENTS, and V2 system map with PC control-plane / HPC execution-plane policy.
+- not_yet_done_checklist:
+  - [ ] Real HPC smoke test is intentionally not run in CI/local gate; it requires operator-managed SSH access and a configured cluster account.
+  - [ ] SGE remains documentation/manual fallback only; trusted full automation is SLURM-first, with PBS compatibility unchanged.
+  - [ ] Deeper multi-stage dependency continuation can be expanded after artifact validators become stage-specific.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/unit/scheduler/test_remote_slurm.py tests/unit/runtime/test_remote_execution_state.py tests/unit/runtime/test_trusted_automation.py tests/unit/safety/test_automation_policy.py tests/integration/api/test_remote_execution_routes.py tests/e2e/cli/test_remote_execution_cli.py` -> pass (`16 passed`)
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/unit/scheduler tests/unit/runtime tests/unit/safety` -> pass
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/integration/api tests/e2e/cli` -> pass
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`, 4 skipped)
+  - `git diff --check -- AGENTS.md README.md docs/v2_system_map.md .env.example src tests` -> pass; Git emitted existing LF-to-CRLF working-copy warnings only.
+  - `rg -n "10\.11\.29\.21" AGENTS.md README.md docs\v2_system_map.md .env.example src tests` -> no committed real private IP match.
+- gate_result: `pass`
+- known_risks:
+  - Real remote SSH/SLURM behavior is covered by mocks locally; operator-run smoke test is still required on the actual HPC account.
+  - Default `ssh_slurm_trusted` previews return a remote-check summary of `safe_for_submit=false` until `GENEAGENT_HPC_HOST` and `GENEAGENT_HPC_USER` are configured.
+  - Local run-state save falls back to local temporary storage if the configured state root is not writable; production should set a writable `GENEAGENT_LOCAL_STATE_ROOT`.
+  - Windows line-ending warnings remain a checkout configuration issue; `diff --check` reported no whitespace errors.
+- next_actions:
+  - Configure local `.env` with operator-managed SSH profile values, then run `python -m cli.app remote-check`.
+  - Perform one non-destructive real smoke test using a harmless command such as the cluster's configured `plink --help` only after SSH and SLURM checks pass.
+  - Add stage-specific artifact validators before expanding automatic continuation across multiple dependent jobs.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-05-27 21:18 +08:00 (trusted remote execution review fixes 1-3)
+- intent_domain: `system`
+- stage_id: `Execution`, `Resource + Safety Gate`, `Audit + Memory`, `V2 Control Plane`
+- module_owner_path: `D:\geneagent\src\scheduler`, `D:\geneagent\src\runtime`, `D:\geneagent\src\contracts`, `D:\geneagent\tests`
+- cluster_execution_expected: `true` for bio `ssh_slurm_trusted` submit/watch paths; `false` for non-bio and `manual_sbase` Agent-side submit.
+- contracts_impacted:
+  - `SubmissionPreview` now carries optional `run_state` in addition to `run_state_path`.
+  - `RunState` transition semantics now record policy-gated low-risk retry attempts when a scheduler exposes a safe retry hook.
+- files_changed:
+  - `D:\geneagent\src\contracts\execution.py`
+  - `D:\geneagent\src\runtime\automation.py`
+  - `D:\geneagent\src\runtime\facade.py`
+  - `D:\geneagent\src\scheduler\remote.py`
+  - `D:\geneagent\tests\unit\scheduler\test_remote_slurm.py`
+  - `D:\geneagent\tests\unit\runtime\test_trusted_automation.py`
+  - `D:\geneagent\tests\unit\runtime\test_dry_run_branching.py`
+  - `D:\geneagent\tests\unit\contracts\test_execution.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added failing-first regression coverage for `submit(..., watch=True)` so submit now immediately polls and returns latest persisted `RunState`.
+  - [x] Wired `TrustedAutomationPolicy` into failed-job handling; policy review is now invoked for low-risk retry classification instead of being unused.
+  - [x] Added hook-based low-risk retry behavior: automatic retry only happens when the scheduler exposes a safe `retry_job(state)` hook; otherwise failed jobs remain manual-review guarded.
+  - [x] Fixed remote SLURM materialization so it creates the remote working directory with `cwd=None` before later `sbatch` runs inside that directory.
+  - [x] Preserved the safety boundary: generic remote SLURM `FAILED` states are not blindly requeued without a safe retry hook/classifier.
+- not_yet_done_checklist:
+  - [ ] Real HPC smoke test still not run; it requires operator-managed SSH credentials and cluster access.
+  - [ ] Stage-specific artifact validators are still needed before enabling deeper automatic multi-stage continuation.
+  - [ ] Future enhancement: add a real failure classifier that distinguishes transient scheduler failures from tool/input/output failures before exposing a RemoteSlurm retry hook.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/unit/scheduler/test_remote_slurm.py::test_remote_slurm_materialize_creates_missing_workdir_before_sbatch tests/unit/runtime/test_trusted_automation.py::test_trusted_run_controller_classifies_failed_job_without_auto_overwrite tests/unit/runtime/test_trusted_automation.py::test_trusted_run_controller_uses_policy_for_low_risk_retry tests/unit/runtime/test_dry_run_branching.py::test_bio_submit_watch_flag_polls_and_returns_latest_run_state` -> first run failed as expected, then pass after fixes.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/unit/scheduler tests/unit/runtime tests/unit/safety tests/unit/contracts/test_execution.py` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/integration/api tests/e2e/cli` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`, 4 skipped).
+  - `git diff --check -- src\contracts\execution.py src\runtime\automation.py src\runtime\facade.py src\scheduler\remote.py tests\unit\scheduler\test_remote_slurm.py tests\unit\runtime\test_trusted_automation.py tests\unit\runtime\test_dry_run_branching.py tests\unit\contracts\test_execution.py docs\HANDOFF.md` -> pass; Git emitted existing LF-to-CRLF working-copy warnings only.
+- gate_result: `pass`
+- known_risks:
+  - Real remote SSH/SLURM behavior remains mock-covered locally; an operator-run smoke test is still required on the actual cluster.
+  - Low-risk retry is intentionally hook-gated; this avoids unsafe generic requeue but means RemoteSlurm failed jobs still require manual review until failure classification is added.
+  - Existing dirty worktree includes prior trusted-remote-execution files; this entry only records the review fixes above.
+- next_actions:
+  - Add classified remote failure diagnostics before enabling real RemoteSlurm automatic requeue.
+  - Configure local `.env` outside Git and run `remote-check` before any real cluster smoke test.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-05-28 09:44 +08:00 (trusted remote execution review fixes 5-7)
+- intent_domain: `system`
+- stage_id: `Resource + Safety Gate`, `Execution`, `Audit + Memory`, `V2 Control Plane`
+- module_owner_path: `D:\geneagent\src\runtime`, `D:\geneagent\src\scheduler`, `D:\geneagent\src\contracts`, `D:\geneagent\tests`, `D:\geneagent\docs`
+- cluster_execution_expected: `true` for bio `ssh_slurm_trusted` real-submit paths only when remote-check passes and real execution is explicitly enabled; `false` for default `local_preview`, `manual_sbase` Agent-side submit, and all non-bio branches.
+- contracts_impacted:
+  - `RemoteExecutionProfile` now carries `connect_timeout_seconds`.
+  - `RemoteSlurmSchedulerAdapter.remote_check()` accepts a request timeout override.
+  - `RunStateStore` no longer falls back to `.tmp` or system temp on write failure.
+  - `settings.execution_mode` default is now `local_preview`, with `ssh_slurm_trusted` requiring explicit opt-in.
+- files_changed:
+  - `D:\geneagent\.env.example`
+  - `D:\geneagent\AGENTS.md`
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\docs\v2_system_map.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+  - `D:\geneagent\src\contracts\remote_execution.py`
+  - `D:\geneagent\src\runtime\settings.py`
+  - `D:\geneagent\src\runtime\facade.py`
+  - `D:\geneagent\src\runtime\run_state.py`
+  - `D:\geneagent\src\scheduler\remote.py`
+  - `D:\geneagent\tests\unit\scheduler\test_remote_slurm.py`
+  - `D:\geneagent\tests\unit\runtime\test_remote_execution_state.py`
+  - `D:\geneagent\tests\unit\runtime\test_settings.py`
+  - `D:\geneagent\tests\unit\runtime\test_dry_run_branching.py`
+  - `D:\geneagent\tests\unit\runtime\test_audit_bundle_export.py`
+  - `D:\geneagent\tests\integration\api\test_remote_execution_routes.py`
+  - `D:\geneagent\tests\integration\conftest.py`
+  - `D:\geneagent\tests\e2e\cli\test_remote_execution_cli.py`
+  - `D:\geneagent\tests\e2e\cli\test_plan_placeholder.py`
+  - `D:\geneagent\tests\e2e\conftest.py`
+- completed_checklist:
+  - [x] Fixed SSH `remote-check` so request-level `remote_profile_name` builds and checks the requested profile instead of reusing the bootstrap scheduler profile.
+  - [x] Changed the safe default execution mode to `local_preview`; automated submit now requires explicit `ssh_slurm_trusted` plus `GENEAGENT_SCHEDULER_REAL_EXECUTION_ENABLED=true`.
+  - [x] Documented the safe-startup versus trusted-automation distinction in `.env.example`, `README.md`, `AGENTS.md`, and `docs\v2_system_map.md`.
+  - [x] Removed silent run-state fallback to `.tmp` and system temp; an unwritable `GENEAGENT_LOCAL_STATE_ROOT` now fails visibly so resume durability problems are not hidden.
+  - [x] Wired `hpc_connect_timeout_seconds` into `RemoteExecutionProfile`, SSH `ConnectTimeout`, and `remote-check` command timeout.
+  - [x] Added regression tests for profile switching, default execution-mode safety, strict state-root behavior, and SSH connect-timeout usage.
+  - [x] Added e2e/integration test fixtures that isolate local run state into pytest temporary directories without weakening production state-store strictness.
+- not_yet_done_checklist:
+  - [ ] Real HPC smoke test remains manual/operator-gated and was not run in this local CI-style gate.
+  - [ ] Remote failure classifier remains a follow-up before enabling real RemoteSlurm automatic requeue.
+  - [ ] Worktree remains dirty with the broader trusted remote execution feature set; this entry does not commit or push.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/integration/api/test_remote_execution_routes.py::test_remote_check_uses_request_profile_name_for_ssh_mode tests/unit/runtime/test_settings.py::test_settings_defaults tests/unit/runtime/test_remote_execution_state.py::test_run_state_store_does_not_silently_fallback_when_primary_root_is_unwritable tests/unit/scheduler/test_remote_slurm.py::test_remote_check_uses_connect_timeout_override` -> failed before implementation, then pass after fixes.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/unit/scheduler/test_remote_slurm.py tests/unit/runtime/test_settings.py tests/unit/runtime/test_remote_execution_state.py tests/integration/api/test_remote_execution_routes.py tests/e2e/cli/test_remote_execution_cli.py` -> pass (`20 passed`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/unit/scheduler tests/unit/runtime tests/unit/safety tests/unit/contracts/test_execution.py` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/integration/api tests/e2e/cli` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/e2e/test_stage4_acceptance.py tests/e2e/test_v1_completion.py tests/integration/test_performance_stability.py` -> pass (`12 passed`, `2 skipped`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`, `4 skipped`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `git diff --check -- AGENTS.md README.md docs\v2_system_map.md docs\HANDOFF.md .env.example src tests` -> pass; Git emitted existing LF-to-CRLF working-copy warnings only.
+  - `rg -n "10\.11\.29\.21|password|private_key|private key" .env.example AGENTS.md README.md docs\v2_system_map.md src\contracts src\runtime src\scheduler tests` -> no real private IP; only safety documentation and negative tests mention password/private key.
+- gate_result: `pass`
+- known_risks:
+  - Real remote SSH/SLURM behavior is still mock-covered locally; one harmless operator-run cluster smoke test is still required before production rollout.
+  - `RunStateStore` now intentionally raises when its configured root is not writable; deployments must set `GENEAGENT_LOCAL_STATE_ROOT` to a durable local PC path.
+  - Default `local_preview` is safer but requires docs/operator training so users understand when automation is actually submitting to SLURM.
+- next_actions:
+  - Commit or otherwise preserve the full trusted remote execution feature set when the user asks for version-control finalization.
+  - Configure local `.env` outside Git and run `remote-check` before a real HPC smoke test.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-05-28 10:21 +08:00 (scripts analysis template completion)
+- intent_domain: `bioinformatics`
+- stage_id: `Execution`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\scripts`, `D:\geneagent\tests\integration`, `D:\geneagent\docs`
+- cluster_execution_expected: `true` when these bioinformatics wrappers are invoked by scheduler-managed bio jobs; this task itself did not submit, poll, or contact any cluster.
+- contracts_impacted:
+  - New script-level metadata convention `analysis_script_template.v1` for run manifests.
+  - New script-level metadata convention `analysis_script_audit_sidecar.v1` for audit sidecars.
+  - No Pydantic/API/CLI contract changes in this task.
+- files_changed:
+  - `D:\geneagent\scripts\INDEX.md`
+  - `D:\geneagent\scripts\qc_pipeline\README.md`
+  - `D:\geneagent\scripts\qc_pipeline\run_qc_pipeline.sh`
+  - `D:\geneagent\scripts\pca_pipeline\README.md`
+  - `D:\geneagent\scripts\pca_pipeline\run_pca_pipeline.sh`
+  - `D:\geneagent\scripts\grm_builder\README.md`
+  - `D:\geneagent\scripts\grm_builder\run_grm_builder.sh`
+  - `D:\geneagent\scripts\genomic_prediction\README.md`
+  - `D:\geneagent\scripts\genomic_prediction\run_genomic_prediction.sh`
+  - `D:\geneagent\scripts\report_generator\README.md`
+  - `D:\geneagent\scripts\report_generator\run_report_generator.sh`
+  - `D:\geneagent\tests\integration\test_analysis_script_templates.py`
+  - `D:\geneagent\tests\integration\test_genomic_prediction_script.py`
+  - `D:\geneagent\tests\integration\test_report_generator_v2_scripts.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added failing-first static regression tests for the common script template contract.
+  - [x] Added common runtime options to the four main analysis scripts: `--task-id`, `--run-id`, `--session-id`, `--threads`, `--log-dir`, `--dry-run`, and `--force`.
+  - [x] Added dry-run manifest generation to `qc_pipeline`, `pca_pipeline`, `grm_builder`, and `genomic_prediction`.
+  - [x] Added audit sidecar generation to the four main analysis wrappers.
+  - [x] Added script-level log capture to `logs/<pipeline>.log`.
+  - [x] Added POSIX path guardrails that reject Windows backslash paths before HPC execution.
+  - [x] Wired `--threads` into PLINK2/GCTA command templates where supported.
+  - [x] Added `run_report_generator.sh --dry-run` with `results/report_generator_run_manifest.json` and log output.
+  - [x] Updated script README/index documentation and V2 wording for the script template layer.
+- not_yet_done_checklist:
+  - [ ] Dynamic Bash dry-run tests were skipped in this PowerShell session because no runnable Bash/Git Bash was found.
+  - [ ] WSL2 smoke verification could not run because the machine reports no installed WSL distribution.
+  - [ ] Real bioinformatics tool smoke tests with `plink2`, `bcftools`, `vcftools`, and `gcta64` remain HPC/operator-environment checks.
+  - [ ] Worktree still includes earlier trusted remote execution dirty files outside this scripts task.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/integration/test_analysis_script_templates.py -rs` -> initially failed on missing template tokens, then pass after implementation (`5 passed`, `9 skipped` due no runnable Bash).
+  - `wsl -e bash -lc '<script-template bash -n and dry-run smoke>'` -> failed before script execution because no WSL distribution is installed/enabled in this Windows session.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/integration/test_analysis_script_templates.py tests/integration/test_report_generator_v2_scripts.py tests/integration/test_genomic_prediction_script.py tests/e2e/test_v1_completion.py -rs` -> pass for available tests; Bash-backed cases skipped due no runnable Bash.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `git diff --check -- scripts tests\integration\test_analysis_script_templates.py tests\integration\test_genomic_prediction_script.py tests\integration\test_report_generator_v2_scripts.py` -> pass; Git emitted existing LF-to-CRLF working-copy warnings only.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped Bash/WSL-dependent cases).
+- gate_result: `pass` for Python/static gates; `partial` for Bash dynamic smoke because this Windows session has no runnable Bash or WSL2 distribution.
+- known_risks:
+  - `analysis_script_template.v1` and `analysis_script_audit_sidecar.v1` are script-level JSON conventions, not yet formal Pydantic contracts.
+  - The new POSIX path guard means callers must pass `/` paths such as `D:/geneagent` locally or true POSIX paths on HPC.
+  - Dynamic dry-run behavior still needs one WSL2/Git Bash or HPC login-node smoke run before claiming shell execution coverage.
+- next_actions:
+  - In a WSL2/HPC-capable environment, run each `run_*` script with `--dry-run --force` and inspect `run_manifest.json`, `audit_sidecar.json`, and logs.
+  - If the manifest conventions become cross-module contracts, promote them into `src/contracts`.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-04 10:09 +08:00 (analysis-domain ontology scaffold)
+- intent_domain: `knowledge`
+- stage_id: `Local-first RAG`, `Blueprint Selection`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\references\ontology`, `D:\geneagent\references\analysis_domains`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`
+- contracts_impacted:
+  - No Pydantic/API/CLI contract changes.
+  - Added documentation-level `domain_scope` and `method_family` vocabulary while preserving existing `knowledge_item.v2.blueprint_scope` enum compatibility.
+- files_changed:
+  - `D:\geneagent\references\ontology\domain_scope_vocab.md`
+  - `D:\geneagent\references\analysis_domains\README.md`
+  - `D:\geneagent\references\ontology\README.md`
+  - `D:\geneagent\references\INDEX.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added `domain_scope_vocab.md` with scientific domain scopes, method-family vocabulary, execution-blueprint mapping, and cross-domain placement rules.
+  - [x] Added `analysis_domains/README.md` as the index-first layer for professional animal genetics and breeding analysis domains.
+  - [x] Clarified that current execution blueprints remain automation entry points, not the scientific taxonomy.
+  - [x] Updated ontology and references indexes so the new domain-scope vocabulary is discoverable.
+  - [x] Preserved current `knowledge_item.v2` schema compatibility by keeping `domain_scope` as a curation/retrieval convention rather than a required metadata field.
+- not_yet_done_checklist:
+  - [ ] Domain-specific files such as `selection_signatures.md`, `association_mapping_gwas_qtl.md`, and `genetic_diversity_inbreeding.md` are not yet created.
+  - [ ] `domain_scope` is not yet a typed Pydantic field or metadata filter in `src/knowledge`; it is currently an ontology convention.
+  - [ ] Existing execution blueprints are not yet expanded for full selection-signature, GWAS/QTL, phasing/imputation, or functional annotation workflows.
+- verification_commands:
+  - `.\.venv\Scripts\python.exe -m pytest -q tests/unit/knowledge/test_references_coverage.py` -> pass (`7 passed`).
+  - `git diff --check -- references\ontology\domain_scope_vocab.md references\analysis_domains\README.md references\ontology\README.md references\INDEX.md` -> pass; Git emitted existing LF-to-CRLF working-copy warnings only.
+  - `rg -n "domain_scope|method_family|selection_signatures|association_mapping_gwas_qtl|domain_scope_vocab" references\ontology\domain_scope_vocab.md references\analysis_domains\README.md references\INDEX.md references\ontology\README.md` -> confirmed new vocabulary and links.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests reported by pytest progress output).
+- gate_result: `pass`
+- known_risks:
+  - `analysis_domains/` is a new `references/` subdirectory and should be added to future directory-routing/coverage policy if it becomes a formal indexed knowledge layer.
+  - README-level analysis-domain guidance is discoverable via indexes but not itself required by coverage metadata rules.
+  - Worktree remains dirty with broader trusted remote execution and script-template changes from prior sessions; this entry only records the analysis-domain ontology scaffold.
+- next_actions:
+  - Create the first formal domain file for `selection_signatures` because current `pca_pipeline` only partially supports Fst/pi/Tajima's D/ROH and should not claim full selection-scan delivery.
+  - Decide whether to promote `domain_scope` into a typed metadata contract and retrieval filter after the first domain files settle.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-04 10:18 +08:00 (AGENTS analysis-domain policy sync)
+- intent_domain: `knowledge`
+- stage_id: `Local-first RAG`, `Blueprint Selection`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\AGENTS.md`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`
+- contracts_impacted:
+  - No Pydantic/API/CLI contract changes.
+  - Updated highest-priority project policy so `analysis_domains/` and `domain_scope` are recognized as the scientific knowledge-layer convention.
+- files_changed:
+  - `D:\geneagent\AGENTS.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added `references/analysis_domains/` to the standard `references/` directory charter in `AGENTS.md`.
+  - [x] Added `domain_scope` wording to the knowledge-base charter while preserving current `knowledge_item.v2.blueprint_scope` compatibility.
+  - [x] Clarified in project scope that `qc / pca / grm / genomic_prediction` are execution blueprint entries, not the GeneAgent knowledge-base scientific taxonomy.
+  - [x] Added routing ownership for `references/analysis_domains/*`.
+- not_yet_done_checklist:
+  - [ ] `domain_scope` remains a documentation-level convention and is not yet a typed metadata field in `src/contracts/knowledge.py`.
+  - [ ] `AGENTS.md` still contains broader dirty trusted-remote-execution edits from prior sessions; this entry records only the analysis-domain policy sync.
+  - [ ] Future formal domain files still need to be added under `references/analysis_domains/`.
+- verification_commands:
+  - `rg -n "analysis_domains|domain_scope|四条主链是执行蓝图入口|知识检索与报告解释不得" AGENTS.md` -> confirmed the new policy lines are present.
+  - `git diff --check -- AGENTS.md references\ontology\domain_scope_vocab.md references\analysis_domains\README.md references\ontology\README.md references\INDEX.md docs\HANDOFF.md` -> pass; Git emitted existing LF-to-CRLF working-copy warnings only.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests reported by pytest progress output).
+  - `.\.venv\Scripts\python.exe -m pytest -q tests/unit/knowledge/test_references_coverage.py` -> pass (`7 passed`).
+- gate_result: `pass`
+- known_risks:
+  - Since `domain_scope` is not typed yet, retrieval can use it through document text and curated mappings but not through a strict metadata filter.
+  - Existing dirty worktree contains prior remote execution and script-template changes unrelated to this policy sync.
+- next_actions:
+  - Add `references/analysis_domains/selection_signatures.md` as the first formal scientific-domain file.
+  - Decide later whether `domain_scope` should be promoted into `KnowledgeItemV2` and coverage tests.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-04 20:35 +08:00 (ordinary Linux SSH shell trusted execution)
+- intent_domain: `system`
+- stage_id: `Resource + Safety Gate`, `Execution`, `Audit + Memory`, `V2 Control Plane`
+- module_owner_path: `D:\geneagent\src\scheduler`, `D:\geneagent\src\runtime`, `D:\geneagent\src\contracts`, `D:\geneagent\src\cli`, `D:\geneagent\tests`, `D:\geneagent\docs`
+- cluster_execution_expected: `true` for bio `ssh_shell_trusted` real-submit paths only when `remote-check` passes and real execution is explicitly enabled; `false` for default `local_preview`, `manual_sbase` Agent-side submit, and all non-bio branches.
+- contracts_impacted:
+  - `ExecutionMode` now includes `ssh_shell_trusted`.
+  - `SchedulerKind` now includes `shell`.
+  - `RemoteCheckResult` can report ordinary SSH shell backend readiness without requiring SLURM commands.
+  - `RunState` can persist `execution_mode=ssh_shell_trusted`, `scheduler=shell`, and `job_id=shell:<pid>`.
+- files_changed:
+  - `D:\geneagent\.env.example`
+  - `D:\geneagent\AGENTS.md`
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\docs\v2_system_map.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+  - `D:\geneagent\src\contracts\common.py`
+  - `D:\geneagent\src\contracts\remote_execution.py`
+  - `D:\geneagent\src\scheduler\base.py`
+  - `D:\geneagent\src\scheduler\ssh_shell.py`
+  - `D:\geneagent\src\runtime\bootstrap.py`
+  - `D:\geneagent\src\runtime\facade.py`
+  - `D:\geneagent\src\runtime\automation.py`
+  - `D:\geneagent\src\cli\app.py`
+  - `D:\geneagent\tests\unit\scheduler\test_remote_slurm.py`
+  - `D:\geneagent\tests\unit\runtime\test_settings.py`
+  - `D:\geneagent\tests\unit\runtime\test_trusted_automation.py`
+  - `D:\geneagent\tests\unit\runtime\test_dry_run_branching.py`
+  - `D:\geneagent\tests\integration\api\test_remote_execution_routes.py`
+  - `D:\geneagent\tests\e2e\cli\test_remote_execution_cli.py`
+- completed_checklist:
+  - [x] Added `ssh_shell_trusted` execution mode for ordinary Linux servers without SLURM.
+  - [x] Added `RemoteShellSchedulerAdapter` that uses SSH batch mode, remote `bash/nohup`, per-run `run.sh`, logs, and state sentinel files.
+  - [x] Added remote shell preflight checks for `bash/nohup/ps/kill/mkdir/chmod/test/cat/base64` and configured tool paths.
+  - [x] Wired request-level and settings-level `ssh_shell_trusted` through runtime bootstrap, submit-preview, submit, remote-check, watch, and resume paths.
+  - [x] Ensured request-level shell mode uses remote profile `work_root`, not Windows/local working directories.
+  - [x] Added shell run-state polling through `poll_run(state)` so resumed watches can recover from `task_id/run_id`.
+  - [x] Added shell PID/state-loss breaker behavior that requires manual review and disables auto-continue.
+  - [x] Updated README, AGENTS, system map, and `.env.example` to position ordinary Linux server SSH execution as the primary current workflow and SLURM as an optional backend.
+  - [x] Kept Xshell/WinSCP/SBASE as manual fallbacks only; no GUI/login automation was added.
+- not_yet_done_checklist:
+  - [ ] Real ordinary-server smoke test was not run in CI/local gates; it remains operator-gated after local `.env` and SSH key setup.
+  - [ ] True output validators for each bio pipeline stage still need to mature before broad automatic downstream continuation.
+  - [ ] Worktree remains dirty with broader prior trusted-remote, script-template, and knowledge-domain changes; this entry does not commit or push.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/unit/scheduler/test_remote_slurm.py` -> pass (`15 passed`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/unit/scheduler tests/unit/runtime tests/unit/safety tests/unit/contracts/test_execution.py` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/integration/api tests/e2e/cli` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests reported by pytest progress output).
+  - `git diff --check -- AGENTS.md README.md docs .env.example src tests` -> pass; Git emitted existing LF-to-CRLF working-copy warnings only.
+  - `rg -n "10\.11\.|password\s*=|private_key\s*=|BEGIN .*PRIVATE KEY|sshpass" .env.example AGENTS.md README.md docs src tests` -> no matches.
+- gate_result: `pass`
+- known_risks:
+  - Ordinary Linux shell mode has no queue-side resource enforcement; GeneAgent caps are pre-submit gates and script parameters only.
+  - `poll(job_id)` remains a compatibility path; durable shell resume relies on `RunState.task_id/run_id` through `poll_run(state)`.
+  - Real server behavior depends on operator-managed passwordless SSH; GeneAgent still does not store or type passwords.
+- next_actions:
+  - Configure local `.env` outside Git with an SSH alias/host, username, and `/data2/<user>/geneagent_runs`, then run `remote-check --execution-mode ssh_shell_trusted`.
+  - Run a harmless real smoke task such as `hostname && date && sleep 5`, then verify `state/pid`, `state/done`, `logs/stdout.log`, and local `state.json`.
+  - Add pipeline-specific output validators before enabling aggressive auto-continue across long bioinformatics chains.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-04 20:54 +08:00 (ordinary server remote-check blocked by SSH auth)
+- intent_domain: `system`
+- stage_id: `Resource + Safety Gate`, `Execution`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\.gitignore`, `D:\geneagent\docs`
+- cluster_execution_expected: `true` for the requested harmless `ssh_shell_trusted` smoke task, but real submit was blocked because remote-check did not pass.
+- contracts_impacted:
+  - No Pydantic/API/CLI contract changes.
+  - Local ignored `.env` was configured for `ssh_shell_trusted`; no password or private key was written.
+- files_changed:
+  - `D:\geneagent\.gitignore`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Confirmed `.env` was absent before this smoke attempt.
+  - [x] Added `.env` to `.gitignore` before creating any local remote-execution configuration.
+  - [x] Created a local ignored `.env` for ordinary-server `ssh_shell_trusted` mode without storing a password or private key.
+  - [x] Ran GeneAgent `remote-check --execution-mode ssh_shell_trusted`.
+  - [x] Blocked the requested real smoke submit because `remote-check` returned `reachable=false` and `safe_for_submit=false`.
+- not_yet_done_checklist:
+  - [ ] Configure operator-managed passwordless SSH/public-key authentication for the remote server.
+  - [ ] Re-run `remote-check --execution-mode ssh_shell_trusted` after BatchMode SSH succeeds.
+  - [ ] Submit the harmless smoke command `hostname && date && sleep 5` only after `safe_for_submit=true`.
+  - [ ] Verify remote `state/pid`, `state/done`, `logs/stdout.log`, and local `.geneagent/runs/*/state.json` after the smoke submit.
+- verification_commands:
+  - `Test-Path -LiteralPath '.env'` -> initially `False`.
+  - `ssh -o BatchMode=yes -o ConnectTimeout=15 <remote> "hostname && pwd && date"` -> failed with host-key verification before local profile setup.
+  - `ssh -o UserKnownHostsFile=.tmp/ssh_known_hosts_smoke -o StrictHostKeyChecking=accept-new -o BatchMode=yes -o ConnectTimeout=15 <remote> "hostname && pwd && date"` -> reached authentication and failed with `Permission denied (publickey,gssapi-keyex,gssapi-with-mic,password)`.
+  - `git check-ignore -v .env` -> pass; `.env` is ignored by `.gitignore`.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m cli.app remote-check --execution-mode ssh_shell_trusted` -> completed, but returned `reachable=false`, `safe_for_submit=false`, messages included `ssh_probe_nonzero` and `work_root_missing`.
+- gate_result: `partial`
+- known_risks:
+  - Password-based SSH login can work manually, but GeneAgent trusted automation requires passwordless BatchMode SSH and must not type or store passwords.
+  - The smoke submit was intentionally not attempted because remote-check did not pass.
+  - Local ignored `.env` contains machine-specific remote profile details and must remain untracked.
+- next_actions:
+  - Add the local public key to the server account's `~/.ssh/authorized_keys` through a manual trusted login path.
+  - Re-run `ssh -o BatchMode=yes <remote> "hostname && pwd && date"` until it succeeds without prompting.
+  - Then run GeneAgent `remote-check --execution-mode ssh_shell_trusted` and the harmless smoke submit.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-05 11:01 +08:00 (password-account SSH via OpenSSH ControlMaster)
+- intent_domain: `system`
+- stage_id: `Resource + Safety Gate`, `Execution`, `Audit + Memory`, `V2 Control Plane`
+- module_owner_path: `D:\geneagent\src\contracts`, `D:\geneagent\src\scheduler`, `D:\geneagent\src\runtime`, `D:\geneagent\src\cli`, `D:\geneagent\tests`, `D:\geneagent\docs`
+- cluster_execution_expected: `true` for bio `ssh_shell_trusted` submit/watch paths after the operator opens an SSH ControlMaster session and `remote-check` passes; `false` for default `local_preview`, docs-only actions, and all non-bio branches.
+- contracts_impacted:
+  - `SshAuthMode` added with `batch` and `control_master`.
+  - `RemoteExecutionProfile` now carries `ssh_auth_mode`, `ssh_control_path`, and `ssh_control_persist` without adding any password/private-key fields.
+  - `SshCommandRunner` can reuse an already-opened OpenSSH control socket while keeping follow-up commands in batch mode.
+- files_changed:
+  - `D:\geneagent\.env.example`
+  - `D:\geneagent\AGENTS.md`
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\docs\v2_system_map.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+  - `D:\geneagent\src\contracts\common.py`
+  - `D:\geneagent\src\contracts\remote_execution.py`
+  - `D:\geneagent\src\contracts\__init__.py`
+  - `D:\geneagent\src\scheduler\remote.py`
+  - `D:\geneagent\src\runtime\settings.py`
+  - `D:\geneagent\src\cli\app.py`
+  - `D:\geneagent\tests\conftest.py`
+  - `D:\geneagent\tests\unit\scheduler\test_remote_slurm.py`
+  - `D:\geneagent\tests\unit\runtime\test_settings.py`
+  - `D:\geneagent\tests\e2e\cli\test_remote_execution_cli.py`
+- completed_checklist:
+  - [x] Added `SshAuthMode.CONTROL_MASTER` so ordinary-server automation can work when the operator only has an account password.
+  - [x] Kept password handling outside GeneAgent: no password, private key, or raw credential field was added to contracts, settings, state, docs, or examples.
+  - [x] Added `SshControlMasterManager` with `open/check/close` command construction.
+  - [x] Added CLI commands `remote-session-open`, `remote-session-check`, and `remote-session-close`.
+  - [x] Updated `SshCommandRunner` so follow-up remote commands use `BatchMode=yes` plus `ControlPath` after the operator opens the SSH control socket.
+  - [x] Added settings/env support for `GENEAGENT_HPC_SSH_AUTH_MODE`, `GENEAGENT_HPC_SSH_CONTROL_PATH`, and `GENEAGENT_HPC_SSH_CONTROL_PERSIST`.
+  - [x] Added `GENEAGENT_ENV_FILE=none` test isolation support so local ignored `.env` remote profiles do not pollute CI/unit tests.
+  - [x] Updated README, AGENTS, `.env.example`, and V2 system map to describe password-account fallback as operator-entered OpenSSH ControlMaster only.
+- not_yet_done_checklist:
+  - [ ] Real server smoke is still pending: run `remote-session-open`, type the server password, then run `remote-session-check` and `remote-check --execution-mode ssh_shell_trusted`.
+  - [ ] Submit the harmless `hostname && date && sleep 5` smoke task only after `remote-check` returns `safe_for_submit=true`.
+  - [ ] If Windows OpenSSH ControlMaster is blocked by the local SSH build or server policy, add the next fallback as a server-side GeneAgent worker started after manual password login.
+  - [ ] Worktree remains dirty with earlier trusted-remote, script-template, and knowledge-domain changes; this entry only records the ControlMaster/password-account adaptation.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/unit/scheduler/test_remote_slurm.py -q` -> initially failed because `SshAuthMode` was missing, then passed after implementation.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/unit/scheduler tests/unit/runtime tests/unit/safety tests/unit/contracts/test_execution.py` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/integration/api tests/e2e/cli` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests reported by pytest progress output).
+  - `git diff --check -- AGENTS.md README.md docs .env.example src tests` -> pass; Git emitted existing LF-to-CRLF working-copy warnings only.
+  - `rg -n "10\.11\.|password\s*=|private_key\s*=|BEGIN .*PRIVATE KEY|sshpass|GENEAGENT_.*PASSWORD" .env.example AGENTS.md README.md docs\v2_system_map.md src tests` -> no matches.
+  - `$env:GENEAGENT_ENV_FILE='none'; $env:GENEAGENT_HPC_HOST='server.example.org'; $env:GENEAGENT_HPC_USER='alice'; $env:GENEAGENT_HPC_SSH_AUTH_MODE='control_master'; $env:GENEAGENT_HPC_SSH_CONTROL_PATH='.geneagent/ssh_control/server.sock'; $env:GENEAGENT_HPC_SSH_CONTROL_PERSIST='2h'; .\.venv\Scripts\python.exe -m cli.app remote-session-open --print-command` -> pass and printed a ControlMaster command with no `BatchMode=yes` and no password field.
+- gate_result: `partial` (code/test gates pass; real ordinary-server smoke remains operator-gated)
+- known_risks:
+  - OpenSSH ControlMaster support may vary on Windows builds and server policy; `ssh -G` on this machine exposes `controlmaster/controlpath/controlpersist`, but real server validation is still pending.
+  - The operator will type the password into the local OpenSSH prompt; GeneAgent must not capture, log, or replay it.
+  - If the control socket expires or is closed, `remote-check` and submit will fail until `remote-session-open` is run again.
+- next_actions:
+  - Configure local ignored `.env` with `GENEAGENT_HPC_SSH_AUTH_MODE=control_master`, profile host/user/work root, and a local `GENEAGENT_HPC_SSH_CONTROL_PATH`.
+  - Run `.\.venv\Scripts\python.exe -m cli.app remote-session-open`, type the server password, then run `remote-session-check`.
+  - Run `remote-check --execution-mode ssh_shell_trusted`; if safe, submit the harmless smoke command and verify remote `state/pid`, `state/done`, `logs/stdout.log`, and local run state.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-05 11:15 +08:00 (fixed remote smoke command)
+- intent_domain: `system`
+- stage_id: `Resource + Safety Gate`, `Execution`, `Audit + Memory`, `V2 Control Plane`
+- module_owner_path: `D:\geneagent\src\runtime`, `D:\geneagent\src\cli`, `D:\geneagent\src\contracts`, `D:\geneagent\tests`, `D:\geneagent\docs`
+- cluster_execution_expected: `true` for the fixed `remote-smoke` command only after `remote-check` passes and real execution is enabled; `false` when remote preflight is missing/unsafe or real execution is disabled.
+- contracts_impacted:
+  - Added `RemoteSmokeResult` for fixed harmless remote smoke validation output.
+  - `ApplicationFacade.remote_smoke()` now owns the smoke workflow so CLI stays thin.
+- files_changed:
+  - `D:\geneagent\.env.example`
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\docs\v2_system_map.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+  - `D:\geneagent\src\contracts\remote_execution.py`
+  - `D:\geneagent\src\contracts\__init__.py`
+  - `D:\geneagent\src\runtime\facade.py`
+  - `D:\geneagent\src\cli\app.py`
+  - `D:\geneagent\tests\unit\runtime\test_trusted_automation.py`
+  - `D:\geneagent\tests\e2e\cli\test_remote_execution_cli.py`
+- completed_checklist:
+  - [x] Added fixed-command `remote-smoke` CLI for the harmless command `hostname && pwd && date && sleep 5`.
+  - [x] Added preflight behavior so `remote-smoke` refuses to submit when `remote-check.safe_for_submit=false`.
+  - [x] Added behavior so `remote-smoke` refuses to submit when `GENEAGENT_SCHEDULER_REAL_EXECUTION_ENABLED=false`.
+  - [x] Added tests that prove unsafe remote profiles do not submit and safe mocked profiles submit only the fixed smoke command.
+  - [x] Updated README, `.env.example`, and V2 system map to document the fixed smoke command and real-execution requirement.
+- not_yet_done_checklist:
+  - [ ] Real server smoke remains pending until the operator opens the SSH ControlMaster session by typing the server password.
+  - [ ] After real `remote-smoke` submission, verify remote `state/pid`, `state/done`, `logs/stdout.log`, `logs/stderr.log`, and local run state.
+  - [ ] If `remote-smoke` fails because Windows OpenSSH ControlMaster is unsupported in this environment, implement the server-side worker fallback.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/unit/runtime/test_trusted_automation.py -q` -> initially failed because `ApplicationFacade.remote_smoke` was missing, then passed after implementation.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/e2e/cli/test_remote_execution_cli.py -q` -> initially failed because `remote-smoke` CLI was missing, then passed after implementation.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/unit/scheduler/test_remote_slurm.py tests/unit/runtime/test_settings.py tests/unit/runtime/test_trusted_automation.py tests/e2e/cli/test_remote_execution_cli.py` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/unit/scheduler tests/unit/runtime tests/unit/safety tests/unit/contracts/test_execution.py` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/integration/api tests/e2e/cli` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests reported by pytest progress output).
+  - `git diff --check -- AGENTS.md README.md docs .env.example src tests` -> pass; Git emitted existing LF-to-CRLF working-copy warnings only.
+  - `rg -n "10\.11\.|password\s*=|private_key\s*=|BEGIN .*PRIVATE KEY|sshpass|GENEAGENT_.*PASSWORD" .env.example AGENTS.md README.md docs\v2_system_map.md src tests` -> no matches.
+  - `$env:GENEAGENT_ENV_FILE='none'; $env:GENEAGENT_HPC_HOST=''; $env:GENEAGENT_HPC_USER=''; .\.venv\Scripts\python.exe -m cli.app remote-smoke` -> blocked with `submitted=false`, `safe_for_submit=false`, and `missing_hpc_host/missing_hpc_user`.
+- gate_result: `partial` (code/test gates pass; real server smoke remains operator-gated)
+- known_risks:
+  - `remote-smoke` is intentionally fixed-command only; do not extend it into arbitrary remote command execution without a separate safety design.
+  - Real execution still depends on an open SSH control socket or another operator-managed authentication path.
+- next_actions:
+  - Run `remote-session-open`, enter the server password, then run `remote-session-check`.
+  - Run `remote-check --execution-mode ssh_shell_trusted`; if safe, run `remote-smoke --task-id task-smoke-001 --run-id run-smoke-001`.
+  - If real smoke succeeds, verify the remote and local state artifacts, then the objective can be audited for completion.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-05 11:25 +08:00 (remote-smoke local run state persistence)
+- intent_domain: `system`
+- stage_id: `Execution`, `Audit + Memory`, `V2 Control Plane`
+- module_owner_path: `D:\geneagent\src\contracts`, `D:\geneagent\src\runtime`, `D:\geneagent\tests\unit\runtime`
+- cluster_execution_expected: `true` only when the operator has opened the password-backed SSH ControlMaster session, `remote-check` is safe, and real execution is enabled; `false` for this local code/test update.
+- contracts_impacted:
+  - `RemoteSmokeResult` now includes `run_state_path`.
+  - `ApplicationFacade.remote_smoke()` persists a local `RunState` after successful fixed-command shell smoke submission.
+- files_changed:
+  - `D:\geneagent\docs\HANDOFF.md`
+  - `D:\geneagent\src\contracts\remote_execution.py`
+  - `D:\geneagent\src\runtime\facade.py`
+  - `D:\geneagent\tests\unit\runtime\test_trusted_automation.py`
+- completed_checklist:
+  - [x] Added a regression assertion that successful `remote-smoke` writes a local state file.
+  - [x] Added `RemoteSmokeResult.run_state_path` so CLI/API consumers can locate the persisted state.
+  - [x] Persisted `RunState` with `execution_mode=ssh_shell_trusted`, `scheduler=shell`, smoke `task_id/run_id`, remote work root, shell job id, and execution stage record.
+  - [x] Verified the fixed smoke command remains fixed to `hostname && pwd && date && sleep 5`.
+  - [x] Kept password handling unchanged: no password/private-key fields or storage were added.
+- not_yet_done_checklist:
+  - [ ] Real server smoke remains pending until the operator runs `remote-session-open` and types the server password into OpenSSH.
+  - [ ] After real `remote-smoke`, verify remote `state/pid`, `state/done`, `logs/stdout.log`, `logs/stderr.log`, and local `.geneagent/runs/<task>/<run>/state.json`.
+  - [ ] If Windows OpenSSH ControlMaster fails on the real server, implement the documented server-side worker fallback.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/unit/runtime/test_trusted_automation.py -q` -> initially failed because `RemoteSmokeResult.run_state_path` was missing, then passed after implementation.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/unit/runtime/test_trusted_automation.py tests/unit/runtime/test_remote_execution_state.py tests/e2e/cli/test_remote_execution_cli.py` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/unit/scheduler/test_remote_slurm.py tests/unit/runtime/test_settings.py` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `git diff --check -- src\contracts\remote_execution.py src\runtime\facade.py tests\unit\runtime\test_trusted_automation.py` -> pass; Git emitted an LF-to-CRLF working-copy warning only.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests reported by pytest progress output).
+- gate_result: `partial` (local code/test gate passes; real account-password server smoke remains operator-gated)
+- known_risks:
+  - The active end-to-end objective is not complete until real `remote-session-open -> remote-check -> remote-smoke` succeeds against the server.
+  - Local ignored `.env` may contain machine-specific remote host/user/work-root values and must remain untracked.
+  - Existing worktree remains dirty with broader remote execution, scripts, and knowledge-domain changes.
+- next_actions:
+  - Run `.\.venv\Scripts\python.exe -m cli.app remote-session-open`, type the server password into OpenSSH, then run `remote-session-check`.
+  - Run `.\.venv\Scripts\python.exe -m cli.app remote-check --execution-mode ssh_shell_trusted`.
+  - If safe, run `.\.venv\Scripts\python.exe -m cli.app remote-smoke --task-id task-smoke-001 --run-id run-smoke-001` and inspect the returned `run_state_path`.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-05 11:34 +08:00 (operator password-session smoke shortcut)
+- intent_domain: `system`
+- stage_id: `Resource + Safety Gate`, `Execution`, `Audit + Memory`, `V2 Control Plane`
+- module_owner_path: `D:\geneagent\src\cli`, `D:\geneagent\tests\e2e\cli`, `D:\geneagent\README.md`, `D:\geneagent\.env.example`, `D:\geneagent\docs`
+- cluster_execution_expected: `true` only for the real `remote-session-smoke --open-session` flow after the operator enters the server password into OpenSSH and the remote check passes; `false` for this local implementation and tests.
+- contracts_impacted:
+  - No Pydantic contract changes.
+  - CLI surface adds `remote-session-smoke` as a guarded convenience flow around existing `remote-session-open/check`, `remote-check`, and fixed `remote-smoke`.
+- files_changed:
+  - `D:\geneagent\.env.example`
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\docs\v2_system_map.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+  - `D:\geneagent\src\cli\app.py`
+  - `D:\geneagent\tests\e2e\cli\test_remote_execution_cli.py`
+- completed_checklist:
+  - [x] Added `remote-session-smoke` CLI command for the account-password workflow.
+  - [x] The command checks for an existing OpenSSH control session, optionally opens one through OpenSSH, then runs `remote-check` and the fixed harmless `remote-smoke`.
+  - [x] The command does not accept, store, print, or replay passwords; OpenSSH remains responsible for the interactive credential prompt.
+  - [x] Added `--print-command` support so the operator can inspect the exact OpenSSH open/check commands before running them.
+  - [x] Added `--open-session/--no-open-session` behavior so tests and cautious operators can avoid prompting or opening a new session.
+  - [x] Updated README, `.env.example`, and V2 system map with the new first-validation shortcut.
+- not_yet_done_checklist:
+  - [ ] Real server verification remains pending: run `remote-session-smoke --open-session --task-id task-smoke-001 --run-id run-smoke-001` in the user's PowerShell and type the server password when OpenSSH prompts.
+  - [ ] Verify returned `smoke.run_state_path` and remote `state/pid`, `state/done`, `logs/stdout.log`, and `logs/stderr.log`.
+  - [ ] If OpenSSH ControlMaster is unsupported by the user's Windows SSH/client/server policy, implement the server-side worker fallback.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/e2e/cli/test_remote_execution_cli.py -q` -> initially failed because `remote-session-smoke` was missing, then passed.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/e2e/cli/test_remote_execution_cli.py tests/unit/scheduler/test_remote_slurm.py tests/unit/runtime/test_trusted_automation.py` -> pass.
+  - `$env:GENEAGENT_ENV_FILE='none'; $env:GENEAGENT_HPC_HOST='server.example.org'; $env:GENEAGENT_HPC_USER='alice'; $env:GENEAGENT_HPC_SSH_AUTH_MODE='control_master'; $env:GENEAGENT_HPC_SSH_CONTROL_PATH='.geneagent/ssh_control/test.sock'; .\.venv\Scripts\python.exe -m cli.app remote-session-smoke --print-command --task-id task-smoke-001 --run-id run-smoke-001` -> pass; printed OpenSSH open/check commands and next steps without password fields.
+  - `git diff --check -- README.md .env.example docs\v2_system_map.md src\cli\app.py tests\e2e\cli\test_remote_execution_cli.py` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `rg -n "10\.11\.|password\s*=|private_key\s*=|BEGIN .*PRIVATE KEY|sshpass|GENEAGENT_.*PASSWORD" .env.example AGENTS.md README.md docs\v2_system_map.md src tests` -> no matches.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests reported by pytest progress output).
+- gate_result: `partial` (local implementation and tests pass; real server session/smoke remains operator-gated)
+- known_risks:
+  - This command improves usability but still depends on a real OpenSSH ControlMaster-compatible client/server path.
+  - The active objective remains incomplete until the real server smoke path succeeds with the user's account-password login.
+  - Local `.env` remains ignored and may contain machine-specific remote profile values; do not stage or print it.
+- next_actions:
+  - In PowerShell, run `.\.venv\Scripts\python.exe -m cli.app remote-session-smoke --open-session --task-id task-smoke-001 --run-id run-smoke-001`.
+  - Type the server password only into the OpenSSH prompt.
+  - If the command returns submitted smoke output, inspect `smoke.run_state_path` and remote run logs/state.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-05 11:47 +08:00 (remote-session doctor and Windows control path remediation)
+- intent_domain: `system`
+- stage_id: `Resource + Safety Gate`, `Execution`, `Audit + Memory`, `V2 Control Plane`
+- module_owner_path: `D:\geneagent\src\cli`, `D:\geneagent\tests\e2e\cli`, `D:\geneagent\README.md`, `D:\geneagent\.env.example`, `D:\geneagent\docs`
+- cluster_execution_expected: `true` only after the operator uses the real account-password OpenSSH prompt and `remote-check` passes; `false` for this local doctor implementation.
+- contracts_impacted:
+  - No Pydantic/API contract changes.
+  - CLI surface adds `remote-session-doctor` for local readiness checks before password-session smoke.
+- files_changed:
+  - `D:\geneagent\.env.example`
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+  - `D:\geneagent\docs\v2_system_map.md`
+  - `D:\geneagent\src\cli\app.py`
+  - `D:\geneagent\tests\e2e\cli\test_remote_execution_cli.py`
+- completed_checklist:
+  - [x] Added `remote-session-doctor` CLI command for local account-password workflow readiness checks.
+  - [x] Doctor checks execution mode, real-execution flag, `control_master` auth mode, SSH target, remote work root, SSH binary, control path, and local control directory writability.
+  - [x] Doctor has `--skip-ssh-probe` so tests and cautious operators can avoid even the local `ssh -G` probe.
+  - [x] Doctor reports structured `control_dir_check` errors and remediation hints.
+  - [x] Verified current sandbox cannot write `.geneagent\ssh_control` and doctor reports `PermissionError` plus a user-writable path recommendation.
+  - [x] Verified using a `%TEMP%\geneagent_ssh\test.sock` control path makes the local doctor return ready.
+  - [x] Updated README and `.env.example` with the Windows control path fallback.
+- not_yet_done_checklist:
+  - [ ] Real server verification remains pending: user must run `remote-session-doctor`, then `remote-session-smoke --open-session`, and type the server password into OpenSSH.
+  - [ ] After real smoke succeeds, verify returned `smoke.run_state_path` plus remote `state/pid`, `state/done`, and `logs/*`.
+  - [ ] If OpenSSH ControlMaster itself is unsupported on the real Windows/server path, implement the server-side worker fallback.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/e2e/cli/test_remote_execution_cli.py -q` -> initially failed because `remote-session-doctor` was missing, then passed.
+  - `$env:GENEAGENT_ENV_FILE='none'; $env:GENEAGENT_EXECUTION_MODE='ssh_shell_trusted'; $env:GENEAGENT_SCHEDULER_REAL_EXECUTION_ENABLED='true'; $env:GENEAGENT_HPC_HOST='server.example.org'; $env:GENEAGENT_HPC_USER='alice'; $env:GENEAGENT_HPC_WORK_ROOT='/data2/alice/geneagent_runs'; $env:GENEAGENT_HPC_SSH_AUTH_MODE='control_master'; $env:GENEAGENT_HPC_SSH_CONTROL_PATH='.geneagent/ssh_control/test.sock'; .\.venv\Scripts\python.exe -m cli.app remote-session-doctor --skip-ssh-probe` -> exit 1 with `ssh_control_dir_not_writable` and a `PermissionError` diagnostic in this sandbox.
+  - Same doctor command using `%TEMP%\geneagent_ssh\test.sock` as `GENEAGENT_HPC_SSH_CONTROL_PATH` -> pass with `ready_for_control_session=true` and `ready_for_real_smoke=true`.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/e2e/cli/test_remote_execution_cli.py tests/unit/scheduler/test_remote_slurm.py tests/unit/runtime/test_trusted_automation.py` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `git diff --check -- README.md .env.example docs\v2_system_map.md src\cli\app.py tests\e2e\cli\test_remote_execution_cli.py` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+  - `rg -n "10\.11\.|password\s*=|private_key\s*=|BEGIN .*PRIVATE KEY|sshpass|GENEAGENT_.*PASSWORD" .env.example AGENTS.md README.md docs\v2_system_map.md src tests` -> no matches.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests reported by pytest progress output).
+- gate_result: `partial` (local implementation and tests pass; real server account-password smoke remains operator-gated)
+- known_risks:
+  - The current sandbox cannot write `.geneagent\ssh_control`; real PowerShell may differ, but doctor now gives a temp-path workaround.
+  - The active objective remains incomplete until the real server accepts the OpenSSH password prompt and the smoke task runs.
+  - Local `.env` remains ignored and may contain machine-specific remote profile values; do not stage or print it.
+- next_actions:
+  - Set `GENEAGENT_HPC_SSH_CONTROL_PATH` to a user-writable local path if `remote-session-doctor` reports `ssh_control_dir_not_writable`.
+  - Run `.\.venv\Scripts\python.exe -m cli.app remote-session-doctor`.
+  - Then run `.\.venv\Scripts\python.exe -m cli.app remote-session-smoke --open-session --task-id task-smoke-001 --run-id run-smoke-001` and type the server password into OpenSSH.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-05 11:53 +08:00 (local password-session profile ready)
+- intent_domain: `system`
+- stage_id: `Resource + Safety Gate`, `Execution`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\.env`, `D:\geneagent\docs`
+- cluster_execution_expected: `true` for the next real `remote-session-smoke --open-session` command after the operator enters the server password into OpenSSH; `false` for this local configuration and verification step.
+- contracts_impacted:
+  - No source/API/Pydantic contract changes.
+  - Local ignored `.env` was adjusted for ControlMaster-based account-password operation without adding password fields.
+- files_changed:
+  - `D:\geneagent\.env` (ignored local runtime configuration; not for Git)
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Confirmed local ignored `.env` exists.
+  - [x] Confirmed remote host/user/work-root values are already configured in `.env` without printing them.
+  - [x] Added/updated `GENEAGENT_HPC_SSH_AUTH_MODE=control_master` in local `.env`.
+  - [x] Added/updated `GENEAGENT_HPC_SSH_CONTROL_PATH` in local `.env` to a user-writable Temp control socket path.
+  - [x] Ran `remote-session-doctor` against local `.env`; it returned `ready_for_control_session=true` and `ready_for_real_smoke=true`.
+  - [x] Ran `remote-session-smoke --no-open-session`; it correctly reported `ssh_control_session_not_ready` and did not submit, proving only the interactive OpenSSH password step remains.
+  - [x] Verified no password/sshpass/private-key fields were added.
+- not_yet_done_checklist:
+  - [ ] Real SSH ControlMaster session is not open yet.
+  - [ ] Operator must run `remote-session-smoke --open-session` and type the server password into the OpenSSH prompt.
+  - [ ] After real smoke succeeds, verify returned `smoke.run_state_path` plus remote `state/pid`, `state/done`, and `logs/*`.
+  - [ ] If OpenSSH cannot prompt or keep a ControlMaster session in the user's terminal, implement the server-side worker fallback.
+- verification_commands:
+  - `Test-Path -LiteralPath .env` -> `True`.
+  - Local `.env` key audit -> host/user/work-root values present; SSH auth mode and control path were initially missing, then added without printing real values.
+  - `.\.venv\Scripts\python.exe -m cli.app remote-session-doctor` with local `.env` -> pass with `ready_for_control_session=true`, `ready_for_real_smoke=true`, and no messages.
+  - `.\.venv\Scripts\python.exe -m cli.app remote-session-smoke --no-open-session --task-id task-smoke-001 --run-id run-smoke-001` -> exit 1 with `session_ready=false`, `submitted=false`, `ssh_control_session_not_ready`.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests reported by pytest progress output).
+  - `rg -n "password\s*=|GENEAGENT_.*PASSWORD|sshpass|private_key\s*=|BEGIN .*PRIVATE KEY" .env .env.example src tests README.md docs\v2_system_map.md` -> no matches.
+- gate_result: `partial` (local configuration and code gates pass; real server password prompt/smoke remains operator-gated)
+- known_risks:
+  - `.env` is intentionally ignored and contains machine-specific remote profile values; do not stage it or print it.
+  - The active objective is not complete until the real server smoke command succeeds after the operator enters the password.
+  - Non-interactive Codex tool calls cannot type the server password; the next command must be run in the user's PowerShell terminal.
+- next_actions:
+  - Run `.\.venv\Scripts\python.exe -m cli.app remote-session-smoke --open-session --task-id task-smoke-001 --run-id run-smoke-001`.
+  - Type the server password only into the OpenSSH prompt.
+  - Inspect the returned JSON for `submitted=true`, `smoke.run_state_path`, and remote run log/state paths.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-05 12:15 +08:00 (password_env Paramiko fallback implemented)
+- intent_domain: `system`
+- stage_id: `Resource + Safety Gate`, `Execution`, `Audit + Memory`, `V2 Control Plane`
+- module_owner_path: `D:\geneagent\src\contracts`, `D:\geneagent\src\runtime`, `D:\geneagent\src\scheduler`, `D:\geneagent\src\cli`, `D:\geneagent\tests`, `D:\geneagent\docs`, `D:\geneagent\pyproject.toml`
+- cluster_execution_expected: `true` for the pending real `password_env` smoke after the operator enters the server password; `false` for local implementation/testing.
+- contracts_impacted:
+  - `SshAuthMode` now includes `password_env`.
+  - `RemoteExecutionProfile` carries `ssh_password` as a `SecretStr` excluded from model dumps/repr.
+  - `Settings` reads `GENEAGENT_HPC_SSH_PASSWORD` into memory for `password_env` mode.
+- files_changed:
+  - `D:\geneagent\AGENTS.md`
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\.env.example`
+  - `D:\geneagent\docs\v2_system_map.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+  - `D:\geneagent\pyproject.toml`
+  - `D:\geneagent\src\contracts\common.py`
+  - `D:\geneagent\src\contracts\remote_execution.py`
+  - `D:\geneagent\src\runtime\settings.py`
+  - `D:\geneagent\src\scheduler\remote.py`
+  - `D:\geneagent\src\cli\app.py`
+  - `D:\geneagent\tests\unit\scheduler\test_remote_slurm.py`
+  - `D:\geneagent\tests\unit\runtime\test_settings.py`
+  - `D:\geneagent\tests\e2e\cli\test_remote_execution_cli.py`
+- completed_checklist:
+  - [x] Real ControlMaster smoke attempt failed in Windows OpenSSH with `getsockname failed: Not a socket`, confirming fallback is needed.
+  - [x] Added `password_env` SSH auth mode.
+  - [x] Added Paramiko-backed SSH command execution for `password_env`; no password is placed in command-line arguments.
+  - [x] Added `GENEAGENT_HPC_SSH_PASSWORD` settings support as an in-memory `SecretStr`.
+  - [x] Ensured `RemoteExecutionProfile.model_dump()` does not include `ssh_password`.
+  - [x] Added `remote-password-set` CLI to prompt for the server password and write it only to local ignored `.env`.
+  - [x] Updated `remote-session-doctor` to support both `control_master` and `password_env` readiness checks.
+  - [x] Added `paramiko>=3.4,<4.0` to `pyproject.toml` and installed Paramiko in the local virtualenv.
+  - [x] Updated AGENTS, README, `.env.example`, and V2 system map with the revised local-only password boundary.
+- not_yet_done_checklist:
+  - [ ] Real `password_env` smoke is waiting for the operator to type the server password in the visible PowerShell window.
+  - [ ] After password entry, read `.geneagent\remote_password_operator\doctor_output.txt` and `smoke_output.txt`.
+  - [ ] Verify `remote_check.safe_for_submit=true`, `smoke.submitted=true`, returned `run_state_path`, and remote `state/done` plus logs.
+  - [ ] If Paramiko auth fails, inspect sanitized stderr and decide whether host-key policy, password, account lockout, or server SSH policy is the cause.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests/unit/scheduler/test_remote_slurm.py tests/unit/runtime/test_settings.py tests/e2e/cli/test_remote_execution_cli.py` -> initially failed before implementation, then passed.
+  - `.\.venv\Scripts\python.exe -m pip install "paramiko>=3.4,<4.0"` -> pass; installed Paramiko 3.5.1 and dependencies into local `.venv`.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `git diff --check -- AGENTS.md README.md .env.example docs\v2_system_map.md pyproject.toml src\contracts\common.py src\contracts\remote_execution.py src\runtime\settings.py src\scheduler\remote.py src\cli\app.py tests\unit\scheduler\test_remote_slurm.py tests\unit\runtime\test_settings.py tests\e2e\cli\test_remote_execution_cli.py` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests reported by pytest progress output).
+- gate_result: `partial` (local implementation/tests pass; real password-based remote smoke remains waiting for operator input)
+- known_risks:
+  - Local `.env` may now contain `GENEAGENT_HPC_SSH_PASSWORD` after the operator uses `remote-password-set`; never stage or print it.
+  - Password auth is less desirable than SSH key or ControlMaster, but is now explicitly supported because the user's server workflow requires account-password login and Windows ControlMaster failed.
+  - The visible helper window must be used for the password prompt; non-interactive Codex shell calls cannot type the server password.
+- next_actions:
+  - In the visible PowerShell window, type the server password at `Server SSH password:`.
+  - If the helper window was closed, rerun `.\.venv\Scripts\python.exe -m cli.app remote-password-set`, then `.\.venv\Scripts\python.exe -m cli.app remote-session-doctor`, then `.\.venv\Scripts\python.exe -m cli.app remote-smoke --task-id task-smoke-001 --run-id run-smoke-001`.
+  - After output files are produced, inspect `.geneagent\remote_password_operator\smoke_output.txt` without printing secrets and verify remote/local state.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-05 16:12 +08:00 (password_env real remote smoke completed)
+- intent_domain: `system`
+- stage_id: `Resource + Safety Gate`, `Execution`, `Artifact + Report`, `Audit + Memory`, `V2 Control Plane`
+- module_owner_path: `D:\geneagent\src\scheduler`, `D:\geneagent\tests\unit\scheduler`, `D:\geneagent\docs`
+- cluster_execution_expected: `true` (real ordinary Linux server smoke executed through `ssh_shell_trusted` + `password_env`; no biological data was submitted)
+- contracts_impacted:
+  - No new Pydantic contract changes in this entry.
+  - Behavior fix: `RemoteShellSchedulerAdapter._submit_command()` now emits a Bash-valid background launch sequence and avoids `&;`.
+- files_changed:
+  - `D:\geneagent\src\scheduler\ssh_shell.py`
+  - `D:\geneagent\tests\unit\scheduler\test_remote_slurm.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Resumed after context compression by reading `docs/HANDOFF.md` and `AGENTS.md`, then ran `git status --short --branch`.
+  - [x] Verified `password_env` readiness with `remote-session-doctor`; it reported `ready_for_password_auth=true`, `ready_for_auth=true`, and `ready_for_real_smoke=true`.
+  - [x] Investigated the failed first smoke and identified the real root cause as an invalid Bash fragment `&; pid=$!` in the remote shell submit command.
+  - [x] Added a regression test proving the submit command must not contain `&;`.
+  - [x] Fixed `RemoteShellSchedulerAdapter._submit_command()` to emit `nohup ... >/dev/null 2>&1 & pid=$!; ...`.
+  - [x] Ran real no-data smoke with `remote-smoke --task-id task-smoke-001 --run-id run-smoke-002`; it submitted through Paramiko password auth and returned a `shell:<pid>` handle.
+  - [x] Ran `watch-run --task-id task-smoke-001 --run-id run-smoke-002`; local run state advanced to `status=completed` and `current_stage=stage_08_artifact_and_report`.
+  - [x] Verified remote sentinel/log state: `state/done=yes`, `state/failed=no`, `exit_code=0`, and `logs/stderr.log` size `0`.
+  - [x] Confirmed local run state path exists at `.geneagent\runs\task-smoke-001\run-smoke-002\state.json`.
+- not_yet_done_checklist:
+  - [ ] Do not stage or print local `.env`; it may contain `GENEAGENT_HPC_SSH_PASSWORD`.
+  - [ ] The older failed remote smoke directory for `run-smoke-001` was left in place as diagnostic evidence; clean it only if the operator explicitly asks.
+  - [ ] Before running real biological data, require the normal InputBundle, resource, overwrite, path-boundary, and data-egress gates.
+  - [ ] Prefer SSH key or a managed credential channel later if the server policy allows it; `password_env` remains the practical local-only fallback for the current account-password workflow.
+- verification_commands:
+  - `.\.venv\Scripts\python.exe -m pytest -q tests/unit/scheduler/test_remote_slurm.py::test_remote_shell_submit_command_uses_valid_background_separator` -> first failed on `&;`, then passed after the fix.
+  - `.\.venv\Scripts\python.exe -m pytest -q tests/unit/scheduler/test_remote_slurm.py tests/unit/runtime/test_settings.py tests/e2e/cli/test_remote_execution_cli.py` -> pass (`40` tests in this targeted set).
+  - `.\.venv\Scripts\python.exe -m cli.app remote-session-doctor` -> pass; `password_env` ready for real smoke.
+  - `.\.venv\Scripts\python.exe -m cli.app remote-smoke --task-id task-smoke-001 --run-id run-smoke-002` -> pass; `submitted=true`, `remote_check.safe_for_submit=true`, `initial_state=running`.
+  - `.\.venv\Scripts\python.exe -m cli.app watch-run --task-id task-smoke-001 --run-id run-smoke-002` -> pass; persisted run state updated to `completed`.
+  - Paramiko-backed remote log/sentinel check -> pass; `done=yes`, `failed=no`, `exit_code=0`, `stderr_bytes=0`.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests shown in pytest progress output).
+  - `git diff --check -- src\scheduler\ssh_shell.py tests\unit\scheduler\test_remote_slurm.py docs\HANDOFF.md` -> pass; Git emitted LF-to-CRLF working-copy warning only.
+- gate_result: `pass`
+- known_risks:
+  - `password_env` is intentionally local-only and less ideal than key-based SSH; it must never leak into tracked files, logs, reports, state, or command arguments.
+  - Ordinary Linux server execution has no scheduler-side CPU/memory/walltime enforcement; GeneAgent caps remain pre-submit gates and script parameters.
+  - The remote smoke proves shell execution, polling, and local state recovery, but real bio pipelines still need their normal input validation and output overwrite gates.
+- next_actions:
+  - Use `ssh_shell_trusted` as the current practical execution backend for the user's PC -> ordinary Linux server workflow.
+  - For the first real bioinformatics dry run, start with a small non-destructive command or a tiny fixture and require report/audit validation before scaling.
+  - Keep SBASE/Xshell/WinSCP as manual fallbacks only; do not automate GUI credential prompts.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-05 16:30 +08:00 (ordinary-server safety guardrails)
+- intent_domain: `system`
+- stage_id: `Resource + Safety Gate`, `Execution`, `Audit + Memory`, `V2 Control Plane`
+- module_owner_path: `D:\geneagent\src\scheduler`, `D:\geneagent\src\runtime`, `D:\geneagent\src\contracts`, `D:\geneagent\tests`, `D:\geneagent\docs`
+- cluster_execution_expected: `true` for real ordinary-server smoke validation; `false` for local unit/runtime tests and documentation edits.
+- contracts_impacted:
+  - `RemoteExecutionProfile` now includes `allowed_write_roots`.
+  - `Settings` now exposes ordinary-server guard fields: `remote_allowed_write_roots`, `remote_shell_cpu_cap`, `remote_shell_memory_gb_cap`, `remote_shell_walltime_cap`, `remote_shell_max_concurrent_runs`, and `remote_shell_process_limits_enabled`.
+  - `RemoteShellSchedulerAdapter` now enforces ordinary-server path/resource guards before real SSH submit.
+- files_changed:
+  - `D:\geneagent\AGENTS.md`
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\.env.example`
+  - `D:\geneagent\docs\v2_system_map.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+  - `D:\geneagent\src\contracts\remote_execution.py`
+  - `D:\geneagent\src\runtime\settings.py`
+  - `D:\geneagent\src\runtime\bootstrap.py`
+  - `D:\geneagent\src\scheduler\ssh_shell.py`
+  - `D:\geneagent\tests\unit\runtime\test_settings.py`
+  - `D:\geneagent\tests\unit\scheduler\test_remote_slurm.py`
+- completed_checklist:
+  - [x] Added `allowed_write_roots` to the remote execution profile so ordinary-server work roots can be constrained to an operator-owned directory prefix.
+  - [x] Added ordinary-server safety settings and `.env.example` entries for write allowlist, CPU cap, memory cap, walltime cap, max concurrent runs, and process-limit guards.
+  - [x] Wired these settings through `create_application_context()` into `RemoteShellSchedulerAdapter`.
+  - [x] `ssh_shell_trusted` now rejects dangerous broad work roots such as `/`, `/tmp`, `/data2`, and `/home`.
+  - [x] `remote-check` now fails safely with `work_root_policy_violation` before attempting to create a disallowed work root.
+  - [x] Real ordinary-server `submit()` now blocks before SSH materialization when resource caps are exceeded.
+  - [x] Generated `run.sh` now exports common thread-limit variables (`OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS`, `MKL_NUM_THREADS`, etc.).
+  - [x] Generated `run.sh` now applies CPU-time and memory `ulimit` guards when `GENEAGENT_REMOTE_SHELL_PROCESS_LIMITS_ENABLED=true`.
+  - [x] Updated README, AGENTS, and V2 system map to state that ordinary Linux servers require stricter pre-submit and script-level guardrails than SLURM.
+  - [x] Re-ran a no-data remote smoke with the new guarded `run.sh`; it completed with `state/done=yes`, `exit_code=0`, guard lines present, and empty stderr.
+- not_yet_done_checklist:
+  - [ ] Local ignored `.env` may still need operator review to set `GENEAGENT_REMOTE_ALLOWED_WRITE_ROOTS` to the exact user directory prefix; do not print or stage `.env` because it may contain the password.
+  - [ ] CPU core isolation on ordinary Linux is best-effort through thread env vars; hard CPU affinity or cgroup limits would require server-side admin support or a managed worker service.
+  - [ ] Before real biological data runs, enforce the normal InputBundle and overwrite gates in addition to these ordinary-server guards.
+- verification_commands:
+  - `.\.venv\Scripts\python.exe -m pytest -q tests/unit/scheduler/test_remote_slurm.py::test_remote_shell_blocks_plan_when_server_resource_caps_are_exceeded tests/unit/scheduler/test_remote_slurm.py::test_remote_shell_real_submit_does_not_touch_remote_when_resource_guard_blocks tests/unit/scheduler/test_remote_slurm.py::test_remote_shell_script_exports_thread_limits_and_ulimits tests/unit/scheduler/test_remote_slurm.py::test_remote_shell_requires_work_root_inside_allowed_write_roots` -> first failed before implementation, then passed.
+  - `.\.venv\Scripts\python.exe -m pytest -q tests/unit/scheduler/test_remote_slurm.py tests/unit/runtime/test_settings.py tests/unit/safety/test_automation_policy.py` -> pass.
+  - `.\.venv\Scripts\python.exe -m cli.app remote-smoke --task-id task-smoke-guard-001 --run-id run-smoke-guard-001` -> pass; no-data guarded remote run submitted.
+  - `.\.venv\Scripts\python.exe -m cli.app watch-run --task-id task-smoke-guard-001 --run-id run-smoke-guard-001` -> pass; persisted run state advanced to `completed`.
+  - Paramiko-backed remote sentinel/log check -> pass; `done=yes`, `failed=no`, `exit_code=0`, `stderr_bytes=0`, and `run.sh` contained `ulimit` plus thread guard exports.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests shown in pytest progress output).
+  - `git diff --check -- AGENTS.md README.md docs\v2_system_map.md .env.example src\contracts\remote_execution.py src\runtime\settings.py src\runtime\bootstrap.py src\scheduler\ssh_shell.py tests\unit\runtime\test_settings.py tests\unit\scheduler\test_remote_slurm.py docs\HANDOFF.md` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `pass`
+- known_risks:
+  - Ordinary Linux servers cannot guarantee queue-side resource isolation; script guards reduce risk but are not equivalent to SLURM/cgroup enforcement.
+  - Thread environment variables do not force every bioinformatics tool to obey the cap; tool-specific thread flags remain required in pipeline templates.
+  - `.env` remains local and may contain credentials; never stage, print, or copy it into docs/logs/state.
+- next_actions:
+  - Review local ignored `.env` manually and set `GENEAGENT_REMOTE_ALLOWED_WRITE_ROOTS` to the exact user folder prefix.
+  - Add tool-template checks so PLINK/GCTA/bcftools commands receive explicit thread flags where supported.
+  - For the first real dataset run, start with a small fixture or dry-run and confirm report/audit outputs before scaling.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-05 16:50 +08:00 (ordinary-server caps adjusted for 96-core 1TB server)
+- intent_domain: `system`
+- stage_id: `Resource + Safety Gate`, `Execution`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\src\runtime`, `D:\geneagent\src\scheduler`, `D:\geneagent\tests`, `D:\geneagent\docs`
+- cluster_execution_expected: `true` for remote read-only validation and existing no-data smoke continuity; `false` for local defaults/docs/tests.
+- contracts_impacted:
+  - No new Pydantic contract fields.
+  - `Settings` and `RemoteShellSchedulerAdapter` default ordinary-server caps changed to match the current 96-core / 1 TB server safety policy.
+- files_changed:
+  - `D:\geneagent\AGENTS.md`
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\.env.example`
+  - `D:\geneagent\docs\v2_system_map.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+  - `D:\geneagent\src\runtime\settings.py`
+  - `D:\geneagent\src\scheduler\ssh_shell.py`
+  - `D:\geneagent\src\scheduler\remote.py`
+  - `D:\geneagent\tests\unit\runtime\test_settings.py`
+  - `D:\geneagent\tests\unit\scheduler\test_remote_slurm.py`
+  - `D:\geneagent\.env` (ignored local file; only non-secret resource-cap keys were updated, and the file was not printed)
+- completed_checklist:
+  - [x] Adjusted ordinary-server default caps from small-server mode to guarded production mode for the current 96-core / 1 TB server.
+  - [x] New default single-run cap is `32` CPU cores.
+  - [x] New default single-run memory cap is `256` GB.
+  - [x] New default walltime cap is `24:00:00`.
+  - [x] New default concurrent run cap is `2`.
+  - [x] Updated local ignored `.env` resource-cap keys without printing credentials or file contents.
+  - [x] Updated `.env.example`, README, AGENTS, and V2 system map with the 96-core / 1 TB cap policy.
+  - [x] Added/updated tests so settings/bootstrap defaults reflect the new caps.
+  - [x] Fixed Paramiko password-mode stream cleanup so local CLI output is not polluted by delayed stream destructor warnings.
+  - [x] Verified a password-mode remote read-only command still succeeds after the stream cleanup fix.
+- not_yet_done_checklist:
+  - [ ] Local ignored `.env` should still be manually reviewed for `GENEAGENT_REMOTE_ALLOWED_WRITE_ROOTS`; do not print or stage it.
+  - [ ] Per-tool templates still need explicit PLINK/GCTA/bcftools thread flags so tool-level parallelism aligns with the 32-core cap.
+  - [ ] If this server is shared with other users or interactive workloads, consider lowering concurrent runs to `1` during business hours.
+- verification_commands:
+  - `.\.venv\Scripts\python.exe -m pytest -q tests/unit/runtime/test_settings.py::test_settings_defaults tests/unit/runtime/test_settings.py::test_bootstrap_builds_remote_shell_scheduler_for_shell_mode` -> first failed on old `4/16/04:00:00/1` defaults, then passed after implementation.
+  - Local Settings non-secret cap audit -> `remote_shell_cpu_cap=32`, `remote_shell_memory_gb_cap=256`, `remote_shell_walltime_cap=24:00:00`, `remote_shell_max_concurrent_runs=2`.
+  - `.\.venv\Scripts\python.exe -m pytest -q tests/unit/scheduler/test_remote_slurm.py tests/unit/runtime/test_settings.py tests/unit/safety/test_automation_policy.py` -> pass.
+  - `.\.venv\Scripts\python.exe -m cli.app remote-smoke --task-id task-smoke-cap-001 --run-id run-smoke-cap-001` -> pass; no-data run submitted after cap update.
+  - `.\.venv\Scripts\python.exe -m cli.app watch-run --task-id task-smoke-cap-001 --run-id run-smoke-cap-001` -> pass; persisted state reached `completed`.
+  - Paramiko-backed remote sentinel check -> pass; `done=yes`, `failed=no`, `exit_code=0`, `stderr_bytes=0`.
+  - Paramiko-backed read-only command `echo ok` -> pass with clean output and no stream destructor warning after the cleanup fix.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests shown in pytest progress output).
+  - `git diff --check -- AGENTS.md README.md docs\v2_system_map.md .env.example src\runtime\settings.py src\scheduler\ssh_shell.py src\scheduler\remote.py tests\unit\runtime\test_settings.py tests\unit\scheduler\test_remote_slurm.py docs\HANDOFF.md` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `pass`
+- known_risks:
+  - 32 CPU / 256 GB / 2 concurrent runs can still be heavy on a shared ordinary server because there is no scheduler-side isolation.
+  - `ulimit` and thread environment variables are helpful guards but not a substitute for cgroups or SLURM.
+  - `.env` remains local and may contain credentials; never stage, print, or copy it into docs/logs/state.
+- next_actions:
+  - Add explicit tool-level thread arguments in analysis templates.
+  - Consider an optional day/night or interactive-hours cap profile if the server is used by other people.
+  - Keep first real dataset run small and audit-backed before scaling to 32-core jobs.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-05 17:19 +08:00 (analysis script tool-level resource caps)
+- intent_domain: `bioinformatics`
+- stage_id: `Resource + Safety Gate`, `Execution`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\scripts`, `D:\geneagent\tests\integration`, `D:\geneagent\docs`
+- cluster_execution_expected: `false` for this local template-hardening task; the changed scripts are used by future bio execution paths under `ssh_shell_trusted` / scheduler backends.
+- contracts_impacted:
+  - No new Pydantic contract fields.
+  - `analysis_script_template.v1` manifests now consistently record `memory_mb` and `tmp_dir` for the four analysis script templates.
+  - Script CLI/resource contract now includes `--memory-mb` and `--tmp-dir` alongside `--threads`.
+- files_changed:
+  - `D:\geneagent\scripts\qc_pipeline\run_qc_pipeline.sh`
+  - `D:\geneagent\scripts\pca_pipeline\run_pca_pipeline.sh`
+  - `D:\geneagent\scripts\grm_builder\run_grm_builder.sh`
+  - `D:\geneagent\scripts\genomic_prediction\run_genomic_prediction.sh`
+  - `D:\geneagent\tests\integration\test_analysis_script_templates.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added explicit `--memory-mb` and `--tmp-dir` options to the four analysis script templates.
+  - [x] Added script-level resource setup: `TMPDIR`, common thread-limit environment variables, and virtual-memory `ulimit -v`.
+  - [x] Updated PLINK2 calls in QC, PCA, GRM, and genomic prediction templates to include both `--threads "$THREADS"` and `--memory "$MEMORY_MB"`.
+  - [x] Updated `bcftools stats` in the QC template to include `--threads "$THREADS"`.
+  - [x] Updated GCTA calls in GRM and genomic prediction templates to include `--thread-num "$THREADS"`.
+  - [x] Added integration tests that require resource options in static template contracts, help output, dry-run manifests, and supported tool command snippets.
+  - [x] Added a negative/static audit test so any future PLINK2/GCTA/bcftools command line missing supported thread or memory flags fails the test suite.
+  - [x] Verified the new tests first failed before the missing script resource contract was implemented, then passed after the template updates.
+- not_yet_done_checklist:
+  - [ ] Current Windows test environment still skips bash-executed script dry-run/help cases when no usable bash fixture is available; rerun the same integration tests under WSL2 before the first real biological dataset run.
+  - [ ] VCFtools does not expose a stable thread/memory option in these templates; it remains bounded by script-level `TMPDIR`, thread environment variables, and `ulimit`.
+  - [ ] Ordinary Linux server execution still lacks scheduler-side resource isolation; tool flags and script guards reduce risk but do not replace cgroups/SLURM.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\integration\test_analysis_script_templates.py::test_analysis_script_templates_have_static_template_contract tests\integration\test_analysis_script_templates.py::test_analysis_script_templates_constrain_tool_threads_and_memory tests\integration\test_analysis_script_templates.py::test_analysis_script_templates_expose_common_runtime_options tests\integration\test_analysis_script_templates.py::test_analysis_script_dry_run_writes_manifest_and_audit_sidecar` -> first failed before implementation on missing resource contract/tool snippets, then passed after implementation with bash-dependent cases skipped by the fixture.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\integration\test_analysis_script_templates.py tests\integration\test_genomic_prediction_script.py` -> pass; bash-dependent cases skipped by the fixture.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests shown in pytest progress output).
+  - `git diff --check -- scripts tests docs\HANDOFF.md` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `pass`
+- known_risks:
+  - Static tests prove supported tool command lines are bounded in templates, but actual server enforcement still depends on real tool behavior and OS limits.
+  - `scripts/` remains a thin-entrypoint layer; reusable resource-policy logic should move to `src/` if these shell templates grow more complex.
+  - Worktree remains dirty from multiple earlier stages; do not attribute unrelated modified/untracked files to this script-resource update.
+- next_actions:
+  - Run the script integration tests under WSL2 or the target Linux server before the first real dataset execution.
+  - For the first real bioinformatics run, start with a small dry run and inspect `run_manifest.json`, logs, audit sidecar, and resource behavior before scaling.
+  - Consider passing resource estimates from `src/pipeline` into script arguments explicitly if future plans need per-stage caps rather than environment-derived defaults.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-05 18:02 +08:00 (scientific-domain script layout and GWAS split)
+- intent_domain: `bioinformatics`
+- stage_id: `Blueprint Selection`, `Execution`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\scripts`, `D:\geneagent\src\pipeline`, `D:\geneagent\src\orchestration`, `D:\geneagent\src\runtime`, `D:\geneagent\tests`, `D:\geneagent\docs`, `D:\geneagent\references`
+- cluster_execution_expected: `false` for this local restructure and validation task; changed wrappers are used by future bio execution paths under trusted remote or scheduler backends.
+- contracts_impacted:
+  - No new Pydantic fields.
+  - `PipelineExecutionPlan` now maps compatibility blueprint keys to scientific-domain script paths.
+  - Pipeline pack registry now exposes `association_mapping_gwas`.
+  - `genomic_prediction` defaults no longer include `gwas`; first-pass GWAS routes through `association_mapping_gwas`.
+- files_changed:
+  - `D:\geneagent\scripts\genotype_processing\run_genotype_qc.sh`
+  - `D:\geneagent\scripts\population_genetics\run_population_structure_diversity.sh`
+  - `D:\geneagent\scripts\quantitative_genetics\run_relationship_matrix.sh`
+  - `D:\geneagent\scripts\quantitative_genetics\run_breeding_value_prediction.sh`
+  - `D:\geneagent\scripts\association_mapping\run_gwas.sh`
+  - `D:\geneagent\scripts\reporting_audit\*.sh`
+  - `D:\geneagent\src\pipeline\execution.py`
+  - `D:\geneagent\src\pipeline\catalog.py`
+  - `D:\geneagent\src\pipeline\packs\builtin_blueprints.py`
+  - `D:\geneagent\src\pipeline\packs\registry.py`
+  - `D:\geneagent\src\orchestration\workflow.py`
+  - `D:\geneagent\src\runtime\facade.py`
+  - `D:\geneagent\src\scheduler\resource_estimator.py`
+  - `D:\geneagent\tests\integration\test_analysis_script_templates.py`
+  - `D:\geneagent\tests\integration\test_genomic_prediction_script.py`
+  - `D:\geneagent\tests\unit\pipeline\test_pipeline_execution.py`
+  - `D:\geneagent\tests\unit\pipeline\test_packs.py`
+  - `D:\geneagent\tests\unit\orchestration\test_orchestration_planning.py`
+  - `D:\geneagent\tests\e2e\test_v1_completion.py`
+  - `D:\geneagent\AGENTS.md`
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\docs\v2_system_map.md`
+  - `D:\geneagent\docs\pipeline_pack_integration_guide.md`
+  - `D:\geneagent\references\analysis_domains\README.md`
+  - `D:\geneagent\references\ontology\domain_scope_vocab.md`
+  - `D:\geneagent\references\sop\*_stage_sop_v1.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Replaced legacy script directories with professional analysis-domain directories: `genotype_processing`, `population_genetics`, `quantitative_genetics`, `association_mapping`, and `reporting_audit`.
+  - [x] Moved QC, population-structure/diversity, relationship-matrix, breeding-value prediction, and reporting wrappers into the new domain directories.
+  - [x] Split GWAS out of the old genomic prediction wrapper into `scripts/association_mapping/run_gwas.sh`.
+  - [x] Changed `run_breeding_value_prediction.sh` so default targets are `heritability,genomic_prediction` and GWAS is not executed inside prediction.
+  - [x] Added `association_mapping_gwas` as an executable pipeline blueprint and pipeline pack.
+  - [x] Updated execution planning so `qc_pipeline/pca_pipeline/grm_builder/genomic_prediction` remain compatibility keys while mapping to scientific-domain script paths.
+  - [x] Updated orchestration so GWAS requests select `association_mapping_gwas` before genomic prediction.
+  - [x] Updated report indexing and rendering so blueprint summary includes `gwas`.
+  - [x] Updated AGENTS, README, V2 system map, script docs, analysis-domain docs, ontology mapping, and SOP script paths to the new structure.
+  - [x] Added regression tests for scientific-domain script directories, GWAS blueprint routing, pack registry exposure, and prediction/GWAS split behavior.
+- not_yet_done_checklist:
+  - [ ] `knowledge_item.v2` strict `blueprint_scope` enum still does not include `association_mapping_gwas`; GWAS knowledge cards should use `shared` plus `domain_scope` prose until that contract is intentionally upgraded and tested.
+  - [ ] Selection-signature workflows such as iHS, XP-EHH, XP-CLR, PBS, and complete candidate-region annotation remain knowledge/planning scope until separate pipeline/tool/report contracts are implemented.
+  - [ ] Current Windows test environment still skips bash-executed script cases when no usable bash fixture is available; rerun script integration tests under WSL2 or the target Linux server before real biological data execution.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\integration\test_analysis_script_templates.py::test_scripts_use_scientific_domain_directories_not_legacy_pipeline_directories tests\unit\pipeline\test_pipeline_execution.py::test_execution_plan_for_pca_includes_population_stats_algorithms tests\unit\pipeline\test_pipeline_execution.py::test_execution_plan_for_genomic_prediction_uses_v1_defaults tests\unit\pipeline\test_pipeline_execution.py::test_execution_plan_for_gwas_uses_association_mapping_script tests\unit\pipeline\test_packs.py::test_pipeline_pack_registry_exposes_scientific_domain_packs` -> first failed before implementation on old directories/paths and unsupported `association_mapping_gwas`, then passed after implementation.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\integration\test_analysis_script_templates.py tests\integration\test_genomic_prediction_script.py tests\unit\pipeline\test_pipeline_execution.py tests\unit\pipeline\test_packs.py tests\e2e\test_v1_completion.py` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\orchestration tests\unit\pipeline tests\unit\runtime\test_dry_run_branching.py tests\unit\runtime\test_compat_envelope.py tests\unit\scheduler\test_scheduler_planning.py tests\unit\scheduler\test_atomic_profiles.py tests\integration\test_analysis_script_templates.py tests\integration\test_genomic_prediction_script.py tests\integration\test_report_generator_v2_scripts.py tests\e2e\test_v1_completion.py` -> pass.
+  - `rg -n "scripts/(qc_pipeline|pca_pipeline|grm_builder|genomic_prediction|report_generator)|run_qc_pipeline|run_pca_pipeline|run_grm_builder|run_genomic_prediction" AGENTS.md README.md docs src tests scripts references --glob "!docs/HANDOFF.md"` -> no active matches.
+  - `rg -n "qc_pipeline/pca_pipeline/grm_builder/genomic_prediction|qc / pca / grm / genomic_prediction|strict binding among qc/pca/grm/genomic_prediction" AGENTS.md README.md docs src tests scripts references --glob "!docs/HANDOFF.md"` -> no active matches.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests shown in pytest progress output).
+  - `git diff --check -- AGENTS.md README.md docs src tests scripts references` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `pass`
+- known_risks:
+  - Worktree remains dirty from multiple earlier stages; do not attribute all modified/untracked files to this script-domain restructure.
+  - The new `association_mapping_gwas` execution bridge is first-pass PLINK2 GWAS only, not QTL/fine mapping or causal interpretation.
+  - Ordinary-server resource isolation remains best-effort unless server-side cgroups or a scheduler are introduced.
+- next_actions:
+  - For the first real dataset, run a small dry-run through the new scientific-domain script path and inspect `run_manifest.json`, logs, report index, and audit sidecar before scaling.
+  - Decide whether to upgrade `knowledge_item.v2` `blueprint_scope` to include `association_mapping_gwas` or keep GWAS knowledge routed through `domain_scope` only.
+  - Plan selection-signature execution as a separate domain workflow instead of folding it into population structure.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-06 10:52 +08:00 (domain content part 1: data preparation QC)
+- intent_domain: `knowledge`
+- stage_id: `Local-first RAG`, `Blueprint Selection`, `Input Validation`, `Resource + Safety Gate`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\references\analysis_domains`, `D:\geneagent\scripts\genotype_processing`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\docs`
+- cluster_execution_expected: `false` for this knowledge and documentation enrichment task; the documented script path is used by future bio execution under trusted remote or scheduler backends.
+- contracts_impacted:
+  - No new Pydantic contract fields.
+  - `knowledge_item.v2` usage expanded into `references/analysis_domains/data_preparation_qc.md`.
+  - `tests/unit/knowledge/test_references_coverage.py` now treats `references/analysis_domains/` as a standard indexed reference directory.
+- files_changed:
+  - `D:\geneagent\references\analysis_domains\data_preparation_qc.md`
+  - `D:\geneagent\references\analysis_domains\README.md`
+  - `D:\geneagent\references\INDEX.md`
+  - `D:\geneagent\scripts\genotype_processing\operation_guide.md`
+  - `D:\geneagent\scripts\genotype_processing\README.md`
+  - `D:\geneagent\tests\unit\knowledge\test_references_coverage.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added the first detailed analysis-domain file, `data_preparation_qc.md`, with five indexed `knowledge_item.v2` sections.
+  - [x] Defined the professional boundary for data preparation and QC: scope, input roles, sample ID policy, QC decision boundary, and execution bridge.
+  - [x] Linked the domain file to the restructured `scripts/genotype_processing/` path without treating the script directory as the scientific taxonomy.
+  - [x] Added `scripts/genotype_processing/operation_guide.md` with safe invocation examples, resource parameters, outputs, and failure boundaries.
+  - [x] Updated `references/analysis_domains/README.md`, `references/INDEX.md`, and `scripts/genotype_processing/README.md` so the new content is discoverable.
+  - [x] Added knowledge coverage tests requiring `analysis_domains/` indexed chunks and the new data-preparation/QC doc IDs.
+  - [x] Verified the new tests failed before the domain file existed and passed after implementation.
+- not_yet_done_checklist:
+  - [ ] Continue the same section-by-section enrichment pattern for `population_genetics/`.
+  - [ ] Add detailed domain files for `population_structure`, `genetic_diversity_inbreeding`, and `selection_signatures`.
+  - [ ] Add detailed domain files for `association_mapping_gwas_qtl`, `relationship_matrix_variance_components`, `genomic_prediction_breeding_value`, and `hpc_execution_reporting_audit`.
+  - [ ] Consider a later contract upgrade if `domain_scope` should become a typed metadata field rather than body-level curation prose.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py::test_analysis_domain_data_preparation_qc_enters_reference_index tests\unit\knowledge\test_references_coverage.py::test_standard_reference_directories_have_indexed_chunks` -> first failed as expected before content was added.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py::test_analysis_domain_data_preparation_qc_enters_reference_index tests\unit\knowledge\test_references_coverage.py::test_standard_reference_directories_have_indexed_chunks tests\unit\knowledge\test_references_coverage.py::test_reference_layer_retrieval_queries_cover_major_topics` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge` -> pass (`42 passed`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests shown in pytest progress output).
+  - `git diff --check -- references\analysis_domains references\INDEX.md scripts\genotype_processing tests\unit\knowledge\test_references_coverage.py` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `pass`
+- known_risks:
+  - This is the first section only; other restructured script directories still need the same detailed content treatment.
+  - The new analysis-domain file uses `domain_scope` in body prose because the current Pydantic metadata contract has not yet added a typed `domain_scope` field.
+  - Worktree remains dirty from multiple earlier stages; do not attribute all modified/untracked files to this content-enrichment task.
+- next_actions:
+  - Continue with `population_genetics/` and add the paired domain content for population structure, diversity/inbreeding, and selection-signature boundaries.
+  - Keep each new domain file small enough for retrieval and review, with 4-6 `##` sections and stable `doc_id` prefixes.
+  - Re-run `tests/unit/knowledge/test_references_coverage.py` after each section.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-06 11:03 +08:00 (domain content part 2: population genetics)
+- intent_domain: `knowledge`
+- stage_id: `Local-first RAG`, `Blueprint Selection`, `Execution`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\references\analysis_domains`, `D:\geneagent\scripts\population_genetics`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\docs`
+- cluster_execution_expected: `false` for this knowledge and documentation enrichment task; the documented wrapper is used by future bio execution paths under trusted remote or scheduler backends.
+- contracts_impacted:
+  - No new Pydantic contract fields.
+  - `knowledge_item.v2` usage expanded into population-structure, diversity/inbreeding, and selection-signature domain files.
+  - `tests/unit/knowledge/test_references_coverage.py` now requires population-genetics domain chunks and retrieval hits.
+- files_changed:
+  - `D:\geneagent\references\analysis_domains\population_structure.md`
+  - `D:\geneagent\references\analysis_domains\genetic_diversity_inbreeding.md`
+  - `D:\geneagent\references\analysis_domains\selection_signatures.md`
+  - `D:\geneagent\references\analysis_domains\README.md`
+  - `D:\geneagent\references\INDEX.md`
+  - `D:\geneagent\scripts\population_genetics\operation_guide.md`
+  - `D:\geneagent\scripts\population_genetics\README.md`
+  - `D:\geneagent\tests\unit\knowledge\test_references_coverage.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added `population_structure.md` with five indexed sections covering PCA scope, pruning, stratification, admixture boundary, and execution bridge.
+  - [x] Added `genetic_diversity_inbreeding.md` with five indexed sections covering LD, ROH, pi/heterozygosity, diversity interpretation, and execution bridge.
+  - [x] Added `selection_signatures.md` with five indexed sections covering group definition, statistic families, candidate-region policy, and first-pass execution bridge.
+  - [x] Added `scripts/population_genetics/operation_guide.md` with input package, invocation examples, resource parameters, output contract, failure handling, and cross-links.
+  - [x] Updated analysis-domain README, references index, and population-genetics script README to expose the new content.
+  - [x] Added knowledge coverage tests requiring population-genetics domain doc IDs and retrieval query coverage.
+  - [x] Verified the new tests failed before content was added and passed after implementation.
+- not_yet_done_checklist:
+  - [ ] Continue the same section-by-section enrichment pattern for `association_mapping/`.
+  - [ ] Add detailed domain file for `association_mapping_gwas_qtl`.
+  - [ ] Add detailed domain files for `relationship_matrix_variance_components`, `genomic_prediction_breeding_value`, and `hpc_execution_reporting_audit`.
+  - [ ] Selection-signature execution remains first-pass only; iHS, XP-EHH, XP-CLR, PBS, phasing, candidate-region merging, and annotation are still knowledge/planning scope until separate pipeline contracts exist.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py::test_analysis_domain_population_genetics_enters_reference_index tests\unit\knowledge\test_references_coverage.py::test_reference_layer_retrieval_queries_cover_major_topics` -> first failed as expected before content was added.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py::test_analysis_domain_population_genetics_enters_reference_index tests\unit\knowledge\test_references_coverage.py::test_reference_layer_retrieval_queries_cover_major_topics` -> pass after implementation.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge` -> pass (`43 passed`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests shown in pytest progress output).
+  - `git diff --check -- references\analysis_domains references\INDEX.md scripts\population_genetics tests\unit\knowledge\test_references_coverage.py` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `pass`
+- known_risks:
+  - `selection_signatures.md` intentionally labels current Fst/pi/Tajima/ROH outputs as first-pass and not a complete selection-signature workflow.
+  - `domain_scope` remains body-level curation prose until the typed metadata contract is intentionally upgraded.
+  - Worktree remains dirty from multiple earlier stages; do not attribute all modified/untracked files to this content-enrichment task.
+- next_actions:
+  - Continue with `association_mapping/` and add the paired `association_mapping_gwas_qtl.md` domain file.
+  - Keep GWAS/QTL/fine-mapping boundaries explicit because current execution support is first-pass PLINK2 GWAS only.
+  - Re-run targeted knowledge tests after the next section.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-06 11:10 +08:00 (domain content part 3: association mapping)
+- intent_domain: `knowledge`
+- stage_id: `Local-first RAG`, `Blueprint Selection`, `Execution`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\references\analysis_domains`, `D:\geneagent\scripts\association_mapping`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\docs`
+- cluster_execution_expected: `false` for this knowledge and documentation enrichment task; the documented wrapper is used by future bio execution paths under trusted remote or scheduler backends.
+- contracts_impacted:
+  - No new Pydantic contract fields.
+  - `knowledge_item.v2` usage expanded into `references/analysis_domains/association_mapping_gwas_qtl.md`.
+  - `association_mapping_gwas` remains an execution blueprint key, while formal knowledge metadata uses `blueprint_scope=shared` until the strict enum is intentionally upgraded.
+  - `tests/unit/knowledge/test_references_coverage.py` now requires association-mapping domain chunks and retrieval hits.
+- files_changed:
+  - `D:\geneagent\references\analysis_domains\association_mapping_gwas_qtl.md`
+  - `D:\geneagent\references\analysis_domains\README.md`
+  - `D:\geneagent\references\INDEX.md`
+  - `D:\geneagent\scripts\association_mapping\operation_guide.md`
+  - `D:\geneagent\scripts\association_mapping\README.md`
+  - `D:\geneagent\tests\unit\knowledge\test_references_coverage.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added `association_mapping_gwas_qtl.md` with six indexed sections covering GWAS/QTL scope, input/model policy, population correction, QTL/fine-mapping boundary, candidate interpretation, and execution bridge.
+  - [x] Added `scripts/association_mapping/operation_guide.md` with input package, invocation examples, method boundaries, resource parameters, output contract, failure handling, and cross-links.
+  - [x] Updated analysis-domain README, references index, and association-mapping script README to expose the new content.
+  - [x] Added knowledge coverage tests requiring association-mapping domain doc IDs and retrieval query coverage.
+  - [x] Verified the new tests failed before content was added and passed after implementation.
+- not_yet_done_checklist:
+  - [ ] Continue the same section-by-section enrichment pattern for `quantitative_genetics/`.
+  - [ ] Add detailed domain files for `relationship_matrix_variance_components` and `genomic_prediction_breeding_value`.
+  - [ ] Add detailed domain file for `hpc_execution_reporting_audit`.
+  - [ ] Mixed-model GWAS, QTL interval mapping, fine mapping, credible sets, and candidate functional validation remain knowledge/planning scope until separate pipeline/tool/report contracts exist.
+  - [ ] Consider a later `knowledge_item.v2` enum upgrade if association-mapping knowledge should use a typed `blueprint_scope=association_mapping_gwas`.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py::test_analysis_domain_association_mapping_enters_reference_index tests\unit\knowledge\test_references_coverage.py::test_reference_layer_retrieval_queries_cover_major_topics` -> first failed as expected before content was added.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py::test_analysis_domain_association_mapping_enters_reference_index tests\unit\knowledge\test_references_coverage.py::test_reference_layer_retrieval_queries_cover_major_topics` -> pass after implementation.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge` -> pass (`44 passed`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests shown in pytest progress output).
+  - `git diff --check -- references\analysis_domains references\INDEX.md scripts\association_mapping tests\unit\knowledge\test_references_coverage.py` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `pass`
+- known_risks:
+  - Current association execution remains first-pass PLINK2 `--glm`; it is not mixed-model GWAS, QTL mapping, fine mapping, or functional validation.
+  - `domain_scope` remains body-level curation prose until the typed metadata contract is intentionally upgraded.
+  - Worktree remains dirty from multiple earlier stages; do not attribute all modified/untracked files to this content-enrichment task.
+- next_actions:
+  - Continue with `quantitative_genetics/` and add paired domain content for relationship matrices, variance components, and genomic prediction/breeding values.
+  - Keep GRM/heritability/prediction boundaries explicit because the same script directory contains multiple quantitative-genetics concerns.
+  - Re-run targeted knowledge tests after the next section.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-06 11:19 +08:00 (domain content part 4: quantitative genetics)
+- intent_domain: `knowledge`
+- stage_id: `Local-first RAG`, `Blueprint Selection`, `Execution`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\references\analysis_domains`, `D:\geneagent\scripts\quantitative_genetics`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\docs`
+- cluster_execution_expected: `false` for this knowledge and documentation enrichment task; the documented wrappers are used by future bio execution paths under trusted remote or scheduler backends.
+- contracts_impacted:
+  - No new Pydantic contract fields.
+  - `knowledge_item.v2` usage expanded into `relationship_matrix_variance_components.md` and `genomic_prediction_breeding_value.md`.
+  - `tests/unit/knowledge/test_references_coverage.py` now requires quantitative-genetics domain chunks and retrieval hits.
+- files_changed:
+  - `D:\geneagent\references\analysis_domains\relationship_matrix_variance_components.md`
+  - `D:\geneagent\references\analysis_domains\genomic_prediction_breeding_value.md`
+  - `D:\geneagent\references\analysis_domains\README.md`
+  - `D:\geneagent\references\INDEX.md`
+  - `D:\geneagent\scripts\quantitative_genetics\operation_guide.md`
+  - `D:\geneagent\scripts\quantitative_genetics\README.md`
+  - `D:\geneagent\tests\unit\knowledge\test_references_coverage.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added `relationship_matrix_variance_components.md` with five indexed sections covering GRM scope, construction policy, variance components, sample-order policy, and execution bridge.
+  - [x] Added `genomic_prediction_breeding_value.md` with five indexed sections covering prediction scope, model family policy, validation, breeding-decision boundary, and execution bridge.
+  - [x] Added `scripts/quantitative_genetics/operation_guide.md` with separate GRM and breeding-value invocation paths, method boundaries, resource parameters, output contracts, failure handling, and cross-links.
+  - [x] Updated analysis-domain README, references index, and quantitative-genetics script README to expose the new content.
+  - [x] Added knowledge coverage tests requiring quantitative-genetics domain doc IDs and retrieval query coverage.
+  - [x] Verified the new tests failed before content was added and passed after implementation.
+- not_yet_done_checklist:
+  - [ ] Continue the same section-by-section enrichment pattern for `reporting_audit/`.
+  - [ ] Add detailed domain file for `hpc_execution_reporting_audit`.
+  - [ ] Add `genotype_processing.md` for phasing, imputation, allele alignment, and liftover beyond the current QC wrapper.
+  - [ ] Add `functional_genomics_annotation.md` for candidate interpretation after GWAS and selection scans.
+  - [ ] ssGBLUP production evaluation, Bayesian/ML prediction, multi-trait models, and breeding decisions remain knowledge/planning scope until separate pipeline/tool/report contracts exist.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py::test_analysis_domain_quantitative_genetics_enters_reference_index tests\unit\knowledge\test_references_coverage.py::test_reference_layer_retrieval_queries_cover_major_topics` -> first failed as expected before content was added.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py::test_analysis_domain_quantitative_genetics_enters_reference_index tests\unit\knowledge\test_references_coverage.py::test_reference_layer_retrieval_queries_cover_major_topics` -> pass after implementation.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge` -> pass (`45 passed`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests shown in pytest progress output).
+  - `git diff --check -- references\analysis_domains references\INDEX.md scripts\quantitative_genetics tests\unit\knowledge\test_references_coverage.py` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `pass`
+- known_risks:
+  - Current prediction execution remains a first-pass GCTA-compatible path; it is not production ssGBLUP, Bayesian/ML model comparison, or an automated breeding decision system.
+  - GRM sample-order correctness remains a downstream safety-critical contract and should block modeling when uncertain.
+  - Worktree remains dirty from multiple earlier stages; do not attribute all modified/untracked files to this content-enrichment task.
+- next_actions:
+  - Continue with `reporting_audit/` and add paired domain content for execution traceability, report index, diagnostics, and audit bundles.
+  - Keep reporting/audit content distinct from scientific inference: report assembly can explain evidence but must not invent biological conclusions.
+  - Re-run targeted knowledge tests after the next section.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-06 11:28 +08:00 (domain content part 5: reporting audit)
+- intent_domain: `knowledge`
+- stage_id: `Local-first RAG`, `Artifact + Report`, `Audit + Memory`, `Execution`
+- module_owner_path: `D:\geneagent\references\analysis_domains`, `D:\geneagent\scripts\reporting_audit`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\docs`
+- cluster_execution_expected: `false` for this knowledge and documentation enrichment task; the documented packaging scripts are used after local, trusted remote, or scheduler-backed bio execution.
+- contracts_impacted:
+  - No new Pydantic contract fields.
+  - `knowledge_item.v2` usage expanded into `hpc_execution_reporting_audit.md`.
+  - `tests/unit/knowledge/test_references_coverage.py` now requires reporting/audit domain chunks and retrieval hits.
+- files_changed:
+  - `D:\geneagent\references\analysis_domains\hpc_execution_reporting_audit.md`
+  - `D:\geneagent\references\analysis_domains\README.md`
+  - `D:\geneagent\references\INDEX.md`
+  - `D:\geneagent\scripts\reporting_audit\operation_guide.md`
+  - `D:\geneagent\scripts\reporting_audit\README.md`
+  - `D:\geneagent\tests\unit\knowledge\test_references_coverage.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added `hpc_execution_reporting_audit.md` with six indexed sections covering domain scope, remote traceability, `report_index.v2`, diagnostics, audit bundle policy, and execution bridge.
+  - [x] Added `scripts/reporting_audit/operation_guide.md` with invocation examples, index expectations, traceability inputs, diagnostics handling, output contract, safety boundaries, and cross-links.
+  - [x] Updated analysis-domain README, references index, and reporting-audit script README to expose the new content.
+  - [x] Added knowledge coverage tests requiring reporting/audit domain doc IDs and retrieval query coverage.
+  - [x] Verified the new tests failed before content was added and passed after implementation.
+- not_yet_done_checklist:
+  - [ ] Add `references/analysis_domains/genotype_processing.md` for phasing, imputation, allele alignment, liftover, and format normalization beyond the current QC wrapper.
+  - [ ] Add `references/analysis_domains/functional_genomics_annotation.md` for candidate-region and candidate-gene interpretation after GWAS and selection scans.
+  - [ ] Decide later whether `domain_scope` should become a typed metadata field in `knowledge_item.v2`.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py::test_analysis_domain_reporting_audit_enters_reference_index tests\unit\knowledge\test_references_coverage.py::test_reference_layer_retrieval_queries_cover_major_topics` -> first failed as expected before content was added.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py::test_analysis_domain_reporting_audit_enters_reference_index tests\unit\knowledge\test_references_coverage.py::test_reference_layer_retrieval_queries_cover_major_topics` -> pass after implementation.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge` -> pass (`46 passed`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests shown in pytest progress output).
+  - `git diff --check -- references\analysis_domains references\INDEX.md scripts\reporting_audit tests\unit\knowledge\test_references_coverage.py` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `pass`
+- known_risks:
+  - Reporting/audit packaging proves traceability, not scientific correctness.
+  - Current report generator still carries some historical `V1.5` title/version strings in script internals; this was not changed in this content-enrichment pass.
+  - Worktree remains dirty from multiple earlier stages; do not attribute all modified/untracked files to this content-enrichment task.
+- next_actions:
+  - Add `genotype_processing.md` as the advanced genotype-processing domain for phasing, imputation, allele alignment, liftover, and format normalization.
+  - Add `functional_genomics_annotation.md` as the interpretation domain for candidate regions, candidate genes, regulatory evidence, pangenome/SV/CNV, eQTL, and single-cell context.
+  - Re-run targeted knowledge tests after each remaining domain.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-06 11:38 +08:00 (domain content part 6: genotype processing)
+- intent_domain: `knowledge`
+- stage_id: `Local-first RAG`, `Blueprint Selection`, `Execution`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\references\analysis_domains`, `D:\geneagent\scripts\genotype_processing`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\docs`
+- cluster_execution_expected: `false` for this knowledge and documentation enrichment task; the documented script boundary informs future trusted remote or scheduler-backed bio execution.
+- contracts_impacted:
+  - No new Pydantic contract fields.
+  - `knowledge_item.v2` usage expanded into `genotype_processing.md`.
+  - `tests/unit/knowledge/test_references_coverage.py` now requires genotype-processing domain chunks and retrieval hits.
+- files_changed:
+  - `D:\geneagent\references\analysis_domains\genotype_processing.md`
+  - `D:\geneagent\references\analysis_domains\README.md`
+  - `D:\geneagent\references\INDEX.md`
+  - `D:\geneagent\scripts\genotype_processing\README.md`
+  - `D:\geneagent\scripts\genotype_processing\operation_guide.md`
+  - `D:\geneagent\tests\unit\knowledge\test_references_coverage.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added `genotype_processing.md` with six indexed sections covering domain scope, format normalization, allele alignment, liftover, phasing/imputation, and execution bridge.
+  - [x] Updated analysis-domain README and references index to expose genotype processing as current knowledge content rather than a future placeholder.
+  - [x] Updated `scripts/genotype_processing` README and operation guide to distinguish the current QC wrapper from advanced genotype-processing planning boundaries.
+  - [x] Added knowledge coverage tests requiring genotype-processing domain doc IDs and retrieval query coverage.
+  - [x] Verified the new tests failed before content was added and passed after implementation.
+- not_yet_done_checklist:
+  - [ ] Add `references/analysis_domains/functional_genomics_annotation.md` for candidate-region and candidate-gene interpretation after GWAS and selection scans.
+  - [ ] Advanced phasing, imputation, liftover, and allele-harmonization execution wrappers remain not implemented until separate tool manifests, script contracts, reports, and tests are added.
+  - [ ] Decide later whether `domain_scope` should become a typed metadata field in `knowledge_item.v2`.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py::test_analysis_domain_genotype_processing_enters_reference_index tests\unit\knowledge\test_references_coverage.py::test_reference_layer_retrieval_queries_cover_major_topics` -> first failed as expected before content was added.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py::test_analysis_domain_genotype_processing_enters_reference_index tests\unit\knowledge\test_references_coverage.py::test_reference_layer_retrieval_queries_cover_major_topics` -> pass after implementation.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge` -> pass (`47 passed`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests shown in pytest progress output).
+  - `git diff --check -- references\analysis_domains references\INDEX.md scripts\genotype_processing tests\unit\knowledge\test_references_coverage.py` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `pass`
+- known_risks:
+  - Current executable `scripts/genotype_processing/run_genotype_qc.sh` remains QC-oriented and must not be presented as complete imputation, phasing, liftover, or allele-harmonization execution.
+  - Allele alignment and liftover are safety-critical transformations; automated execution should block until reference assets and reversible mapping artifacts are explicit.
+  - Worktree remains dirty from multiple earlier stages; do not attribute all modified/untracked files to this content-enrichment task.
+- next_actions:
+  - Continue with `functional_genomics_annotation.md` as the next remaining domain.
+  - Keep functional interpretation separate from proof of causality, selection, or association.
+  - Re-run targeted knowledge tests after the next section.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-06 11:51 +08:00 (domain content part 7: functional genomics annotation)
+- intent_domain: `knowledge`
+- stage_id: `Local-first RAG`, `Blueprint Selection`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\references\analysis_domains`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\docs`
+- cluster_execution_expected: `false` for this knowledge and documentation enrichment task; functional annotation remains a report/retrieval interpretation domain until dedicated execution wrappers exist.
+- contracts_impacted:
+  - No new Pydantic contract fields.
+  - `knowledge_item.v2` usage expanded into `functional_genomics_annotation.md`.
+  - `tests/unit/knowledge/test_references_coverage.py` now requires functional-genomics annotation domain chunks and retrieval hits.
+- files_changed:
+  - `D:\geneagent\references\analysis_domains\functional_genomics_annotation.md`
+  - `D:\geneagent\references\analysis_domains\README.md`
+  - `D:\geneagent\references\INDEX.md`
+  - `D:\geneagent\tests\unit\knowledge\test_references_coverage.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added `functional_genomics_annotation.md` with seven indexed sections covering domain scope, gene-model policy, regulatory evidence, pangenome/SV/CNV evidence, eQTL/FarmGTEx/single-cell evidence, candidate reporting, and current automation boundary.
+  - [x] Updated analysis-domain README and references index to expose functional genomics annotation as a current GeneAgent knowledge playbook rather than a future placeholder.
+  - [x] Added knowledge coverage tests requiring functional-annotation domain doc IDs and retrieval query coverage.
+  - [x] Verified the new tests failed before content was added and passed after implementation.
+- not_yet_done_checklist:
+  - [ ] Dedicated annotation execution wrappers remain not implemented for gene overlap, variant consequence annotation, pangenome graph query, SV/CNV annotation, eQTL colocalization, TWAS, and pathway enrichment.
+  - [ ] Add `multi_omics_integration.md` if the next knowledge pass should cover transcriptome, epigenome, metabolome, microbiome, and proteome integration.
+  - [ ] Add `species_specific_playbooks.md` if the next knowledge pass should cover cattle, pig, chicken, sheep/goat, aquaculture, and comparative caveats.
+  - [ ] Decide later whether `domain_scope` should become a typed metadata field in `knowledge_item.v2`.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py::test_analysis_domain_functional_genomics_annotation_enters_reference_index tests\unit\knowledge\test_references_coverage.py::test_reference_layer_retrieval_queries_cover_major_topics` -> first failed as expected before content was added.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py::test_analysis_domain_functional_genomics_annotation_enters_reference_index tests\unit\knowledge\test_references_coverage.py::test_reference_layer_retrieval_queries_cover_major_topics` -> pass after implementation.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge` -> pass (`48 passed`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests shown in pytest progress output).
+  - `git diff --check -- references\analysis_domains references\INDEX.md tests\unit\knowledge\test_references_coverage.py` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `pass`
+- known_risks:
+  - Functional annotation can easily overstate causality; the new domain file explicitly keeps annotation as ranked evidence and hypotheses.
+  - Current GeneAgent can structure and explain annotation evidence, but must not pretend to have queried external annotation databases or run consequence tools unless a future wrapper actually does so.
+  - Worktree remains dirty from multiple earlier stages; do not attribute all modified/untracked files to this content-enrichment task.
+- next_actions:
+  - Decide whether the next domain expansion should be `multi_omics_integration.md` or `species_specific_playbooks.md`.
+  - Keep any future multi-omics content separate from causal inference unless the evidence design supports it.
+  - Re-run targeted knowledge tests after the next domain.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-06 12:08 +08:00 (workflow/file responsibility alignment)
+- intent_domain: `system`, `knowledge`
+- stage_id: `Intake`, `Intent + Scope`, `Input Validation`, `Local-first RAG`, `Blueprint Selection`, `Resource + Safety Gate`, `Execution`, `Artifact + Report`, `Audit + Memory`, `V2 Control Plane`
+- module_owner_path: `D:\geneagent\docs`, `D:\geneagent\README.md`, `D:\geneagent\tests\unit`
+- cluster_execution_expected: `false`; this was documentation and alignment-test work only, with no remote submit, no scheduler materialization, and no bio tool execution.
+- contracts_impacted:
+  - No Pydantic contract fields changed.
+  - Added a documentation regression test that locks the current workflow/file responsibility map, blueprint/script/domain mapping, and trusted remote execution boundary links.
+- files_changed:
+  - `D:\geneagent\docs\current_workflow_file_map.md`
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\docs\README.md`
+  - `D:\geneagent\docs\v2_system_map.md`
+  - `D:\geneagent\tests\unit\test_documentation_alignment.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added `docs/current_workflow_file_map.md` as the compact current map from V2 workflow stages to owner files, forbidden ownership, script directories, knowledge domains, and trusted execution boundaries.
+  - [x] Linked the new workflow/file map from `README.md`, `docs/README.md`, and `docs/v2_system_map.md`.
+  - [x] Added `tests/unit/test_documentation_alignment.py` so future changes must keep the workflow map linked and covering stages, module owners, blueprint/script/domain alignment, and remote execution modes.
+  - [x] Verified the new documentation test failed before the map existed and passed after implementation.
+- not_yet_done_checklist:
+  - [ ] The broader project goal remains active: continue tightening runtime behavior and function alignment, not just documentation.
+  - [ ] Consider a follow-up code audit to compare `docs/current_workflow_file_map.md` against actual CLI/API route surfaces and pipeline catalog entries.
+  - [ ] Continue knowledge expansion later with `multi_omics_integration.md` or `species_specific_playbooks.md` if still in scope.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\test_documentation_alignment.py` -> first failed as expected before `docs/current_workflow_file_map.md` existed.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\test_documentation_alignment.py` -> pass after implementation (`4 passed`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\test_documentation_alignment.py tests\unit\knowledge\test_references_coverage.py` -> pass (`18 passed`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests shown in pytest progress output).
+  - `git diff --check -- docs\current_workflow_file_map.md README.md docs\README.md docs\v2_system_map.md tests\unit\test_documentation_alignment.py` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `pass`
+- known_risks:
+  - This stage tightens documentation and regression coverage, but does not itself prove every runtime function is fully aligned with the map.
+  - Worktree remains dirty from multiple earlier stages; do not attribute all modified/untracked files to this alignment task.
+  - Some README/AGENTS Chinese text renders mojibake in PowerShell output, but the edited path links and tests are UTF-8 readable.
+- next_actions:
+  - Audit CLI/API command and route surfaces against the new map and V2 system map.
+  - Audit pipeline catalog, script entrypoints, and knowledge-domain mappings for stale legacy references.
+  - Keep the active goal open until current version behavior, docs, and tests are aligned end to end.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-06 12:28 +08:00 (code-entry and workflow map alignment audit)
+- intent_domain: `system`, `knowledge`
+- stage_id: `Intake`, `Blueprint Selection`, `Execution`, `Artifact + Report`, `Audit + Memory`, `V2 Control Plane`
+- module_owner_path: `D:\geneagent\README.md`, `D:\geneagent\docs`, `D:\geneagent\tests\unit`, `D:\geneagent\tests\unit\pipeline`
+- cluster_execution_expected: `false`; this was an alignment-audit and regression-test task only, with no remote submit, no scheduler materialization, and no bio tool execution.
+- contracts_impacted:
+  - No Pydantic contract fields changed.
+  - Documentation alignment tests now verify current CLI/API operational surface and remote execution environment wording.
+  - Pipeline execution tests now verify all compatibility blueprints resolve to current scientific script directories and that legacy blueprint-named script directories are absent.
+- files_changed:
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\docs\v2_system_map.md`
+  - `D:\geneagent\docs\current_workflow_file_map.md`
+  - `D:\geneagent\tests\unit\test_documentation_alignment.py`
+  - `D:\geneagent\tests\unit\pipeline\test_pipeline_execution.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Tightened README runtime boundary from old HPC-primary wording to PC Agent control plane plus ordinary Linux server first, with HPC/SLURM as optional backend.
+  - [x] Updated `docs/v2_system_map.md` so blueprint binding names the current catalog, pack-first payloads, workflow compatibility layer, command planner, and validator files.
+  - [x] Extended `docs/current_workflow_file_map.md` with explicit CLI and API operational surfaces.
+  - [x] Added documentation regression coverage for README remote-execution wording, system-map pipeline layering, and CLI/API surface links.
+  - [x] Added pipeline execution regression coverage that all compatibility blueprints resolve to current scientific script paths and old `scripts/qc_pipeline`, `scripts/pca_pipeline`, `scripts/grm_builder`, `scripts/genomic_prediction`, and `scripts/report_generator` directories are no longer current filesystem layout.
+  - [x] Verified new tests caught the stale README/system-map/map-surface wording before the fixes and passed after implementation.
+- not_yet_done_checklist:
+  - [ ] The active project goal remains open: continue aligning deeper runtime behavior, not only docs/tests.
+  - [ ] Follow-up audit should compare `src/runtime/facade.py` behavior against the workflow map for non-bio submit prevention, trusted remote caps, and report/audit closure.
+  - [ ] Follow-up audit should check docs for any remaining stale `V1` wording that describes current behavior rather than compatibility history.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\test_documentation_alignment.py` -> first failed as expected for stale README/system-map/map-surface coverage.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\test_documentation_alignment.py` -> pass after implementation (`7 passed`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\test_documentation_alignment.py tests\unit\pipeline\test_pipeline_execution.py` -> pass (`15 passed`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\test_documentation_alignment.py tests\unit\pipeline\test_pipeline_execution.py tests\unit\knowledge\test_references_coverage.py` -> pass (`29 passed`).
+  - `rg -n '主要部署平台：Linux HPC|队列系统：`SLURM / PBS / SGE`|pipeline blueprint definitions: `src/pipeline/workflows.py`' README.md docs\v2_system_map.md docs\current_workflow_file_map.md` -> no matches.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests shown in pytest progress output).
+  - `git diff --check -- README.md docs\v2_system_map.md docs\current_workflow_file_map.md tests\unit\test_documentation_alignment.py tests\unit\pipeline\test_pipeline_execution.py` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `pass`
+- known_risks:
+  - This audit locks entry/document/script mapping, but does not prove every runtime branch in `facade.py` follows the map under all inputs.
+  - Worktree remains dirty from multiple earlier stages; do not attribute all modified/untracked files to this alignment task.
+  - README still contains some pre-existing mojibake-rendered Chinese in PowerShell output; this stage only corrected the target runtime-boundary lines.
+- next_actions:
+  - Audit `src/runtime/facade.py` against non-bio and trusted-remote execution boundaries.
+  - Audit API v2 route inclusion and console/observability/release surfaces against the current workflow file map.
+  - Keep the active goal open until current workflow, file responsibilities, and runtime behavior are aligned end to end.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-06 15:49 +08:00 (runtime facade execution-boundary tightening)
+- intent_domain: `system`, `bioinformatics`
+- stage_id: `Intent + Scope`, `Resource + Safety Gate`, `Execution`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\src\runtime`, `D:\geneagent\tests\unit\runtime`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`; this was a local runtime hardening and regression-test task only. No real SSH, SLURM, shell, or bio tool submit was performed.
+- contracts_impacted:
+  - No Pydantic field schema changed.
+  - `SubmissionPreview.gate_status/gate_decision/circuit_break_conditions/run_state.next_action` now surface remote shell quota blockers when a trusted shell preview exceeds configured ordinary-server caps.
+  - Non-bio submit/submit-preview requests now avoid scheduler/execution-working-directory construction before returning the lightweight branch.
+- files_changed:
+  - `D:\geneagent\src\runtime\facade.py`
+  - `D:\geneagent\tests\unit\runtime\test_dry_run_branching.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added a regression test proving non-bio submit with requested `ssh_shell_trusted` mode must not build scheduler execution flow, remote working directory, scheduler scripts, run state, or report-generator execution.
+  - [x] Moved scheduler adapter and execution working-directory resolution in `ApplicationFacade._build_submission_preview` until after the non-bio branch returns.
+  - [x] Added a regression test proving per-request `ssh_shell_trusted` previews use configured `remote_shell_*` caps instead of adapter defaults.
+  - [x] Passed configured ordinary-server caps from `Settings` into facade-built remote shell check and execution adapters.
+  - [x] Surfaced remote shell quota blockers in the preview gate output and run-state next action before any real submit path can materialize remote files.
+  - [x] Verified both new tests failed before their fixes and passed after implementation.
+- not_yet_done_checklist:
+  - [ ] Continue the broader active goal by auditing API v2 route inclusion, console/observability/release surfaces, and any remaining stale current-behavior wording.
+  - [ ] Real ordinary-server smoke tests remain operator-run only after local `.env` and password/key handling are configured; CI continues to use mocks.
+  - [ ] Worktree remains dirty from multiple prior stages; do not attribute all modified/untracked files to this runtime tightening task.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\runtime\test_dry_run_branching.py::test_per_request_remote_shell_preview_uses_configured_caps_and_surfaces_blocker` -> first failed as expected on default cap usage, then passed after implementation.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\runtime\test_dry_run_branching.py::test_non_bio_submit_with_trusted_mode_does_not_enter_scheduler_flow` -> first failed as expected on premature scheduler-flow construction, then passed after implementation.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\runtime\test_dry_run_branching.py` -> pass (`9 passed`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\runtime tests\unit\scheduler tests\unit\safety tests\integration\api tests\e2e\cli` -> pass (`100%`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests shown in pytest progress output).
+  - `git diff --check -- src\runtime\facade.py tests\unit\runtime\test_dry_run_branching.py` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `pass`
+- known_risks:
+  - This tightens runtime execution boundaries but does not run a real remote server smoke test.
+  - Preview-level quota blockers now surface through existing `SubmissionPreview` fields rather than a new dedicated quota field.
+  - The worktree includes many older dirty files; preserve unrelated changes.
+- next_actions:
+  - Audit API v2 inclusion and CLI/API behavior against `docs/current_workflow_file_map.md`.
+  - Audit docs for remaining stale current-behavior wording that should be historical/compatibility-only.
+  - Keep the active project goal open until workflow, file responsibilities, and runtime behavior are aligned end to end.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-06 15:59 +08:00 (API v2 and CLI surface documentation alignment)
+- intent_domain: `system`
+- stage_id: `Intake`, `Resource + Safety Gate`, `Execution`, `Audit + Memory`, `V2 Control Plane`
+- module_owner_path: `D:\geneagent\README.md`, `D:\geneagent\docs`, `D:\geneagent\tests\unit`
+- cluster_execution_expected: `false`; this was a documentation and alignment-test task only, with no real SSH, SLURM, shell, or bio tool submit.
+- contracts_impacted:
+  - No Pydantic contract fields changed.
+  - Documentation regression tests now derive every real `/v2/tasks/*` route from `api.app.create_app()` and require README, workflow map, and V2 system map to list them explicitly.
+  - Documentation now distinguishes CLI-only operator-auth commands from CLI/API remote execution surfaces.
+- files_changed:
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\docs\current_workflow_file_map.md`
+  - `D:\geneagent\docs\v2_system_map.md`
+  - `D:\geneagent\tests\unit\test_documentation_alignment.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added a regression test that derives all real `/v2/tasks/*` routes from FastAPI and requires each route to be documented in README, `docs/current_workflow_file_map.md`, and `docs/v2_system_map.md`.
+  - [x] Verified the route-documentation test failed first because `/v2/tasks/remote-check`, `/v2/tasks/watch-run`, `/v2/tasks/resume-run`, `/v2/tasks/validate-inputs`, and `/v2/tasks/review-action` were not consistently listed.
+  - [x] Updated README, workflow map, and V2 system map so V2 task routes are explicit instead of compressed shorthand.
+  - [x] Added a regression test requiring `remote-session-*`, `remote-password-set`, and fixed-command `remote-smoke` to be documented as CLI-only operator-auth commands.
+  - [x] Updated README, workflow map, and V2 system map to separate CLI-only local authentication/session operations from CLI/API remote execution operations.
+- not_yet_done_checklist:
+  - [ ] Continue the broader active goal by auditing remaining stale current-behavior wording and deeper end-to-end completion evidence.
+  - [ ] Real ordinary-server smoke tests remain operator-run only after local `.env` and password/key handling are configured; CI continues to use mocks.
+  - [ ] Worktree remains dirty from multiple prior stages; do not attribute all modified/untracked files to this alignment task.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\test_documentation_alignment.py::test_every_v2_task_route_is_documented_in_workflow_map_and_readme` -> first failed as expected on missing README route documentation, then passed after implementation.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\test_documentation_alignment.py::test_operator_auth_remote_session_commands_are_documented_as_cli_only` -> first failed as expected on missing CLI-only statement, then passed after implementation.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\test_documentation_alignment.py tests\integration\api\test_v2_routes.py tests\integration\api\test_remote_execution_routes.py tests\e2e\cli\test_remote_execution_cli.py` -> pass (`39 passed`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests shown in pytest progress output).
+  - `git diff --check -- README.md docs\current_workflow_file_map.md docs\v2_system_map.md tests\unit\test_documentation_alignment.py` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `pass`
+- known_risks:
+  - This stage proves route/documentation alignment, not real remote server execution.
+  - API intentionally does not expose local operator-auth commands because they touch local SSH session or local ignored `.env` password state.
+  - The worktree includes many older dirty files; preserve unrelated changes.
+- next_actions:
+  - Audit remaining current-behavior wording for stale V1/V1.5/HPC-primary phrasing.
+  - Audit final end-to-end goal requirements before considering the active goal complete.
+  - Keep the active project goal open until workflow, file responsibilities, and runtime behavior are aligned end to end.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-06 16:07 +08:00 (current-stage source docstring tightening)
+- intent_domain: `system`
+- stage_id: `Intake`, `V2 Control Plane`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\src\cli`, `D:\geneagent\src\api`, `D:\geneagent\src\runtime`, `D:\geneagent\src\contracts`, `D:\geneagent\tests\unit`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`; this was source/documentation wording and regression-test work only, with no real SSH, SLURM, shell, or bio tool submit.
+- contracts_impacted:
+  - No Pydantic contract fields changed.
+  - Documentation alignment tests now require current entrypoint/runtime top-level docstrings to use `GeneAgent V2` wording and reject `GeneAgent V1` / `V1 workflows` current-stage wording.
+- files_changed:
+  - `D:\geneagent\src\cli\app.py`
+  - `D:\geneagent\src\api\routes\tasks.py`
+  - `D:\geneagent\src\runtime\bootstrap.py`
+  - `D:\geneagent\src\runtime\settings.py`
+  - `D:\geneagent\src\contracts\__init__.py`
+  - `D:\geneagent\tests\unit\test_documentation_alignment.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added a regression test requiring current entrypoint/runtime module docstrings to use V2 wording rather than stale V1 wording.
+  - [x] Verified the new docstring test failed first on `src/cli/app.py` because it still said `GeneAgent V1 workflows`.
+  - [x] Updated `src/cli/app.py`, `src/api/routes/tasks.py`, `src/runtime/bootstrap.py`, `src/runtime/settings.py`, and `src/contracts/__init__.py` to current `GeneAgent V2` wording.
+  - [x] Re-scanned for `GeneAgent V1` / `V1 workflows` and confirmed only the negative assertions in `tests/unit/test_documentation_alignment.py` remain.
+  - [x] Re-scanned stale current-stage phrases and confirmed historical V1.5/old-script mentions remain constrained to HANDOFF history or explicit compatibility-history wording.
+- not_yet_done_checklist:
+  - [ ] Continue the broader active goal by auditing final end-to-end requirements before deciding whether the goal is complete.
+  - [ ] Real ordinary-server smoke tests remain operator-run only after local `.env` and password/key handling are configured; CI continues to use mocks.
+  - [ ] Worktree remains dirty from multiple prior stages; do not attribute all modified/untracked files to this docstring tightening task.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\test_documentation_alignment.py::test_current_entrypoint_and_runtime_docstrings_use_v2_wording` -> first failed as expected on stale V1 wording, then passed after implementation.
+  - `rg -n "GeneAgent V1|V1 workflows" README.md AGENTS.md docs src tests references scripts` -> only negative assertions in `tests/unit/test_documentation_alignment.py` remained.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\test_documentation_alignment.py tests\integration\api\test_v2_routes.py tests\e2e\cli\test_plan_placeholder.py tests\e2e\cli\test_remote_execution_cli.py tests\unit\runtime\test_settings.py` -> pass (`55 passed`).
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests shown in pytest progress output).
+  - `git diff --check -- src\cli\app.py src\api\routes\tasks.py src\runtime\bootstrap.py src\runtime\settings.py src\contracts\__init__.py tests\unit\test_documentation_alignment.py` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `pass`
+- known_risks:
+  - This stage tightens source-level wording only and does not run a real remote server smoke test.
+  - Historical V1/V1.5 wording remains intentionally allowed where it describes history, compatibility baselines, or HANDOFF history.
+  - The worktree includes many older dirty files; preserve unrelated changes.
+- next_actions:
+  - Perform a requirement-by-requirement completion audit against the active goal before considering `update_goal(status="complete")`.
+  - If audit finds weak evidence, continue with the highest-risk missing proof rather than claiming completion.
+  - Keep the active project goal open until workflow, file responsibilities, and runtime behavior are proven aligned end to end.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-06 20:53 +08:00 (knowledge blueprint_scope module alignment)
+- intent_domain: `knowledge`
+- stage_id: `Local-first RAG`, `Blueprint Selection`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\src\contracts`, `D:\geneagent\src\knowledge`, `D:\geneagent\references`, `D:\geneagent\tests\unit\contracts`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\AGENTS.md`
+- cluster_execution_expected: `false`; this was a local metadata contract, indexer, and references knowledge-asset alignment task only. No SSH, SLURM, shell, bio tool, source fetch, or remote execution was performed.
+- contracts_impacted:
+  - `BlueprintScope` formal values changed from legacy `qc/pca/grm/genomic_prediction/shared` to current module scopes: `knowledge_governance`, `genotype_processing`, `population_genetics`, `quantitative_genetics`, `association_mapping`, and `reporting_audit`.
+  - `KnowledgeItemV2` and `KnowledgeChunk` now normalize legacy scope labels as compatibility aliases.
+  - `HybridKnowledgeIndex.search(..., blueprint_scope=...)` now accepts legacy scope filters and maps them to current module scopes.
+- files_changed:
+  - `D:\geneagent\src\contracts\knowledge.py`
+  - `D:\geneagent\src\knowledge\indexing.py`
+  - `D:\geneagent\tests\unit\contracts\test_knowledge.py`
+  - `D:\geneagent\tests\unit\knowledge\test_indexing.py`
+  - `D:\geneagent\tests\unit\knowledge\test_references_coverage.py`
+  - `D:\geneagent\tests\unit\knowledge\test_retrieval.py`
+  - `D:\geneagent\references\**\*.md` metadata lines that previously used legacy `blueprint_scope` values
+  - `D:\geneagent\references\ontology\knowledge_item.v2.md`
+  - `D:\geneagent\references\ontology\knowledge_ontology_controls.md`
+  - `D:\geneagent\references\ontology\domain_scope_vocab.md`
+  - `D:\geneagent\references\analysis_domains\association_mapping_gwas_qtl.md`
+  - `D:\geneagent\references\analysis_domains\README.md`
+  - `D:\geneagent\docs\superpowers\plans\2026-06-06-knowledge-completion.md`
+  - `D:\geneagent\AGENTS.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added failing contract tests proving the old `BlueprintScope` enum still exposed only legacy values.
+  - [x] Added failing indexer/reference tests proving references still used legacy `blueprint_scope` metadata and legacy `grm` search filters needed compatibility handling.
+  - [x] Upgraded `BlueprintScope` to current module scopes aligned to the new knowledge/script layout.
+  - [x] Added compatibility normalization so legacy values `qc`, `pca`, `grm`, `genomic_prediction`, and `shared` map to current module scopes when encountered by code.
+  - [x] Migrated formal `references/*` `knowledge_item.v2.blueprint_scope` metadata away from legacy values.
+  - [x] Updated current ontology/schema/domain documentation and `AGENTS.md` so they no longer instruct curators to use old scope values.
+  - [x] Verified current references metadata contains no legacy `blueprint_scope` values.
+- not_yet_done_checklist:
+  - [ ] `domain_scope` remains a document/body-level scientific curation dimension, not yet a required Pydantic field.
+  - [ ] Literature cards that were broadly `shared` are now mostly `knowledge_governance`; future detailed curation can reassign individual cards to `association_mapping`, `population_genetics`, or other module scopes when evidence-specific cards are reviewed.
+  - [ ] The full knowledge base is still not complete; continue M02-M15 content expansion after this metadata alignment.
+  - [ ] Worktree remains dirty from multiple prior stages; preserve unrelated changes and do not attribute all dirty files to this scope-alignment task.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\contracts\test_knowledge.py::test_blueprint_scope_values_align_to_current_knowledge_modules tests\unit\contracts\test_knowledge.py::test_knowledge_item_v2_normalizes_legacy_blueprint_scope_values tests\unit\knowledge\test_indexing.py::test_hybrid_index_accepts_legacy_scope_filter_as_compatibility_alias tests\unit\knowledge\test_references_coverage.py::test_reference_metadata_uses_current_blueprint_scopes_only` -> first failed as expected, then passed after implementation.
+  - `rg -n 'blueprint_scope:\s*\"?(qc|pca|grm|genomic_prediction|shared)\"?\s*$' references` -> no matches.
+  - `rg -n 'BlueprintScope\.(QC|PCA|GRM|GENOMIC_PREDICTION|SHARED)|blueprint_scope == \"(qc|pca|grm|genomic_prediction|shared)\"|blueprint_scope=\"(qc|pca|grm|genomic_prediction|shared)\"' src tests` -> no matches.
+  - `rg -n 'blueprint_scope remains|current retrieval compatibility|qc`, `pca`, `grm`, `genomic_prediction`, or `shared`|has not yet expanded|until the code contract is extended|blueprint_scope=shared' docs references AGENTS.md README.md -g '!docs/HANDOFF.md'` -> no matches.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\contracts\test_knowledge.py tests\unit\knowledge tests\unit\test_documentation_alignment.py` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass (`100%`; skipped tests shown in pytest progress output).
+  - `git diff --check -- AGENTS.md references src tests docs\superpowers\plans\2026-06-06-knowledge-completion.md` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `pass`
+- known_risks:
+  - This is a metadata contract upgrade; it does not itself add missing scientific content for every knowledge module.
+  - Compatibility aliases keep old inputs readable, but formal references metadata should stay on current module scopes.
+  - Because many references files had metadata migrated, review should focus on whether each path-to-scope mapping is scientifically acceptable before final commit.
+- next_actions:
+  - Continue knowledge-base completion with M02 input bundle and sample identity content expansion under `genotype_processing`.
+  - Consider adding a future `domain_scope` Pydantic field only after references assets and report consumers are ready for a second metadata migration.
+  - Keep active goal open until all planned knowledge modules are content-complete and verified.
+- resume_first_command: `git status --short --branch`

@@ -101,7 +101,7 @@ def test_scheduler_retry_recovery_path_succeeds_after_transient_failure(tmp_path
     handle = adapter.submit(
         working_directory=str(workdir),
         resources=ResourceEstimate(cpus=4, memory_gb=16, walltime="02:00:00"),
-        command=["bash", "scripts/pca_pipeline/run_pca_pipeline.sh"],
+        command=["bash", "scripts/population_genetics/run_population_structure_diversity.sh"],
         task_id="task-perf-retry-001",
         run_id="run-perf-retry-001",
     )

@@ -5,7 +5,7 @@ knowledge_item.v2:
   doc_id: "sop_pca_pipeline_stage_v1"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "pca"
+  blueprint_scope: population_genetics
   evidence_level: "sop"
   source: "sop"
   updated_at: "2026-05-09T15:10:00+08:00"
@@ -14,7 +14,7 @@ knowledge_item.v2:
 
 ## Purpose
 - Standardize stage-by-stage operation for `pca_pipeline`.
-- Keep execution aligned with `scripts/pca_pipeline/run_pca_pipeline.sh` and population-structure safeguards.
+- Keep execution aligned with `scripts/population_genetics/run_population_structure_diversity.sh` and population-structure safeguards.
 
 ## Stage: ld_pruning
 

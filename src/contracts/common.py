@@ -37,6 +37,33 @@ class BreakerState(str, Enum):
 class SchedulerKind(str, Enum):
     SLURM = "slurm"
     PBS = "pbs"
+    SHELL = "shell"
+
+
+class ExecutionMode(str, Enum):
+    """Where and how execution is driven for scheduler-backed tasks."""
+
+    LOCAL_PREVIEW = "local_preview"
+    MANUAL_SBASE = "manual_sbase"
+    SSH_SHELL_TRUSTED = "ssh_shell_trusted"
+    SSH_SLURM_TRUSTED = "ssh_slurm_trusted"
+    HPC_LOCAL = "hpc_local"
+
+
+class SshAuthMode(str, Enum):
+    """How GeneAgent authenticates to a remote SSH execution plane."""
+
+    BATCH = "batch"
+    CONTROL_MASTER = "control_master"
+    PASSWORD_ENV = "password_env"
+
+
+class AutoRepairLevel(str, Enum):
+    """Automation level for retry and recovery decisions."""
+
+    OFF = "off"
+    LOW_RISK = "low_risk"
+    TRUSTED = "trusted"
 
 
 class JobState(str, Enum):

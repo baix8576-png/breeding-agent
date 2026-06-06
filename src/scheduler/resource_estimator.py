@@ -38,6 +38,12 @@ class ConservativeResourceEstimator:
         "qc_pipeline": ResourceEstimate(cpus=4, memory_gb=16, walltime="02:00:00", conservative_default=False),
         "pca_pipeline": ResourceEstimate(cpus=8, memory_gb=32, walltime="06:00:00", conservative_default=False),
         "grm_builder": ResourceEstimate(cpus=16, memory_gb=64, walltime="10:00:00", conservative_default=False),
+        "association_mapping_gwas": ResourceEstimate(
+            cpus=16,
+            memory_gb=64,
+            walltime="12:00:00",
+            conservative_default=False,
+        ),
         "gwas": ResourceEstimate(cpus=16, memory_gb=64, walltime="12:00:00", conservative_default=False),
         "genomic_prediction": ResourceEstimate(
             cpus=16,

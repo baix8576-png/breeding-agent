@@ -20,7 +20,7 @@ SCRIPTS = ROOT / "scripts"
 
 
 def test_v1_bio_blueprints_are_stable_and_emit_expected_contracts() -> None:
-    expected = {"qc_pipeline", "pca_pipeline", "grm_builder", "genomic_prediction"}
+    expected = {"qc_pipeline", "pca_pipeline", "grm_builder", "association_mapping_gwas", "genomic_prediction"}
     assert set(list_blueprints()) == expected
 
     for name in sorted(expected):
@@ -87,8 +87,8 @@ def test_non_bio_requests_clearly_skip_cluster_execution() -> None:
 @pytest.mark.parametrize(
     "script_path",
     [
-        SCRIPTS / "report_generator" / "run_report_generator.sh",
-        SCRIPTS / "report_generator" / "build_result_index.sh",
+        SCRIPTS / "reporting_audit" / "run_report_generator.sh",
+        SCRIPTS / "reporting_audit" / "build_result_index.sh",
     ],
 )
 def test_report_generator_critical_script_exists_and_has_help(
@@ -114,10 +114,14 @@ def test_report_generator_critical_script_exists_and_has_help(
 @pytest.mark.parametrize(
     ("request_text", "expected_script_suffix"),
     [
-        ("Run QC on sheep VCF with call-rate and MAF filters", "scripts/qc_pipeline/run_qc_pipeline.sh"),
-        ("Run PCA structure analysis on sheep VCF", "scripts/pca_pipeline/run_pca_pipeline.sh"),
-        ("Build genomic relationship matrix from genotype panel", "scripts/grm_builder/run_grm_builder.sh"),
-        ("Run genomic prediction using sheep VCF and phenotype for GWAS", "scripts/genomic_prediction/run_genomic_prediction.sh"),
+        ("Run QC on sheep VCF with call-rate and MAF filters", "scripts/genotype_processing/run_genotype_qc.sh"),
+        ("Run PCA structure analysis on sheep VCF", "scripts/population_genetics/run_population_structure_diversity.sh"),
+        ("Build genomic relationship matrix from genotype panel", "scripts/quantitative_genetics/run_relationship_matrix.sh"),
+        (
+            "Run genomic prediction using sheep VCF and phenotype",
+            "scripts/quantitative_genetics/run_breeding_value_prediction.sh",
+        ),
+        ("Run GWAS using sheep VCF and phenotype", "scripts/association_mapping/run_gwas.sh"),
     ],
 )
 def test_v15_bio_main_chains_emit_artifact_index_report_summary_and_audit_trace(

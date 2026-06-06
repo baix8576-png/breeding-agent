@@ -177,7 +177,7 @@ def _qc_blueprint() -> PipelineBlueprint:
         stages=stages,
         outputs=outputs,
         assets={
-            "scripts": ["scripts/qc_pipeline/", "scripts/report_generator/"],
+            "scripts": ["scripts/genotype_processing/", "scripts/reporting_audit/"],
             "references": [
                 "references/input_specs/",
                 "references/qc_rules/",
@@ -347,7 +347,7 @@ def _pca_blueprint() -> PipelineBlueprint:
         stages=stages,
         outputs=outputs,
         assets={
-            "scripts": ["scripts/pca_pipeline/", "scripts/report_generator/"],
+            "scripts": ["scripts/population_genetics/", "scripts/reporting_audit/"],
             "references": [
                 "references/input_specs/",
                 "references/structure_analysis/",
@@ -477,7 +477,7 @@ def _grm_blueprint() -> PipelineBlueprint:
         stages=stages,
         outputs=outputs,
         assets={
-            "scripts": ["scripts/grm_builder/", "scripts/report_generator/"],
+            "scripts": ["scripts/quantitative_genetics/", "scripts/reporting_audit/"],
             "references": [
                 "references/input_specs/",
                 "references/structure_analysis/",
@@ -492,6 +492,144 @@ def _grm_blueprint() -> PipelineBlueprint:
         ],
         interpretation_notes=[
             "Matrix outputs should be validated for symmetry and sample-order consistency before downstream use.",
+        ],
+        ready_for_gate="design_ready",
+    )
+
+
+def _gwas_blueprint() -> PipelineBlueprint:
+    stages = [
+        {
+            "id": "cohort_alignment",
+            "title": "GWAS Cohort Alignment",
+            "kind": "input",
+            "objective": "Align genotype, phenotype, and covariate roles before association testing.",
+            "required_inputs": ["genotype_dataset", "phenotype_table"],
+            "optional_inputs": ["covariate_table"],
+            "checks": [
+                "Confirm sample IDs are stable across genotype and phenotype tables.",
+                "Carry population-structure covariates or reviewed PCs when required.",
+            ],
+            "outputs": [
+                _artifact(
+                    "gwas_cohort_alignment_manifest",
+                    "results/association/gwas/cohort_alignment.json",
+                    "json",
+                    "Manifest for GWAS sample alignment, trait, covariate, and genotype inputs.",
+                )
+            ],
+        },
+        {
+            "id": "association_model",
+            "title": "Association Model Spec",
+            "kind": "model",
+            "objective": "Declare the PLINK2 GLM association model, phenotype table, and covariate policy.",
+            "required_inputs": ["gwas_cohort_alignment_manifest"],
+            "optional_inputs": ["covariate_table"],
+            "checks": [
+                "Record covariate inclusion rather than silently choosing PCs.",
+                "Flag missing phenotype or covariate files before execution.",
+            ],
+            "outputs": [
+                _artifact(
+                    "gwas_model_spec",
+                    "results/association/gwas/model_spec.json",
+                    "json",
+                    "Structured GWAS model spec for PLINK2 --glm execution.",
+                )
+            ],
+        },
+        {
+            "id": "gwas_scan",
+            "title": "GWAS Scan",
+            "kind": "association",
+            "objective": "Run bounded PLINK2 --glm association testing and index primary result files.",
+            "required_inputs": ["gwas_model_spec"],
+            "optional_inputs": [],
+            "checks": [
+                "Use explicit thread and memory arguments for PLINK2.",
+                "Do not interpret significant loci without multiple-testing and structure review.",
+            ],
+            "outputs": [
+                _artifact(
+                    "gwas_results_index",
+                    "results/association/gwas/README.md",
+                    "markdown",
+                    "Index of GWAS result files produced by PLINK2.",
+                ),
+                _artifact(
+                    "gwas_metric_table",
+                    "results/association/gwas/metrics.tsv",
+                    "tsv",
+                    "Basic GWAS run metrics such as tested-variant row counts.",
+                ),
+            ],
+        },
+        {
+            "id": "gwas_report",
+            "title": "GWAS Report",
+            "kind": "report",
+            "objective": "Bundle association artifacts, caveats, and downstream interpretation boundaries.",
+            "required_inputs": ["gwas_results_index", "gwas_metric_table"],
+            "optional_inputs": [],
+            "checks": [
+                "Keep candidate-gene and functional interpretation as a downstream reviewed step.",
+            ],
+            "outputs": [
+                _artifact(
+                    "gwas_summary_report",
+                    "reports/gwas_summary.md",
+                    "markdown",
+                    "Human-readable summary of GWAS execution and interpretation caveats.",
+                )
+            ],
+        },
+    ]
+    outputs = [artifact for stage in stages for artifact in stage["outputs"]]
+    return PipelineBlueprint(
+        name="association_mapping_gwas",
+        summary="Association mapping workflow for GWAS scans and report packaging.",
+        focus=PIPELINE_FOCUS["association_mapping_gwas"],
+        input_requirements=[
+            {
+                "role": "genotype_dataset",
+                "accepted_types": [InputDataType.VCF.value, InputDataType.PLINK_BED.value],
+                "required": True,
+                "description": "Primary genotype dataset used for marker-trait association testing.",
+            },
+            {
+                "role": "phenotype_table",
+                "accepted_types": [InputDataType.PHENOTYPE_TABLE.value, InputDataType.TEXT_TABLE.value],
+                "required": True,
+                "description": "Trait table defining response variables and sample IDs.",
+            },
+            {
+                "role": "covariate_table",
+                "accepted_types": [InputDataType.COVARIATE_TABLE.value, InputDataType.TEXT_TABLE.value],
+                "required": False,
+                "description": "Optional covariates such as PCs, batch, herd, or environmental factors.",
+            },
+        ],
+        stages=stages,
+        outputs=outputs,
+        assets={
+            "scripts": ["scripts/association_mapping/", "scripts/reporting_audit/"],
+            "references": [
+                "references/input_specs/",
+                "references/structure_analysis/",
+                "references/modeling_guides/",
+                "references/report_templates/diagnostic_report_template.md",
+            ],
+        },
+        report_sections=[
+            "Trait and cohort scope",
+            "Association model",
+            "GWAS artifact inventory",
+            "Multiple-testing and stratification caveats",
+        ],
+        interpretation_notes=[
+            "GWAS outputs should not be treated as causal claims without fine mapping and functional validation.",
+            "Population structure and relatedness adjustment must be reviewed before locus interpretation.",
         ],
         ready_for_gate="design_ready",
     )
@@ -560,13 +698,6 @@ def _genomic_prediction_blueprint() -> PipelineBlueprint:
                     "results/prediction/predictions.tsv",
                     "tsv",
                     "EBV or GEBV prediction table.",
-                ),
-                _artifact(
-                    "gwas_results_index",
-                    "results/prediction/gwas/README.md",
-                    "markdown",
-                    "Index of GWAS result files produced by PLINK2.",
-                    required=False,
                 ),
             ],
         },
@@ -657,9 +788,8 @@ def _genomic_prediction_blueprint() -> PipelineBlueprint:
         outputs=outputs,
         assets={
             "scripts": [
-                "scripts/grm_builder/",
-                "scripts/genomic_prediction/",
-                "scripts/report_generator/",
+                "scripts/quantitative_genetics/",
+                "scripts/reporting_audit/",
             ],
             "references": [
                 "references/input_specs/",
@@ -687,6 +817,7 @@ _BLUEPRINT_BUILDERS = {
     "qc_pipeline": _qc_blueprint,
     "pca_pipeline": _pca_blueprint,
     "grm_builder": _grm_blueprint,
+    "association_mapping_gwas": _gwas_blueprint,
     "genomic_prediction": _genomic_prediction_blueprint,
 }
 

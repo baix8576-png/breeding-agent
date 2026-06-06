@@ -45,6 +45,10 @@ def envelope_from_submit_preview(payload: SubmitPreviewRequest) -> RuntimeReques
         dry_run_completed=payload.dry_run_completed,
         approval=payload.approval.model_dump(mode="json") if payload.approval is not None else None,
         outbound_payload=payload.outbound_payload,
+        execution_mode=payload.execution_mode,
+        remote_profile_name=payload.remote_profile_name,
+        watch=payload.watch,
+        auto_continue=payload.auto_continue,
     )
 
 
@@ -58,6 +62,10 @@ def envelope_from_submit(payload: SubmitRequest) -> RuntimeRequestEnvelopeV2:
         dry_run_completed=payload.dry_run_completed,
         approval=payload.approval.model_dump(mode="json") if payload.approval is not None else None,
         outbound_payload=payload.outbound_payload,
+        execution_mode=payload.execution_mode,
+        remote_profile_name=payload.remote_profile_name,
+        watch=payload.watch,
+        auto_continue=payload.auto_continue,
     )
 
 

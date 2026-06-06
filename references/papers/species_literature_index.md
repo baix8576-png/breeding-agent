@@ -8,7 +8,7 @@ knowledge_item.v2:
   doc_id: "index_species_cattle_literature"
   version: "v2"
   species: "bos_taurus"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "expert_opinion"
   source: "internal_note"
   updated_at: "2026-05-26T20:20:00+08:00"
@@ -26,7 +26,7 @@ knowledge_item.v2:
   doc_id: "index_species_pig_literature"
   version: "v2"
   species: "sus_scrofa"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "expert_opinion"
   source: "internal_note"
   updated_at: "2026-05-26T20:20:00+08:00"
@@ -44,7 +44,7 @@ knowledge_item.v2:
   doc_id: "index_species_poultry_literature"
   version: "v2"
   species: "gallus_gallus"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "expert_opinion"
   source: "internal_note"
   updated_at: "2026-05-26T20:20:00+08:00"
@@ -62,7 +62,7 @@ knowledge_item.v2:
   doc_id: "index_species_small_ruminant_literature"
   version: "v2"
   species: "small_ruminants"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "expert_opinion"
   source: "internal_note"
   updated_at: "2026-05-26T20:20:00+08:00"
@@ -80,7 +80,7 @@ knowledge_item.v2:
   doc_id: "index_species_aquaculture_literature"
   version: "v2"
   species: "aquaculture_multi_species"
-  blueprint_scope: "shared"
+  blueprint_scope: knowledge_governance
   evidence_level: "expert_opinion"
   source: "internal_note"
   updated_at: "2026-05-26T20:20:00+08:00"

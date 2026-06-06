@@ -4,8 +4,10 @@ GeneAgent 是面向动物遗传育种与群体基因组分析场景的 Agent 工
 
 系统框架总览（单页真相源）：
 - `docs/v2_system_map.md`
+- `docs/current_workflow_file_map.md`
 
 ## V2 Operational Guides
+- `docs/current_workflow_file_map.md`: current workflow, file responsibilities, blueprint/script/domain alignment, and execution boundaries.
 - `docs/knowledge_update_workflow.md`: knowledge asset ingest/update workflow and evidence-chain regression checks.
 - `docs/pipeline_pack_integration_guide.md`: blueprint pack contract and integration checklist.
 - `docs/tool_manifest_authoring_spec.md`: tool manifest schema/rules and validation checklist.
@@ -58,7 +60,8 @@ python -m api.app
 - V2 是当前完成阶段，继承 V1.5 核心执行闭环，并补齐稳定 API、console、observability、audit export、production/release governance。
 - V1.5 是过渡增强基线，用于描述四条生信主链、调度、报告、审计、知识检索等执行内核。
 - 顶层分流：`bioinformatics / system / knowledge`
-- 生信主链蓝图：`qc / pca / grm / genomic_prediction`
+- 生信兼容蓝图：`qc / pca / grm / gwas / genomic_prediction`
+- 专业脚本域：`genotype_processing / population_genetics / quantitative_genetics / association_mapping / reporting_audit`
 - 主链一级输入：`request_text + working_directory + InputBundle`
 - 主链能力：`plan -> dry-run -> submit -> poll -> artifact/report -> audit/memory`
 - 非生信支路：`intake -> local retrieval -> answer blueprint`（不进集群）
@@ -91,7 +94,7 @@ flowchart TD
 
     D -->|bioinformatics| B1["Input Validation\nInputBundle + consistency checks"]
     B1 --> B2["Local-first RAG\nreferences first"]
-    B2 --> B3["Blueprint Selection\nqc / pca / grm / genomic_prediction"]
+    B2 --> B3["Blueprint Selection\nqc / pca / grm / gwas / genomic_prediction"]
     B3 --> B4["Resource + Safety Gate\ndry-run + manual confirmation + circuit breaker"]
     B4 --> B5["Execution\nbash wrapper + scheduler script + submit"]
     B5 --> B6["Poll + Recovery\nstate tracking + retry strategy"]
@@ -114,7 +117,7 @@ flowchart TD
 ## V2 请求分流判定表（继承 V1.5 基线）
 | 请求类型 | 典型目标 | 是否进集群 | 关键产物 |
 |---|---|---|---|
-| `bioinformatics` | `qc/pca/grm/genomic_prediction` | 是 | `scheduler script`、`job_id`、`artifact/report_index`、`audit/memory` |
+| `bioinformatics` | `qc/pca/grm/gwas/genomic_prediction` | 是 | `scheduler script`、`job_id`、`artifact/report_index`、`audit/memory` |
 | `system` | 调度/环境/错误诊断 | 否（默认） | `diagnostic preview`、修复建议、审计记录 |
 | `knowledge` | 方法咨询/方案解释 | 否 | `answer blueprint`、引用依据、审计记录 |
 
@@ -157,7 +160,7 @@ flowchart TD
 2. `Intent + Scope`：识别 `bioinformatics / system / knowledge`
 3. `Input Validation`：原始路径归一化为 `InputBundle`，校验 VCF/PLINK/BAM/表型/协变量/谱系一致性
 4. `Local-first RAG`：优先检索 `references/*`、本地 SOP、模板和历史规范
-5. `Blueprint Selection`：严格绑定 `qc / pca / grm / genomic_prediction`，输出阶段清单与产物契约
+5. `Blueprint Selection`：严格绑定 `qc / pca / grm / gwas / genomic_prediction`，输出阶段清单与产物契约
 6. `Resource + Safety Gate`：资源估算、dry-run 预览、人工确认项、熔断条件
 7. `Execution`：生成 Bash wrapper + scheduler script，执行提交、轮询与失败恢复
 8. `Artifact + Report`：收集结果/图表/日志，生成报告索引与解释摘要
@@ -225,12 +228,17 @@ API 重点路由（V1 兼容）：
 
 API 重点路由（V2 稳定）：
 - `POST /v2/tasks/draft-plan`
+- `POST /v2/tasks/validate-inputs`
+- `POST /v2/tasks/review-action`
 - `POST /v2/tasks/dry-run`
 - `POST /v2/tasks/submit-preview`
 - `POST /v2/tasks/submit`
 - `POST /v2/tasks/poll-explain`
 - `POST /v2/tasks/report`
 - `POST /v2/tasks/diagnostic`
+- `POST /v2/tasks/remote-check`
+- `POST /v2/tasks/watch-run`
+- `POST /v2/tasks/resume-run`
 - `POST /v2/tasks/audit-export`
 
 API 控制平面（V2）：
@@ -248,7 +256,7 @@ API 控制平面（V2）：
 - `python -m pytest -q` 全绿
 - `python -m compileall src tests` 通过
 - 生信请求可走 `dry-run/submit/poll` 闭环
-- `qc / pca / grm / genomic_prediction` 均产出结构化计划、脚本与产物索引（含 `report_index`）
+- `qc / pca / grm / gwas / genomic_prediction` 均产出结构化计划、脚本与产物索引（含 `report_index`）
 - non-bio 请求明确“不进集群”
 
 ## 目录与架构
@@ -256,15 +264,15 @@ API 控制平面（V2）：
 禁止通过平行源码目录进行版本分叉（如 `src_v2/`、`new_src/` 等）。
 
 ## 运行环境边界
-- 主要部署平台：Linux HPC 集群（登录节点 + 计算节点）
-- 队列系统：`SLURM / PBS / SGE`
-- 文件系统：POSIX 兼容（支持大文件与高并发 I/O）
-- 网络访问：内网环境，数据不出集群
-- 环境一致性：路径统一使用 `/`，脚本 shebang 使用 `#!/usr/bin/env bash`，编码统一 UTF-8，换行统一 LF
+- 主要执行平台：普通 Linux 服务器（PC Agent 通过 SSH 控制）优先；Linux HPC/SLURM 集群为可选后端。
+- 执行后端：普通服务器使用 `ssh_shell_trusted` + Bash/nohup；HPC 使用 `ssh_slurm_trusted` + `sbatch/squeue/sacct`；SBASE/Xshell/WinSCP 仅作人工兜底。
+- 文件系统：POSIX 兼容（支持大文件与高并发 I/O）。
+- 网络访问：内网环境，原始实体数据不出本地/服务器计算环境。
+- 环境一致性：路径统一使用 `/`，脚本 shebang 使用 `#!/usr/bin/env bash`，编码统一 UTF-8，换行统一 LF。
 - Windows 开发注意事项（如必须使用）：
-  - 必须通过 WSL2 执行所有生信工具调用和调度脚本
+  - 生信工具和调度脚本必须在 WSL2 或远端 Linux 执行，不能仅在 PowerShell 验证。
   - Git 建议配置：`git config --global core.autocrlf input`
-  - 测试必须在 WSL2 环境验证，不能仅在 PowerShell 验证
+  - Agent 控制面可在 Windows 运行；真实生信执行面必须是受控 Linux/SSH 后端。
 
 ## 安全边界
 - 原始实体数据（VCF/BAM/FASTQ/FASTA）不得离开本地计算环境
@@ -285,6 +293,27 @@ API 控制平面（V2）：
 - `V1.5`：通向 V2 的过渡增强基线（PBS 兼容、report/diagnostic、manifest 体系化、知识检索补强）
 - `V2`：当前完成阶段，包含 V1.5 核心闭环 + versioning/console/observability/audit export/release governance
 - `V2 hardening / V2.x expansion`：后续聚焦插件化工具生态、增强记忆系统、更广泛多组学模板、生产级权限与签名边界
+
+## Trusted Remote Execution
+- Safe startup default: `local_preview`.
+- Ordinary Linux server delivery target: set `GENEAGENT_EXECUTION_MODE=ssh_shell_trusted` and `GENEAGENT_SCHEDULER_REAL_EXECUTION_ENABLED=true` only after `remote-check` passes.
+- HPC/SLURM delivery target: set `GENEAGENT_EXECUTION_MODE=ssh_slurm_trusted` and `GENEAGENT_SCHEDULER_REAL_EXECUTION_ENABLED=true` only when `sbatch/squeue/sacct` are available and `remote-check` passes.
+- Deployment shape: the Agent runs on the personal computer as the control plane; the Linux server or HPC remains the execution plane.
+- Credential boundary: GeneAgent never stores passwords or private keys. Default SSH uses `ssh -o BatchMode=yes` with the operator's existing SSH agent/key setup.
+- Password-account fallback: prefer `GENEAGENT_HPC_SSH_AUTH_MODE=control_master`, run `geneagent remote-session-doctor` to check local readiness, then run `geneagent remote-session-open` or `geneagent remote-session-smoke --open-session` and type the server password into the OpenSSH prompt once. If Windows OpenSSH ControlMaster is unavailable, use `geneagent remote-password-set` to store the password only in local ignored `.env`, switch to `GENEAGENT_HPC_SSH_AUTH_MODE=password_env`, then run `remote-check`, `remote-smoke`, `submit`, `watch-run`, and `resume-run` through Paramiko.
+- CLI-only operator-auth commands: `remote-session-doctor`, `remote-session-open`, `remote-session-check`, `remote-session-close`, `remote-session-smoke`, `remote-password-set`, and fixed-command `remote-smoke`. These touch local SSH session or local ignored `.env` state and are intentionally not exposed as API routes.
+- If `remote-session-doctor` reports `ssh_control_dir_not_writable` on Windows, set `GENEAGENT_HPC_SSH_CONTROL_PATH` to an absolute user-writable local path, for example under `%TEMP%\geneagent_ssh\default.sock`, then rerun the doctor command.
+- `ssh_shell_trusted` writes each run under `<remote_work_root>/<task_id>/<run_id>/` with `run.sh`, `logs/stdout.log`, `logs/stderr.log`, and `state/pid|done|failed|exit_code`.
+- Ordinary-server writes are constrained to the configured `GENEAGENT_HPC_WORK_ROOT`; set `GENEAGENT_REMOTE_ALLOWED_WRITE_ROOTS=["/data2/<user>"]` so `remote-check` and submit reject accidental writes outside your user folder.
+- For the current 96-core / 1 TB ordinary server, `ssh_shell_trusted` defaults to guarded production caps: `GENEAGENT_REMOTE_SHELL_CPU_CAP=32`, `GENEAGENT_REMOTE_SHELL_MEMORY_GB_CAP=256`, `GENEAGENT_REMOTE_SHELL_WALLTIME_CAP=24:00:00`, and `GENEAGENT_REMOTE_SHELL_MAX_CONCURRENT_RUNS=2`.
+- Real ordinary-server submit is blocked before SSH materialization when these caps are exceeded; generated `run.sh` also exports common thread-limit variables and applies `ulimit` guards when `GENEAGENT_REMOTE_SHELL_PROCESS_LIMITS_ENABLED=true`.
+- `ssh_slurm_trusted` with real execution disabled still returns a synthetic planning handle; it does not call `sbatch`.
+- Xshell/WinSCP/SBASE are manual fallback tools only; GeneAgent does not click GUI clients, store passwords, or submit through web UI automation.
+- Local run state is stored under `GENEAGENT_LOCAL_STATE_ROOT` as `.geneagent/runs/<task_id>/<run_id>/state.json` unless the operator overrides the path.
+- CLI/API remote execution surface: `remote-check --execution-mode ssh_shell_trusted`, `watch-run`, `resume-run`, plus `execution_mode`, `remote_profile_name`, `watch`, and `auto_continue` on submit-preview/submit.
+- Automatic recovery is intentionally narrow: creating log/state directories inside the configured remote work root, retrying transient SSH/SLURM failures, safe sidecars, and stage continuation only after output validation.
+- Circuit breakers still win over automation: delete/overwrite results, sample filtering changes, path boundary violations, unknown tools, resource caps, repeated failures, lost shell PID without state sentinels, and data egress require manual review or block execution.
+- Ordinary Linux servers do not enforce queue-side CPU/memory/walltime limits; GeneAgent resource caps are pre-submit gates plus script-level process guards in `ssh_shell_trusted`.
 
 ## 声明
 GeneAgent 是流程编排与研究辅助系统，不替代研究者做最终生物学解释与育种决策。

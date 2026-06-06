@@ -141,7 +141,7 @@ def test_local_retriever_returns_traceable_knowledge_chunks() -> None:
     assert traceable_hit.chunk_id is not None
     assert traceable_hit.section is not None
     assert traceable_hit.page_or_anchor is not None
-    assert traceable_hit.blueprint_scope == "grm"
+    assert traceable_hit.blueprint_scope == "quantitative_genetics"
     assert traceable_hit.evidence_level == "peer_reviewed"
     assert "bm25" in traceable_hit.retrieval_channels
     assert any(reason.startswith("doc_id:paper_grm_vanraden_2008") for reason in traceable_hit.hit_reasons)

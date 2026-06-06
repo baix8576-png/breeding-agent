@@ -23,16 +23,24 @@ class PipelineExecutionPlan(BaseModel):
 
 
 _PIPELINE_SCRIPT = {
-    "qc_pipeline": "qc_pipeline/run_qc_pipeline.sh",
-    "pca_pipeline": "pca_pipeline/run_pca_pipeline.sh",
-    "grm_builder": "grm_builder/run_grm_builder.sh",
-    "genomic_prediction": "genomic_prediction/run_genomic_prediction.sh",
+    "qc_pipeline": "genotype_processing/run_genotype_qc.sh",
+    "pca_pipeline": "population_genetics/run_population_structure_diversity.sh",
+    "grm_builder": "quantitative_genetics/run_relationship_matrix.sh",
+    "genomic_prediction": "quantitative_genetics/run_breeding_value_prediction.sh",
+    "association_mapping_gwas": "association_mapping/run_gwas.sh",
 }
 
 _PIPELINE_ALIASES = {
+    "genotype_qc": "qc_pipeline",
     "population_structure": "pca_pipeline",
+    "population_structure_diversity": "pca_pipeline",
+    "relationship_matrix": "grm_builder",
     "grm_construction": "grm_builder",
+    "breeding_value_prediction": "genomic_prediction",
     "genomic_selection": "genomic_prediction",
+    "association_mapping": "association_mapping_gwas",
+    "gwas": "association_mapping_gwas",
+    "gwas_qtl": "association_mapping_gwas",
 }
 
 _TARGET_ALIASES = {
@@ -41,19 +49,24 @@ _TARGET_ALIASES = {
     "relationship_matrix": ["grm", "kinship"],
     "breeding_value_prediction": ["genomic_prediction"],
     "bayesian_prediction": ["genomic_prediction"],
+    "association_mapping": ["gwas"],
+    "association_mapping_gwas": ["gwas"],
+    "gwas_qtl": ["gwas"],
 }
 
 _DEFAULT_TARGETS = {
     "qc_pipeline": ["qc", "sample_qc", "variant_qc"],
     "pca_pipeline": ["pca", "population_structure", "ld", "roh", "fst", "pi", "tajima_d"],
     "grm_builder": ["grm", "kinship"],
-    "genomic_prediction": ["gwas", "heritability", "genomic_prediction"],
+    "association_mapping_gwas": ["gwas"],
+    "genomic_prediction": ["heritability", "genomic_prediction"],
 }
 
 _PIPELINE_UMBRELLA_TARGET = {
     "qc_pipeline": "qc",
     "pca_pipeline": "pca",
     "grm_builder": "grm",
+    "association_mapping_gwas": "gwas",
     "genomic_prediction": "genomic_prediction",
 }
 

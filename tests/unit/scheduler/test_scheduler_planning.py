@@ -15,7 +15,7 @@ def test_slurm_submission_plan_returns_structured_dry_run_metadata() -> None:
     adapter = SlurmSchedulerAdapter()
 
     plan = adapter.build_submission_plan(
-        command=["bash", "scripts/pca_pipeline/run_pca.sh"],
+        command=["bash", "scripts/population_genetics/run_population_structure_diversity.sh"],
         working_directory="/cluster/work/demo",
         resources=ResourceEstimate(cpus=8, memory_gb=24, walltime="02:30:00"),
         task_id="task-scheduler-001",
@@ -339,14 +339,14 @@ def test_slurm_real_submit_is_idempotent_for_same_task_and_run(tmp_path) -> None
     first = adapter.submit(
         working_directory=str(tmp_path),
         resources=ResourceEstimate(cpus=4, memory_gb=8, walltime="01:00:00"),
-        command=["bash", "scripts/pca_pipeline/run_pca_pipeline.sh"],
+        command=["bash", "scripts/population_genetics/run_population_structure_diversity.sh"],
         task_id="task-idempotent-001",
         run_id="run-idempotent-001",
     )
     second = adapter.submit(
         working_directory=str(tmp_path),
         resources=ResourceEstimate(cpus=4, memory_gb=8, walltime="01:00:00"),
-        command=["bash", "scripts/pca_pipeline/run_pca_pipeline.sh"],
+        command=["bash", "scripts/population_genetics/run_population_structure_diversity.sh"],
         task_id="task-idempotent-001",
         run_id="run-idempotent-001",
     )
@@ -371,7 +371,7 @@ def test_slurm_real_submit_idempotency_conflict_rejects_different_command(tmp_pa
     adapter.submit(
         working_directory=str(tmp_path),
         resources=ResourceEstimate(cpus=4, memory_gb=8, walltime="01:00:00"),
-        command=["bash", "scripts/qc_pipeline/run_qc_pipeline.sh"],
+        command=["bash", "scripts/genotype_processing/run_genotype_qc.sh"],
         task_id="task-idempotent-002",
         run_id="run-idempotent-002",
     )
@@ -380,7 +380,7 @@ def test_slurm_real_submit_idempotency_conflict_rejects_different_command(tmp_pa
         adapter.submit(
             working_directory=str(tmp_path),
             resources=ResourceEstimate(cpus=4, memory_gb=8, walltime="01:00:00"),
-            command=["bash", "scripts/pca_pipeline/run_pca_pipeline.sh"],
+            command=["bash", "scripts/population_genetics/run_population_structure_diversity.sh"],
             task_id="task-idempotent-002",
             run_id="run-idempotent-002",
         )
@@ -398,7 +398,7 @@ def test_scheduler_quota_gate_blocks_plan_when_limits_exceeded() -> None:
     )
 
     plan = adapter.build_submission_plan(
-        command=["bash", "scripts/grm_builder/run_grm_builder.sh"],
+        command=["bash", "scripts/quantitative_genetics/run_relationship_matrix.sh"],
         working_directory="/cluster/work/demo",
         resources=ResourceEstimate(cpus=8, memory_gb=64, walltime="06:00:00"),
         task_id="task-quota-block-001",
@@ -420,7 +420,7 @@ def test_scheduler_quota_gate_warns_when_usage_near_limit() -> None:
     )
 
     plan = adapter.build_submission_plan(
-        command=["bash", "scripts/qc_pipeline/run_qc_pipeline.sh"],
+        command=["bash", "scripts/genotype_processing/run_genotype_qc.sh"],
         working_directory="/cluster/work/demo",
         resources=ResourceEstimate(cpus=8, memory_gb=32, walltime="06:00:00"),
         task_id="task-quota-warn-001",

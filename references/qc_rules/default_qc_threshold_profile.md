@@ -7,7 +7,7 @@ knowledge_item.v2:
   doc_id: qc_rule_missingness_thresholds
   version: v2
   species: multi_species
-  blueprint_scope: qc
+  blueprint_scope: genotype_processing
   evidence_level: expert_opinion
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -31,7 +31,7 @@ knowledge_item.v2:
   doc_id: qc_rule_maf_hwe_policy
   version: v2
   species: multi_species
-  blueprint_scope: qc
+  blueprint_scope: genotype_processing
   evidence_level: expert_opinion
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -55,7 +55,7 @@ knowledge_item.v2:
   doc_id: qc_rule_heterozygosity_inbreeding
   version: v2
   species: multi_species
-  blueprint_scope: qc
+  blueprint_scope: genotype_processing
   evidence_level: expert_opinion
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -79,7 +79,7 @@ knowledge_item.v2:
   doc_id: qc_rule_variant_exclusion_policy
   version: v2
   species: multi_species
-  blueprint_scope: qc
+  blueprint_scope: genotype_processing
   evidence_level: expert_opinion
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -103,7 +103,7 @@ knowledge_item.v2:
   doc_id: qc_rule_vcf_plink_bam_inputs
   version: v2
   species: multi_species
-  blueprint_scope: qc
+  blueprint_scope: genotype_processing
   evidence_level: sop
   source: sop
   updated_at: 2026-05-26T00:00:00Z
@@ -127,7 +127,7 @@ knowledge_item.v2:
   doc_id: qc_rule_sample_anomaly_review
   version: v2
   species: multi_species
-  blueprint_scope: qc
+  blueprint_scope: genotype_processing
   evidence_level: expert_opinion
   source: sop
   updated_at: 2026-05-26T00:00:00Z

@@ -1,13 +1,16 @@
-"""Shared data contracts used across GeneAgent V1."""
+"""Shared data contracts used across GeneAgent V2."""
 
 from contracts.common import (
+    AutoRepairLevel,
     BreakerState,
+    ExecutionMode,
     GateDecision,
     GateStatus,
     JobState,
     RiskLevel,
     RoleOutputHeader,
     SchedulerKind,
+    SshAuthMode,
     TaskDomain,
 )
 from contracts.execution import (
@@ -32,6 +35,14 @@ from contracts.knowledge import (
     KnowledgeItemV2,
     KnowledgeSource,
 )
+from contracts.remote_execution import (
+    ManualSubmitCard,
+    RemoteCheckResult,
+    RemoteExecutionProfile,
+    RemoteSmokeResult,
+    RunStageRecord,
+    RunState,
+)
 from contracts.envelope import ExecutionIntent, RuntimeRequestEnvelopeV2
 from contracts.tasks import ResourceEstimate, UserRequest
 from contracts.validation import (
@@ -47,6 +58,8 @@ from contracts.validation import (
 
 __all__ = [
     "BreakerState",
+    "AutoRepairLevel",
+    "ExecutionMode",
     "ExecutionArtifacts",
     "ExecutionRequest",
     "AuditBundleExport",
@@ -58,17 +71,24 @@ __all__ = [
     "KnowledgeIndexManifest",
     "KnowledgeItemV2",
     "KnowledgeSource",
+    "ManualSubmitCard",
     "JobHandle",
     "JobState",
     "PipelineSpec",
     "BlueprintScope",
     "ResourceEstimate",
     "RiskLevel",
+    "RemoteCheckResult",
+    "RemoteExecutionProfile",
+    "RemoteSmokeResult",
     "RoleOutputHeader",
     "RunContext",
+    "RunStageRecord",
+    "RunState",
     "SafetyReviewRequest",
     "SafetyReviewResult",
     "SchedulerKind",
+    "SshAuthMode",
     "SubmissionPreview",
     "SubmissionSpec",
     "TaskDomain",

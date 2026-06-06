@@ -7,7 +7,7 @@ knowledge_item.v2:
   doc_id: playbook_qc_defaults
   version: v2
   species: multi_species
-  blueprint_scope: qc
+  blueprint_scope: genotype_processing
   evidence_level: expert_opinion
   source: parameter_playbook
   updated_at: 2026-05-26T00:00:00Z
@@ -33,7 +33,7 @@ knowledge_item.v2:
   doc_id: playbook_pca_component_policy
   version: v2
   species: multi_species
-  blueprint_scope: pca
+  blueprint_scope: population_genetics
   evidence_level: expert_opinion
   source: parameter_playbook
   updated_at: 2026-05-26T00:00:00Z
@@ -57,7 +57,7 @@ knowledge_item.v2:
   doc_id: playbook_grm_resource_baseline
   version: v2
   species: multi_species
-  blueprint_scope: grm
+  blueprint_scope: quantitative_genetics
   evidence_level: expert_opinion
   source: parameter_playbook
   updated_at: 2026-05-26T00:00:00Z
@@ -82,7 +82,7 @@ knowledge_item.v2:
   doc_id: playbook_genomic_prediction_cv_policy
   version: v2
   species: multi_species
-  blueprint_scope: genomic_prediction
+  blueprint_scope: quantitative_genetics
   evidence_level: expert_opinion
   source: parameter_playbook
   updated_at: 2026-05-26T00:00:00Z
@@ -107,7 +107,7 @@ knowledge_item.v2:
   doc_id: playbook_scheduler_resource_presets
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: knowledge_governance
   evidence_level: sop
   source: parameter_playbook
   updated_at: 2026-05-26T00:00:00Z
@@ -133,7 +133,7 @@ knowledge_item.v2:
   doc_id: playbook_report_artifact_retention
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: knowledge_governance
   evidence_level: sop
   source: parameter_playbook
   updated_at: 2026-05-26T00:00:00Z

@@ -15,6 +15,7 @@ from contracts.knowledge import (
     KnowledgeChunk,
     KnowledgeIndexManifest,
     KnowledgeItemV2,
+    normalize_blueprint_scope_value,
 )
 
 _TOKEN_PATTERN = re.compile(r"[A-Za-z0-9_]+|[\u4e00-\u9fff]+")
@@ -373,7 +374,7 @@ def _normalize_scope(scope: BlueprintScope | str | None) -> BlueprintScope | Non
         return None
     if isinstance(scope, BlueprintScope):
         return scope
-    return BlueprintScope(scope)
+    return BlueprintScope(normalize_blueprint_scope_value(scope))
 
 
 def _slugify(value: str) -> str:

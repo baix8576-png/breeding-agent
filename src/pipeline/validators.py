@@ -611,7 +611,7 @@ class InputValidator:
             ]
         if valid:
             return [
-                "Proceed to blueprint selection with strict binding among qc/pca/grm/genomic_prediction.",
+                "Proceed to blueprint selection with strict binding among qc/pca/grm/gwas/genomic_prediction.",
                 "Keep phenotype/covariate/pedigree sidecars aligned with the same sample namespace before execution.",
             ]
         if any(issue.code in {"plink_trio_incomplete", "consistency_plink_trio_consistency"} for issue in issues):

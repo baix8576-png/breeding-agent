@@ -7,7 +7,7 @@ knowledge_item.v2:
   doc_id: playbook_qc_defaults_file
   version: v2
   species: multi_species
-  blueprint_scope: qc
+  blueprint_scope: genotype_processing
   evidence_level: expert_opinion
   source: parameter_playbook
   updated_at: 2026-05-26T00:00:00Z

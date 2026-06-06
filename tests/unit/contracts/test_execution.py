@@ -4,8 +4,10 @@ import pytest
 from pydantic import ValidationError
 
 from contracts import (
+    AutoRepairLevel,
     AuditBundleExport,
     AuditBundleItem,
+    ExecutionMode,
     ExecutionArtifacts,
     JobHandle,
     JobState,
@@ -13,6 +15,7 @@ from contracts import (
     ResourceEstimate,
     RoleOutputHeader,
     RunContext,
+    RunState,
     SchedulerKind,
     SubmissionPreview,
     TaskDomain,
@@ -79,6 +82,11 @@ def test_execution_contracts_expose_tracking_and_submission_fields() -> None:
     assert "cluster_execution_enabled" in SubmissionPreview.model_fields
     assert "runtime_lifecycle" in SubmissionPreview.model_fields
     assert "explanation_layer" in SubmissionPreview.model_fields
+    assert "execution_mode" in SubmissionPreview.model_fields
+    assert "manual_submit_card" in SubmissionPreview.model_fields
+    assert "remote_check_summary" in SubmissionPreview.model_fields
+    assert "run_state_path" in SubmissionPreview.model_fields
+    assert "run_state" in SubmissionPreview.model_fields
     assert "artifact_index" in ExecutionArtifacts.model_fields
     assert "figure_paths" in ExecutionArtifacts.model_fields
     assert "log_paths" in ExecutionArtifacts.model_fields
@@ -97,8 +105,11 @@ def test_execution_contracts_expose_tracking_and_submission_fields() -> None:
     assert plan.pipeline_spec.name == "bioinformatics-analysis-mvp"
     assert preview.job_handle.scheduler == SchedulerKind.SLURM
     assert preview.job_handle.state == JobState.DRAFT
+    assert preview.execution_mode == ExecutionMode.LOCAL_PREVIEW
     assert preview.artifacts is not None
     assert preview.artifacts.run_context.run_id == "run-contracts-001"
+    assert AutoRepairLevel.LOW_RISK.value == "low_risk"
+    assert "task_id" in RunState.model_fields
 
 
 def test_tracking_contracts_require_task_and_run_identifiers() -> None:

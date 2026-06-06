@@ -7,7 +7,7 @@ knowledge_item.v2:
   doc_id: diagnostic_scheduler_slurm_account_partition_mismatch
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z
@@ -53,7 +53,7 @@ knowledge_item.v2:
   doc_id: diagnostic_scheduler_slurm_qos_or_resource_limit
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z
@@ -101,7 +101,7 @@ knowledge_item.v2:
   doc_id: diagnostic_scheduler_slurm_node_constraint_unavailable
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z
@@ -147,7 +147,7 @@ knowledge_item.v2:
   doc_id: diagnostic_scheduler_pbs_unknown_queue
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z
@@ -193,7 +193,7 @@ knowledge_item.v2:
   doc_id: diagnostic_scheduler_pbs_resource_limit_exceeded
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z
@@ -238,7 +238,7 @@ knowledge_item.v2:
   doc_id: diagnostic_scheduler_pbs_hold_or_permission_denied
   version: v2
   species: multi_species
-  blueprint_scope: shared
+  blueprint_scope: reporting_audit
   evidence_level: incident_verified
   source: failure_case
   updated_at: 2026-05-26T00:00:00Z

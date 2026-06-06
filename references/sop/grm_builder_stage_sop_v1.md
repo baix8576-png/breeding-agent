@@ -5,7 +5,7 @@ knowledge_item.v2:
   doc_id: "sop_grm_builder_stage_v1"
   version: "v2"
   species: "multi_species"
-  blueprint_scope: "grm"
+  blueprint_scope: quantitative_genetics
   evidence_level: "sop"
   source: "sop"
   updated_at: "2026-05-09T15:10:00+08:00"
@@ -14,7 +14,7 @@ knowledge_item.v2:
 
 ## Purpose
 - Standardize stage-by-stage operation for `grm_builder`.
-- Align outputs with `scripts/grm_builder/run_grm_builder.sh` and downstream model consumers.
+- Align outputs with `scripts/quantitative_genetics/run_relationship_matrix.sh` and downstream model consumers.
 
 ## Stage: marker_standardization
 

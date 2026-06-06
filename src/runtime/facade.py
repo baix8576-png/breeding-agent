@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 from audit.observability import ObservabilityService
 from audit.store import AuditEvent, FileAuditStore
 from contracts.api import RequestIdentity
-from contracts.common import GateDecision, JobState, TaskDomain
+from contracts.common import ExecutionMode, GateDecision, JobState, SchedulerKind, TaskDomain
 from contracts.envelope import ExecutionIntent, RuntimeRequestEnvelopeV2
 from contracts.execution import (
     AuditBundleExport,
@@ -27,17 +27,23 @@ from contracts.execution import (
     SubmissionPreview,
     TaskPlan,
 )
-from contracts.tasks import UserRequest
+from contracts.remote_execution import RemoteCheckResult, RemoteSmokeResult, RunState
+from contracts.tasks import ResourceEstimate, UserRequest
 from contracts.validation import InputBundle, ValidationReport
 from memory.stores import MemoryCoordinator
 from pipeline.execution import build_execution_command
 from pipeline.workflows import build_blueprint
 from pipeline.validators import InputValidator
-from safety.gates import SafetyGateResult, SafetyGateService, SafetyReviewContext
+from safety.automation_policy import TrustedAutomationPolicy
+from safety.gates import GateStage, SafetyGateResult, SafetyGateService, SafetyReviewContext
 from scheduler.base import BaseSchedulerAdapter
+from scheduler.remote import RemoteSlurmSchedulerAdapter, build_manual_submit_card
+from scheduler.ssh_shell import RemoteShellSchedulerAdapter
 from scheduler.models import PollExplanation
 from scheduler.poller import JobPoller
 from runtime.governance import GovernanceService
+from runtime.automation import TrustedRunController
+from runtime.run_state import RunStateStore
 from runtime.state_machine import RuntimeStage, create_stage_trace
 from runtime.settings import Settings
 
@@ -99,6 +105,15 @@ class ApplicationFacade:
         self._audit_store = audit_store
         self._observability = ObservabilityService(audit_store)
         self._governance = GovernanceService(settings=settings, audit_store=audit_store)
+        self._run_state_store = RunStateStore(settings.local_state_root)
+        self._trusted_controller = TrustedRunController(
+            state_store=self._run_state_store,
+            policy=TrustedAutomationPolicy(
+                level=settings.remote_auto_repair_level,
+                cpu_cap=settings.max_cpu,
+                memory_gb_cap=settings.max_mem_gb,
+            ),
+        )
 
     def draft_plan(
         self,
@@ -205,6 +220,10 @@ class ApplicationFacade:
         dry_run_completed: bool = False,
         approval: dict[str, object] | None = None,
         outbound_payload: dict[str, object] | None = None,
+        execution_mode: ExecutionMode | None = None,
+        remote_profile_name: str | None = None,
+        watch: bool = False,
+        auto_continue: bool | None = None,
     ) -> RuntimeRequestEnvelopeV2:
         return RuntimeRequestEnvelopeV2(
             intent=intent,
@@ -216,6 +235,10 @@ class ApplicationFacade:
             dry_run_completed=dry_run_completed,
             approval=approval,
             outbound_payload=outbound_payload,
+            execution_mode=execution_mode,
+            remote_profile_name=remote_profile_name,
+            watch=watch,
+            auto_continue=auto_continue,
         )
 
     def _identity_from_envelope(self, envelope: RuntimeRequestEnvelopeV2) -> RequestIdentity:
@@ -461,6 +484,10 @@ class ApplicationFacade:
         input_bundle: InputBundle | None = None,
         approval: dict[str, object] | None = None,
         outbound_payload: dict[str, object] | None = None,
+        execution_mode: ExecutionMode | None = None,
+        remote_profile_name: str | None = None,
+        watch: bool = False,
+        auto_continue: bool | None = None,
     ) -> SubmissionPreview:
         """Build a submit-preview payload without issuing a real scheduler command."""
 
@@ -474,6 +501,10 @@ class ApplicationFacade:
             input_bundle=input_bundle,
             approval=approval,
             outbound_payload=outbound_payload,
+            execution_mode=execution_mode,
+            remote_profile_name=remote_profile_name,
+            watch=watch,
+            auto_continue=auto_continue,
         )
 
     def submit(
@@ -486,6 +517,10 @@ class ApplicationFacade:
         input_bundle: InputBundle | None = None,
         approval: dict[str, object] | None = None,
         outbound_payload: dict[str, object] | None = None,
+        execution_mode: ExecutionMode | None = None,
+        remote_profile_name: str | None = None,
+        watch: bool = False,
+        auto_continue: bool | None = None,
     ) -> SubmissionPreview:
         """Submit a real scheduler job after passing the safety gate."""
 
@@ -499,6 +534,10 @@ class ApplicationFacade:
             input_bundle=input_bundle,
             approval=approval,
             outbound_payload=outbound_payload,
+            execution_mode=execution_mode,
+            remote_profile_name=remote_profile_name,
+            watch=watch,
+            auto_continue=auto_continue,
         )
 
     def explain_poll_state(self, job_id: str) -> PollExplanation:
@@ -509,6 +548,235 @@ class ApplicationFacade:
             scheduler=self._settings.scheduler_type,
             job_id=job_id,
             state=state,
+        )
+
+    def remote_check(
+        self,
+        *,
+        execution_mode: ExecutionMode | None = None,
+        remote_profile_name: str | None = None,
+    ) -> RemoteCheckResult:
+        """Check the configured execution target without exposing credentials."""
+
+        resolved_mode = self._resolve_execution_mode(execution_mode)
+        profile = self._settings.remote_execution_profile(remote_profile_name)
+        if resolved_mode == ExecutionMode.SSH_SHELL_TRUSTED:
+            checker = self._build_remote_shell_check_scheduler(profile=profile)
+            return checker.remote_check(timeout_seconds=self._settings.hpc_connect_timeout_seconds)
+        if resolved_mode == ExecutionMode.SSH_SLURM_TRUSTED and self._settings.scheduler_type == SchedulerKind.SLURM:
+            checker = self._build_remote_check_scheduler(profile=profile)
+            return checker.remote_check(timeout_seconds=self._settings.hpc_connect_timeout_seconds)
+        if resolved_mode == ExecutionMode.MANUAL_SBASE:
+            return RemoteCheckResult(
+                profile_name=profile.profile_name,
+                execution_mode=ExecutionMode.MANUAL_SBASE,
+                scheduler=self._settings.scheduler_type,
+                ssh_target=profile.ssh_target,
+                work_root=profile.work_root,
+                reachable=False,
+                safe_for_submit=False,
+                messages=["manual_sbase_requires_operator_submit"],
+            )
+        return RemoteCheckResult(
+            profile_name=profile.profile_name,
+            execution_mode=resolved_mode,
+            scheduler=self._settings.scheduler_type,
+            ssh_target=profile.ssh_target,
+            work_root=profile.work_root,
+            reachable=resolved_mode == ExecutionMode.HPC_LOCAL,
+            safe_for_submit=resolved_mode == ExecutionMode.HPC_LOCAL and self._settings.scheduler_real_execution_enabled,
+            messages=["local_preview_no_remote_check" if resolved_mode == ExecutionMode.LOCAL_PREVIEW else "hpc_local_uses_local_scheduler_cli"],
+        )
+
+    def remote_smoke(
+        self,
+        *,
+        execution_mode: ExecutionMode | None = None,
+        remote_profile_name: str | None = None,
+        task_id: str | None = None,
+        run_id: str | None = None,
+    ) -> RemoteSmokeResult:
+        """Submit one fixed harmless command to validate ordinary remote execution."""
+
+        resolved_mode = self._resolve_execution_mode(execution_mode or ExecutionMode.SSH_SHELL_TRUSTED)
+        smoke_command = ["bash", "-lc", "hostname && pwd && date && sleep 5"]
+        remote_check = self.remote_check(
+            execution_mode=resolved_mode,
+            remote_profile_name=remote_profile_name,
+        )
+        messages = list(remote_check.messages)
+        profile = self._settings.remote_execution_profile(remote_profile_name)
+        if resolved_mode != ExecutionMode.SSH_SHELL_TRUSTED:
+            messages.append("remote_smoke_requires_ssh_shell_trusted")
+            return RemoteSmokeResult(
+                profile_name=profile.profile_name,
+                execution_mode=resolved_mode,
+                command=smoke_command,
+                remote_check=remote_check,
+                submitted=False,
+                messages=messages,
+            )
+        if not remote_check.safe_for_submit:
+            return RemoteSmokeResult(
+                profile_name=profile.profile_name,
+                execution_mode=resolved_mode,
+                command=smoke_command,
+                remote_check=remote_check,
+                submitted=False,
+                messages=messages,
+            )
+        if not self._settings.scheduler_real_execution_enabled:
+            messages.append("scheduler_real_execution_disabled")
+            return RemoteSmokeResult(
+                profile_name=profile.profile_name,
+                execution_mode=resolved_mode,
+                command=smoke_command,
+                remote_check=remote_check,
+                submitted=False,
+                messages=messages,
+            )
+
+        scheduler = self._scheduler_for_execution_mode(
+            execution_mode=resolved_mode,
+            remote_profile_name=remote_profile_name,
+        )
+        resolved_task_id = task_id or f"task-smoke-{uuid4().hex[:8]}"
+        resolved_run_id = run_id or f"run-smoke-{uuid4().hex[:8]}"
+        handle = scheduler.submit(
+            working_directory=profile.work_root,
+            resources=ResourceEstimate(cpus=1, memory_gb=1, walltime="00:05:00"),
+            command=smoke_command,
+            job_name="geneagent-smoke",
+            task_id=resolved_task_id,
+            run_id=resolved_run_id,
+        )
+        run_state = RunState(
+            task_id=resolved_task_id,
+            run_id=resolved_run_id,
+            execution_mode=resolved_mode,
+            remote_profile_name=profile.profile_name,
+            scheduler=SchedulerKind.SHELL,
+            working_directory=profile.work_root,
+            current_stage=RuntimeStage.STAGE_07_EXECUTION.value,
+            status=handle.state,
+            job_id=handle.job_id,
+            auto_continue=False,
+            next_action="watch shell state",
+        ).with_stage(
+            stage_id=RuntimeStage.STAGE_07_EXECUTION.value,
+            status="submitted",
+            message="fixed remote smoke command submitted",
+            job_id=handle.job_id,
+            run_status=handle.state,
+            auto_continue_ready=False,
+        )
+        run_state_path = self._run_state_store.save(run_state)
+        return RemoteSmokeResult(
+            profile_name=profile.profile_name,
+            execution_mode=resolved_mode,
+            command=smoke_command,
+            remote_check=remote_check,
+            submitted=True,
+            job_handle=handle,
+            initial_state=handle.state,
+            run_state_path=str(run_state_path),
+            messages=messages,
+        )
+
+    def _build_remote_check_scheduler(self, *, profile) -> RemoteSlurmSchedulerAdapter:
+        return RemoteSlurmSchedulerAdapter(
+            profile=profile,
+            local_cache_root=Path(self._settings.local_state_root),
+            real_execution_enabled=False,
+            idempotent_submit_enabled=False,
+            retry_max_attempts=1,
+            retry_backoff_seconds=[0],
+            command_timeout_seconds=self._settings.hpc_connect_timeout_seconds,
+            quota_cpu_hours_limit=self._settings.scheduler_quota_cpu_hours_limit,
+            quota_memory_gb_limit=self._settings.scheduler_quota_memory_gb_limit,
+            quota_max_concurrent_jobs=self._settings.scheduler_quota_max_concurrent_jobs,
+            current_active_jobs=self._settings.scheduler_current_active_jobs,
+        )
+
+    def _build_remote_shell_check_scheduler(self, *, profile) -> RemoteShellSchedulerAdapter:
+        return RemoteShellSchedulerAdapter(
+            profile=profile,
+            local_cache_root=Path(self._settings.local_state_root),
+            remote_cpu_cap=self._settings.remote_shell_cpu_cap,
+            remote_memory_gb_cap=self._settings.remote_shell_memory_gb_cap,
+            remote_walltime_cap=self._settings.remote_shell_walltime_cap,
+            remote_max_concurrent_runs=self._settings.remote_shell_max_concurrent_runs,
+            process_limits_enabled=self._settings.remote_shell_process_limits_enabled,
+            real_execution_enabled=False,
+            idempotent_submit_enabled=False,
+            retry_max_attempts=1,
+            retry_backoff_seconds=[0],
+            command_timeout_seconds=self._settings.hpc_connect_timeout_seconds,
+            quota_cpu_hours_limit=self._settings.scheduler_quota_cpu_hours_limit,
+            quota_memory_gb_limit=self._settings.scheduler_quota_memory_gb_limit,
+            quota_max_concurrent_jobs=self._settings.scheduler_quota_max_concurrent_jobs,
+            current_active_jobs=self._settings.scheduler_current_active_jobs,
+        )
+
+    def _scheduler_for_execution_mode(
+        self,
+        *,
+        execution_mode: ExecutionMode,
+        remote_profile_name: str | None,
+    ):
+        if (
+            execution_mode == self._settings.execution_mode
+            and (remote_profile_name is None or remote_profile_name == self._settings.remote_profile_name)
+        ):
+            return self._scheduler
+        if execution_mode == ExecutionMode.SSH_SHELL_TRUSTED:
+            return RemoteShellSchedulerAdapter(
+                profile=self._settings.remote_execution_profile(remote_profile_name),
+                local_cache_root=Path(self._settings.local_state_root),
+                remote_cpu_cap=self._settings.remote_shell_cpu_cap,
+                remote_memory_gb_cap=self._settings.remote_shell_memory_gb_cap,
+                remote_walltime_cap=self._settings.remote_shell_walltime_cap,
+                remote_max_concurrent_runs=self._settings.remote_shell_max_concurrent_runs,
+                process_limits_enabled=self._settings.remote_shell_process_limits_enabled,
+                real_execution_enabled=self._settings.scheduler_real_execution_enabled,
+                idempotent_submit_enabled=self._settings.scheduler_idempotent_submit_enabled,
+                retry_max_attempts=self._settings.scheduler_retry_max_attempts,
+                retry_backoff_seconds=self._settings.scheduler_retry_backoff_seconds,
+                command_timeout_seconds=self._settings.scheduler_command_timeout_seconds,
+                quota_cpu_hours_limit=self._settings.scheduler_quota_cpu_hours_limit,
+                quota_memory_gb_limit=self._settings.scheduler_quota_memory_gb_limit,
+                quota_max_concurrent_jobs=self._settings.scheduler_quota_max_concurrent_jobs,
+                current_active_jobs=self._settings.scheduler_current_active_jobs,
+            )
+        if execution_mode == ExecutionMode.SSH_SLURM_TRUSTED and self._settings.scheduler_type == SchedulerKind.SLURM:
+            return RemoteSlurmSchedulerAdapter(
+                profile=self._settings.remote_execution_profile(remote_profile_name),
+                local_cache_root=Path(self._settings.local_state_root),
+                real_execution_enabled=self._settings.scheduler_real_execution_enabled,
+                idempotent_submit_enabled=self._settings.scheduler_idempotent_submit_enabled,
+                retry_max_attempts=self._settings.scheduler_retry_max_attempts,
+                retry_backoff_seconds=self._settings.scheduler_retry_backoff_seconds,
+                command_timeout_seconds=self._settings.scheduler_command_timeout_seconds,
+                quota_cpu_hours_limit=self._settings.scheduler_quota_cpu_hours_limit,
+                quota_memory_gb_limit=self._settings.scheduler_quota_memory_gb_limit,
+                quota_max_concurrent_jobs=self._settings.scheduler_quota_max_concurrent_jobs,
+                current_active_jobs=self._settings.scheduler_current_active_jobs,
+            )
+        return self._scheduler
+
+    def watch_run(self, *, task_id: str, run_id: str) -> RunState:
+        """Watch one persisted trusted run state."""
+
+        return self._trusted_controller.watch_run(task_id=task_id, run_id=run_id, scheduler=self._scheduler)
+
+    def resume_run(self, *, task_id: str, run_id: str, auto_continue: bool | None = None) -> RunState:
+        """Resume one persisted trusted run state."""
+
+        return self._trusted_controller.resume_run(
+            task_id=task_id,
+            run_id=run_id,
+            scheduler=self._scheduler,
+            auto_continue=auto_continue,
         )
 
     def list_task_board(
@@ -732,13 +1000,15 @@ class ApplicationFacade:
         selected_blueprint = "unknown"
         submission_cmd_first = submission_commands[0] if submission_commands else ""
         lowered_cmd = submission_cmd_first.lower()
-        if "run_qc_pipeline.sh" in lowered_cmd:
+        if "run_genotype_qc.sh" in lowered_cmd:
             selected_blueprint = "qc_pipeline"
-        elif "run_pca_pipeline.sh" in lowered_cmd:
+        elif "run_population_structure_diversity.sh" in lowered_cmd:
             selected_blueprint = "pca_pipeline"
-        elif "run_grm_builder.sh" in lowered_cmd:
+        elif "run_relationship_matrix.sh" in lowered_cmd:
             selected_blueprint = "grm_builder"
-        elif "run_genomic_prediction.sh" in lowered_cmd:
+        elif "run_gwas.sh" in lowered_cmd:
+            selected_blueprint = "association_mapping_gwas"
+        elif "run_breeding_value_prediction.sh" in lowered_cmd:
             selected_blueprint = "genomic_prediction"
         gate_decision = "unknown"
         if runtime_lifecycle.get("runtime_path") == "non_bio_lightweight":
@@ -947,6 +1217,10 @@ class ApplicationFacade:
         input_bundle: InputBundle | None,
         approval: dict[str, object] | None,
         outbound_payload: dict[str, object] | None,
+        execution_mode: ExecutionMode | None = None,
+        remote_profile_name: str | None = None,
+        watch: bool = False,
+        auto_continue: bool | None = None,
     ) -> SubmissionPreview:
         """Shared builder for dry-run, submit-preview, and submit modes."""
 
@@ -964,6 +1238,21 @@ class ApplicationFacade:
             input_bundle=input_bundle,
             approval=approval,
             outbound_payload=outbound_payload,
+            execution_mode=execution_mode,
+            remote_profile_name=remote_profile_name,
+            watch=watch,
+            auto_continue=auto_continue,
+        )
+        resolved_execution_mode = self._resolve_execution_mode(envelope.execution_mode)
+        resolved_profile_name = envelope.remote_profile_name or remote_profile_name or self._settings.remote_profile_name
+        resolved_auto_continue = (
+            envelope.auto_continue
+            if envelope.auto_continue is not None
+            else (
+                auto_continue
+                if auto_continue is not None
+                else self._settings.remote_auto_continue_enabled
+            )
         )
         normalized_identity = self._identity_from_envelope(envelope)
         run_context = self._resolve_run_context(identity=normalized_identity)
@@ -984,6 +1273,15 @@ class ApplicationFacade:
                 validation_report=validation_report,
                 runtime_lifecycle=runtime_trace.to_contract(),
             )
+        execution_scheduler = self._scheduler_for_execution_mode(
+            execution_mode=resolved_execution_mode,
+            remote_profile_name=resolved_profile_name,
+        )
+        execution_working_directory = self._execution_working_directory(
+            run_context=run_context,
+            execution_mode=resolved_execution_mode,
+            remote_profile_name=resolved_profile_name,
+        )
         if execute_submit and validation_report is not None and not validation_report.valid:
             raise PermissionError(
                 "InputBundle validation failed; resolve blocking input issues before real submit."
@@ -991,7 +1289,7 @@ class ApplicationFacade:
         command = envelope.command or self._build_default_bio_command(
             plan=plan,
             request_text=request_text,
-            working_directory=run_context.working_directory or self._settings.work_root,
+            working_directory=execution_working_directory,
         )
         runtime_trace.advance(RuntimeStage.STAGE_02_INTENT_AND_SCOPE.value)
         runtime_trace.advance(RuntimeStage.STAGE_03_INPUT_VALIDATION.value)
@@ -1006,15 +1304,21 @@ class ApplicationFacade:
             if plan.pipeline_spec is not None
             else []
         )
-        submission_plan = self._scheduler.build_submission_plan(
+        submission_plan = execution_scheduler.build_submission_plan(
             command=command,
-            working_directory=run_context.working_directory or self._settings.work_root,
+            working_directory=execution_working_directory,
             resources=resources,
             mode=mode,
             task_id=run_context.task_id,
             run_id=run_context.run_id,
             atomic_tools=atomic_tools,
         )
+        manual_submit_card = None
+        if resolved_execution_mode == ExecutionMode.MANUAL_SBASE:
+            manual_submit_card = build_manual_submit_card(
+                plan=submission_plan,
+                profile=self._settings.remote_execution_profile(resolved_profile_name),
+            )
         gate_resources = resources.model_copy(
             update={
                 "cpus": submission_plan.resource_request.total_cpus,
@@ -1044,21 +1348,47 @@ class ApplicationFacade:
                 safety_review=safety_review,
                 validation_report=validation_report,
             )
+        if submission_plan.quota_gate_status == "blocked":
+            safety_review = self._apply_submission_quota_block_to_safety_review(
+                safety_review=safety_review,
+                quota_reasons=submission_plan.quota_gate_reasons,
+                quota_usage=submission_plan.quota_usage,
+            )
+        if mode == "submit" and safety_review.decision == GateDecision.BLOCK:
+            raise PermissionError(
+                "Safety gate rejected real submit; run dry-run and complete manual confirmation requirements first."
+            )
         runtime_trace.advance(RuntimeStage.STAGE_07_EXECUTION.value)
         job_handle = submission_plan.job_handle
-        if execute_submit:
+        effective_execute_submit = execute_submit and resolved_execution_mode not in {
+            ExecutionMode.LOCAL_PREVIEW,
+            ExecutionMode.MANUAL_SBASE,
+        }
+        if effective_execute_submit:
             if safety_review.decision != GateDecision.PASS:
                 raise PermissionError(
                     "Safety gate rejected real submit; run dry-run and complete manual confirmation requirements first."
                 )
-            job_handle = self._scheduler.submit(
-                working_directory=run_context.working_directory or self._settings.work_root,
+            job_handle = execution_scheduler.submit(
+                working_directory=execution_working_directory,
                 resources=resources,
                 command=command,
                 task_id=run_context.task_id,
                 run_id=run_context.run_id,
                 atomic_tools=atomic_tools,
             )
+        remote_check_summary = (
+            self.remote_check(
+                execution_mode=resolved_execution_mode,
+                remote_profile_name=resolved_profile_name,
+            )
+            if resolved_execution_mode in {
+                ExecutionMode.SSH_SHELL_TRUSTED,
+                ExecutionMode.SSH_SLURM_TRUSTED,
+                ExecutionMode.MANUAL_SBASE,
+            }
+            else None
+        )
         submit_command_text = shlex.join(submission_plan.submit_command)
         predicted_audit_record_path = self._predict_audit_record_path(
             run_context=run_context,
@@ -1114,6 +1444,44 @@ class ApplicationFacade:
             audit_path=audit_record_path,
             parameter_snapshot=self._parameter_snapshot_from_plan(plan),
         )
+        run_state = RunState(
+            task_id=run_context.task_id,
+            run_id=run_context.run_id,
+            execution_mode=resolved_execution_mode,
+            remote_profile_name=resolved_profile_name,
+            scheduler=self._scheduler_kind_for_execution_mode(resolved_execution_mode),
+            working_directory=submission_plan.paths.working_directory,
+            current_stage=RuntimeStage.STAGE_07_EXECUTION.value,
+            status=job_handle.state,
+            job_id=job_handle.job_id,
+            auto_continue=bool(resolved_auto_continue),
+            next_action=(
+                "resource cap blocked; adjust request or configured caps before submit"
+                if submission_plan.quota_gate_status == "blocked"
+                else (
+                    "watch scheduler state"
+                    if job_handle.state != JobState.DRAFT
+                    else "submit or manual SBASE submission pending"
+                )
+            ),
+        ).with_stage(
+            stage_id=RuntimeStage.STAGE_07_EXECUTION.value,
+            status="submitted" if effective_execute_submit and job_handle.state != JobState.DRAFT else "planned",
+            message=f"execution_mode={resolved_execution_mode.value}",
+            job_id=job_handle.job_id,
+            run_status=job_handle.state,
+            auto_continue_ready=False,
+        )
+        run_state_path = self._run_state_store.save(run_state)
+        run_state = run_state.model_copy(update={"state_path": str(run_state_path)})
+        if watch and effective_execute_submit and job_handle.state != JobState.DRAFT:
+            run_state = self._trusted_controller.watch_run(
+                task_id=run_context.task_id,
+                run_id=run_context.run_id,
+                scheduler=execution_scheduler,
+            )
+            if run_state.state_path:
+                run_state_path = Path(run_state.state_path)
         explanation_layer = self._build_explanation_layer(
             domain=plan.domain.value,
             selected_blueprint=plan.pipeline_spec.name if plan.pipeline_spec is not None else "bioinformatics_pipeline",
@@ -1142,6 +1510,8 @@ class ApplicationFacade:
         return SubmissionPreview(
             run_context=run_context,
             mode=mode,
+            execution_mode=resolved_execution_mode,
+            remote_profile_name=resolved_profile_name,
             cluster_execution_enabled=True,
             working_directory=submission_plan.paths.working_directory,
             command=command,
@@ -1153,7 +1523,11 @@ class ApplicationFacade:
             polling_hint=submission_plan.polling_hint,
             poll_strategy=submission_plan.poll_strategy,
             failure_recovery=submission_plan.failure_recovery,
-            gate_status=safety_review.ready_for_gate.value,
+            gate_status=(
+                submission_plan.ready_for_gate
+                if submission_plan.quota_gate_status == "blocked"
+                else safety_review.ready_for_gate.value
+            ),
             gate_decision=safety_review.decision.value,
             manual_confirmation_items=safety_review.human_confirmation_conditions,
             circuit_break_conditions=safety_review.circuit_break_conditions,
@@ -1177,6 +1551,10 @@ class ApplicationFacade:
             input_validation=validation_report,
             runtime_lifecycle=runtime_trace.to_contract(),
             explanation_layer=explanation_layer,
+            manual_submit_card=manual_submit_card,
+            remote_check_summary=remote_check_summary,
+            run_state_path=str(run_state_path),
+            run_state=run_state,
         )
 
     def _build_non_bio_submission_preview(
@@ -1253,6 +1631,8 @@ class ApplicationFacade:
         return SubmissionPreview(
             run_context=run_context,
             mode=mode,
+            execution_mode=ExecutionMode.LOCAL_PREVIEW,
+            remote_profile_name=None,
             cluster_execution_enabled=False,
             working_directory=run_context.working_directory or self._settings.work_root,
             command=[],
@@ -1295,7 +1675,31 @@ class ApplicationFacade:
             input_validation=validation_report,
             runtime_lifecycle=runtime_lifecycle,
             explanation_layer=explanation_layer,
+            run_state_path=None,
         )
+
+    def _resolve_execution_mode(self, execution_mode: ExecutionMode | str | None) -> ExecutionMode:
+        if execution_mode is None:
+            return self._settings.execution_mode
+        if isinstance(execution_mode, ExecutionMode):
+            return execution_mode
+        return ExecutionMode(str(execution_mode))
+
+    def _execution_working_directory(
+        self,
+        *,
+        run_context: RunContext,
+        execution_mode: ExecutionMode,
+        remote_profile_name: str | None,
+    ) -> str:
+        if execution_mode == ExecutionMode.SSH_SHELL_TRUSTED:
+            return self._settings.remote_execution_profile(remote_profile_name).work_root
+        return run_context.working_directory or self._settings.work_root
+
+    def _scheduler_kind_for_execution_mode(self, execution_mode: ExecutionMode) -> SchedulerKind:
+        if execution_mode == ExecutionMode.SSH_SHELL_TRUSTED:
+            return SchedulerKind.SHELL
+        return self._settings.scheduler_type
 
     def _build_safety_review_for_scheduler(
         self,
@@ -1374,6 +1778,53 @@ class ApplicationFacade:
                     [
                         *safety_review.rollback_or_remediation,
                         *validation_report.recommended_next_actions,
+                    ]
+                ),
+            }
+        )
+
+    def _apply_submission_quota_block_to_safety_review(
+        self,
+        *,
+        safety_review: SafetyGateResult,
+        quota_reasons: list[str],
+        quota_usage: dict[str, float | int],
+    ) -> SafetyGateResult:
+        quota_conditions = [f"quota:{reason}" for reason in quota_reasons]
+        return safety_review.model_copy(
+            update={
+                "ready_for_gate": GateStage.BLOCKED,
+                "decision": GateDecision.BLOCK,
+                "requires_human_confirmation": True,
+                "human_confirmation_conditions": self._stable_unique(
+                    [
+                        *safety_review.human_confirmation_conditions,
+                        "Requested resources exceed trusted remote caps; adjust request or configured caps before submit.",
+                    ]
+                ),
+                "circuit_break_conditions": self._stable_unique(
+                    [
+                        *safety_review.circuit_break_conditions,
+                        *quota_conditions,
+                    ]
+                ),
+                "quota_gate": {
+                    **safety_review.quota_gate,
+                    "status": "blocked",
+                    "reasons": list(quota_reasons),
+                    "usage": dict(quota_usage),
+                },
+                "reasons": self._stable_unique(
+                    [
+                        *safety_review.reasons,
+                        "remote_shell_resource_cap_blocked",
+                        *quota_conditions,
+                    ]
+                ),
+                "rollback_or_remediation": self._stable_unique(
+                    [
+                        *safety_review.rollback_or_remediation,
+                        "Lower CPU/memory/walltime request or raise the configured server caps after operator review.",
                     ]
                 ),
             }
@@ -1507,7 +1958,7 @@ class ApplicationFacade:
         log_paths: list[str],
         audit_path: str | None,
     ) -> tuple[str, str | None, dict[str, object] | None]:
-        script_path = Path(__file__).resolve().parents[2] / "scripts" / "report_generator" / "run_report_generator.sh"
+        script_path = Path(__file__).resolve().parents[2] / "scripts" / "reporting_audit" / "run_report_generator.sh"
         if not script_path.exists():
             return ("skipped_script_missing", "report_generator_script_missing", None)
 
