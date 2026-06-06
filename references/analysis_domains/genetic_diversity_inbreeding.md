@@ -1,4 +1,4 @@
-# Genetic Diversity And Inbreeding Domain
+﻿# Genetic Diversity And Inbreeding Domain
 
 This file defines the genetic diversity and inbreeding knowledge domain that is partly executed by `scripts/population_genetics/run_population_structure_diversity.sh` and partly interpreted through reports and relatedness context.
 
@@ -158,3 +158,132 @@ Submit blockers:
 - missing population definitions when population-specific interpretation is requested
 
 Risk boundary: if only first-pass artifacts exist, the report should call them diversity diagnostics, not final population-genetic inference.
+
+## ROH threshold detail policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_genetic_diversity_roh_threshold_detail
+  version: v2
+  species: multi_species
+  blueprint_scope: population_genetics
+  evidence_level: expert_opinion
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+ROH thresholds must be stated because ROH calls depend on marker density, genotyping error, heterozygote allowance, gap rules, and minimum segment length. A threshold from one species, chip, or sequencing design should not be treated as universal.
+
+Minimum threshold fields:
+- minimum ROH length
+- minimum SNP count per segment
+- maximum gap between markers
+- maximum heterozygous calls allowed
+- maximum missing calls allowed
+- marker-density or map-distance requirement
+- autosome-only or chromosome-specific scope
+
+Interpretation policy:
+- short ROH often reflects older shared ancestry or high LD
+- long ROH often reflects recent inbreeding, but still requires sample and marker context
+- FROH should state denominator genome length or marker-covered length
+- group-level ROH summaries should show sample counts and dispersion, not only means
+
+Risk boundary: changing ROH thresholds can change biological conclusions. Reports must make threshold choices visible and auditable.
+
+## LD decay window policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_genetic_diversity_ld_decay_window_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: population_genetics
+  evidence_level: expert_opinion
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+LD decay summaries need window and distance policy. In animal breeding datasets, LD can be high because of selection, family structure, recent bottlenecks, or SNP-chip ascertainment.
+
+Required plan fields:
+- maximum pairwise distance
+- distance bin size
+- LD statistic such as r2 or D prime
+- MAF and missingness filters before LD
+- whether related animals were retained
+- population labels and sample counts
+
+Report requirements:
+- show LD decay by group when groups are compared
+- avoid comparing groups with very different marker density or sample size without caveats
+- state if LD was computed on SNP array, WGS, imputed markers, or filtered variants
+- keep LD pruning parameters separate from LD decay summary parameters
+
+Risk boundary: LD decay informs resolution and transferability; it does not by itself prove selection or demographic history.
+
+## Effective population size and inbreeding caveat policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_genetic_diversity_ne_inbreeding_caveat_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: population_genetics
+  evidence_level: expert_opinion
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Effective population size, pedigree inbreeding, genomic inbreeding, and ROH-based inbreeding answer related but different questions. GeneAgent should keep their estimators separate unless a dedicated analysis has been run.
+
+Estimator distinctions:
+- pedigree inbreeding depends on pedigree depth and completeness
+- GRM diagonal summaries depend on allele-frequency base and marker filtering
+- FROH depends on ROH threshold and covered genome length
+- LD-based Ne depends on LD model, distance bins, and population assumptions
+
+Required caveats:
+- small samples can destabilize Ne and diversity estimates
+- crossbred or admixed cohorts violate simple population assumptions
+- commercial-line data may represent selected closed populations, not natural population history
+- pedigree and genomic inbreeding can disagree for legitimate reasons
+
+Risk boundary: inbreeding and Ne summaries can influence management decisions. GeneAgent should present them as evidence requiring expert review unless species-specific thresholds and decision rules are provided.
+
+## Group diversity summary policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_genetic_diversity_group_summary_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: population_genetics
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Group summaries are the safest way to make diversity results interpretable. Every group-level statistic should carry sample count, marker count, filter context, and uncertainty or dispersion when available.
+
+Minimum group summary table:
+- group label and label source
+- sample count before and after QC
+- retained marker count
+- observed and expected heterozygosity when computed
+- nucleotide diversity or pi when computed
+- ROH burden or FROH when computed
+- LD summary such as median r2 by distance bin when computed
+- missingness and MAF filters
+
+Reporting rules:
+- do not rank breeds or lines without stating sampling design
+- show missing or unavailable metrics instead of leaving blank interpretations
+- separate technical batch groups from biological population groups
+- link every summary to the input sample list used
+
+Risk boundary: group summaries are descriptive. Conservation, management, or breeding recommendations require additional species-specific context and review.

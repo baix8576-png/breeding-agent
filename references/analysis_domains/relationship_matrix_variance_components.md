@@ -1,4 +1,4 @@
-# Relationship Matrix And Variance Components Domain
+﻿# Relationship Matrix And Variance Components Domain
 
 This file defines the quantitative-genetics domain for GRM, kinship, pedigree comparison, REML, heritability, and variance components.
 
@@ -178,3 +178,134 @@ Submit blockers:
 - output overwrite without approval
 
 Risk boundary: this bridge creates relationship artifacts. It does not certify that those artifacts are appropriate for every REML, ssGBLUP, GWAS, or prediction model.
+
+## GRM QC prerequisite policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_relationship_matrix_grm_qc_prerequisites
+  version: v2
+  species: multi_species
+  blueprint_scope: quantitative_genetics
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+GRM construction should start only after genotype QC is clear enough for relationship inference. A GRM built from poorly controlled markers can be numerically valid and scientifically misleading.
+
+Prerequisite checks:
+- sample IDs are unique and reconciled with phenotype/covariate/pedigree IDs when needed
+- marker missingness, sample missingness, MAF, and chromosome filters are recorded
+- duplicate markers and allele-coding conflicts are resolved or excluded
+- close duplicates and sample swaps are reviewed
+- retained marker count is sufficient for the intended relationship estimate
+- population structure and breed composition are visible for interpretation
+
+Blocking conditions:
+- duplicated sample IDs
+- missing sample-order artifact
+- incompatible genotype format
+- hidden marker-set mismatch between GRM and downstream model
+- output overwrite without approval
+
+Risk boundary: GRM quality depends on both technical QC and biological sampling. It is not just a file conversion step.
+
+## A matrix and H matrix boundary
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_relationship_matrix_a_matrix_h_matrix_boundary
+  version: v2
+  species: multi_species
+  blueprint_scope: quantitative_genetics
+  evidence_level: expert_opinion
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+The pedigree numerator relationship matrix (`A`), genomic relationship matrix (`G`), and single-step relationship matrix (`H`) are related but distinct model objects.
+
+Boundary rules:
+- `A` requires a reviewed pedigree and founder/missing-parent policy.
+- `G` requires genotype markers, allele-frequency/scaling policy, and sample order.
+- `H` requires both pedigree and genomic inputs plus compatibility rules for genotyped and non-genotyped animals.
+- ssGBLUP is not complete just because both pedigree and genotype files exist.
+- Pedigree-genomic conflict should trigger diagnostic review before single-step planning.
+
+Current GeneAgent status:
+- GRM and relatedness artifacts are partially executable through quantitative-genetics scripts.
+- A/H matrix construction is knowledge/planning scope unless a dedicated backend and tests are added.
+- Reports should distinguish GBLUP-like genomic-only prediction from ssGBLUP.
+
+Risk boundary: mixing `A`, `G`, and `H` terminology can mislead users about which animals and relationships were modeled.
+
+## REML convergence policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_relationship_matrix_reml_convergence_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: quantitative_genetics
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+REML outputs should be treated as model results with convergence and diagnostic status, not as a guaranteed heritability value.
+
+Required REML report fields:
+- model formula and random effects
+- phenotype and transformation
+- fixed effects and covariates
+- GRM or relationship matrix source
+- sample count after model merge
+- convergence status and software return code
+- variance component estimates and standard errors when available
+- boundary estimates or singularity warnings
+
+Review triggers:
+- convergence failure
+- variance component near zero or boundary
+- negative or impossible estimates from unsupported workflows
+- high standard error relative to estimate
+- sample count too small for the requested model
+- phenotype/covariate missingness removes a large cohort fraction
+
+Risk boundary: heritability and variance components are model-dependent estimates. GeneAgent should surface uncertainty and convergence before interpretation.
+
+## Sparse relatedness policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_relationship_matrix_sparse_relatedness_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: quantitative_genetics
+  evidence_level: expert_opinion
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Large cohorts may require sparse relatedness summaries, pairwise thresholds, or block processing. Sparse representations should not hide sample-order or threshold choices.
+
+Planning fields:
+- threshold used to retain pairwise relationships
+- whether diagonal and close relatives are retained
+- matrix or edge-list output format
+- sample-order or node-ID file
+- intended downstream use: duplicate detection, validation split, mixed model, or report summary
+- chunking or block strategy when pairwise calculations are large
+
+Interpretation rules:
+- sparse relatedness is usually a thresholded view, not the full GRM
+- close relatives retained for breeding models may be excluded for validation-split design
+- pairwise relatedness thresholds should be stated as review parameters
+- edge lists must preserve both sample IDs and relationship estimate type
+
+Risk boundary: sparse relatedness can save resources, but thresholding can remove information needed for model fitting or interpretation.

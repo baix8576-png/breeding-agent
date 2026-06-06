@@ -2906,3 +2906,111 @@ Paste this into a new session:
   - Keep future cleanup or content-expansion stages recorded in checklist form before closing them.
   - Re-run the appropriate regression slice before any further publication.
 - resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-06 21:37 +08:00 (M02-M15 knowledge completion pass)
+- intent_domain: `knowledge`
+- stage_id: `Local-first RAG`, `Blueprint Selection`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\references`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\docs\superpowers\plans`
+- cluster_execution_expected: `false`; this was static knowledge-asset, retrieval-test, and documentation-plan work only. No SSH, shell, SLURM, scheduler submit, bio tool execution, or source fetching was performed.
+- contracts_impacted:
+  - No Pydantic runtime contract changed in this stage.
+  - `tests/unit/knowledge/test_references_coverage.py` now requires M02-M15 completion-detail `doc_id` coverage and retrieval queries.
+  - `tests/unit/knowledge/test_literature_knowledge_pack.py` now separates paper-card count assertions from literature evidence-matrix governance entries.
+- files_changed:
+  - `D:\geneagent\references\input_specs\input_bundle_contract.md`
+  - `D:\geneagent\references\qc_rules\default_qc_threshold_profile.md`
+  - `D:\geneagent\references\analysis_domains\genotype_processing.md`
+  - `D:\geneagent\references\analysis_domains\population_structure.md`
+  - `D:\geneagent\references\analysis_domains\genetic_diversity_inbreeding.md`
+  - `D:\geneagent\references\analysis_domains\selection_signatures.md`
+  - `D:\geneagent\references\analysis_domains\association_mapping_gwas_qtl.md`
+  - `D:\geneagent\references\analysis_domains\functional_genomics_annotation.md`
+  - `D:\geneagent\references\analysis_domains\relationship_matrix_variance_components.md`
+  - `D:\geneagent\references\analysis_domains\genomic_prediction_breeding_value.md`
+  - `D:\geneagent\references\papers\species_literature_index.md`
+  - `D:\geneagent\references\papers\animal_genomics_classic_landmarks.md`
+  - `D:\geneagent\references\papers\animal_genomics_recent_high_impact_2022_2026.md`
+  - `D:\geneagent\references\ontology\literature_curation_policy.md`
+  - `D:\geneagent\references\sop\hpc_execution_sop.md`
+  - `D:\geneagent\references\evaluation\evaluation_metric_playbook.md`
+  - `D:\geneagent\references\failure_cases\operational_failure_cases.md`
+  - `D:\geneagent\references\report_templates\report_index_v2_template.md`
+  - `D:\geneagent\references\ontology\knowledge_ontology_controls.md`
+  - `D:\geneagent\tests\unit\knowledge\test_references_coverage.py`
+  - `D:\geneagent\tests\unit\knowledge\test_literature_knowledge_pack.py`
+  - `D:\geneagent\docs\superpowers\plans\2026-06-06-knowledge-completion.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Created and observed a failing M02-M15 completion-detail regression test before adding new knowledge content.
+  - [x] Added M02 input bundle detail entries for phenotype dictionaries, covariate typing, pedigree consistency, sidecar checksums, and missing-file diagnostics.
+  - [x] Added M03-M04 genotype QC and processing entries for sex/duplicate/relatedness checks, batch/platform missingness, filter-order audit, variant normalization, PLINK bridge, imputation quality, and reference assembly records.
+  - [x] Added M05-M08 population genetics and association mapping entries for PCA pruning/retention/admixture/cluster naming, ROH/LD/Ne/group summaries, selection statistics, candidate-region merging, GWAS trait models, covariates/PCs, multiple testing, and QTL overlap evidence.
+  - [x] Added M09-M13 entries for functional annotation coordinate/tissue/SV interpretation, GRM/REML/A-H matrix policy, genomic prediction validation/deployment gates, species overlays, and literature evidence-matrix governance.
+  - [x] Added M14-M15 operational and retrieval QA entries for trusted remote shell review, operational acceptance, failure recovery, report review completion, retrieval regression queries, index health, and chunk traceability.
+  - [x] Updated the Superpowers implementation plan checkboxes for Tasks 3-8.
+  - [x] Verified the full reference index builds with no metadata errors and now reports `371` items / `371` chunks.
+- not_yet_done_checklist:
+  - [ ] This pass completes the planned Git-versioned knowledge-asset layer for M02-M15, but future domain curation can still add new literature cards, species-specific benchmarks, and tool-specific SOPs as the system grows.
+  - [ ] `domain_scope` remains a document/body-level curation dimension rather than a required Pydantic metadata field.
+  - [ ] Real remote server execution and external source fetching were intentionally not run in this knowledge-only stage.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py::test_m02_to_m15_completion_detail_doc_ids_exist` -> first failed as expected, then passed after content completion.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py::test_m02_to_m15_completion_detail_doc_ids_exist tests\unit\knowledge\test_references_coverage.py::test_reference_layer_retrieval_queries_cover_major_topics` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge` -> pass after updating the literature pack-size test to distinguish paper-card counts from evidence-matrix governance entries.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass.
+  - `git diff --check -- references tests docs\HANDOFF.md` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+  - `rg -n 'blueprint_scope:\s*"?(qc|pca|grm|genomic_prediction|shared)"?\s*$' references` -> no matches.
+  - `rg --files references | rg '\.(bam|bcf|cram|fasta|fastq|fq|pdf|tei|vcf|xml)$'` -> no matches.
+- gate_result: `pass`
+- known_risks:
+  - This stage intentionally adds curated SOP/expert guidance and evidence-matrix knowledge, not new raw papers, raw PDFs, or manuscript-grade citation exports.
+  - Some new guidance is `expert_opinion`; reports must not present it as peer-reviewed default evidence.
+  - Windows may continue to print LF-to-CRLF warnings during Git checks.
+- next_actions:
+  - Run final post-HANDOFF verification before committing this branch.
+  - If committing, keep this work on `codex/knowledge-m02-m15` unless the user explicitly asks to merge or push to `main`.
+  - Future curation should add species-specific benchmarks and DOI-refreshed literature cards only through the established `knowledge_item.v2` and retrieval gates.
+- resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-06 21:58 +08:00 (knowledge cleanup publication on branch)
+- intent_domain: `knowledge`, `system`
+- stage_id: `Local-first RAG`, `Blueprint Selection`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\references`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`; this was local knowledge-asset cleanup, test-boundary correction, cache cleanup, and branch publication prep only. No SSH, shell, SLURM, scheduler submit, bio tool execution, external source fetching, or raw data movement was performed.
+- contracts_impacted:
+  - No Pydantic runtime contracts changed in this cleanup step.
+  - `tests/unit/knowledge/test_literature_knowledge_pack.py` now distinguishes DOI/publisher-verified recent cards from candidate retrieval cards that explicitly require citation refresh.
+- files_changed:
+  - `D:\geneagent\references\**\*.md`
+  - `D:\geneagent\tests\unit\knowledge\test_literature_knowledge_pack.py`
+  - `D:\geneagent\tests\unit\knowledge\test_references_coverage.py`
+  - `D:\geneagent\docs\superpowers\plans\2026-06-06-knowledge-completion.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Re-read `AGENTS.md` and `docs/HANDOFF.md` before cleanup and publication work.
+  - [x] Removed generated ignored cache directories such as `__pycache__`, `.pytest_cache`, `.tmp`, `logs`, `pycache_temp`, and `pytest-cache-files-*` while preserving local-only `.env`, `.venv`, `.geneagent`, and `results`.
+  - [x] Ran a tracked-diff secret scan for password/private-key/IP/user credential patterns and found only a generic safety-policy mention of password handling.
+  - [x] Fixed the failing knowledge test by enforcing honest verified-vs-candidate recent-literature card boundaries instead of treating unverified candidate cards as manuscript-grade citations.
+  - [x] Updated the Superpowers plan wording so M02-M15 is described as structural/index and operational knowledge coverage, with full recent-literature citation refresh still tracked as follow-up.
+  - [x] Re-ran targeted knowledge, compile, full pytest, and whitespace gates successfully before final staging.
+- not_yet_done_checklist:
+  - [ ] Recent-literature candidate cards that still say `verify before citation export` must be refreshed through CrossRef/PubMed/Semantic Scholar/Zotero before manuscript-grade reference export.
+  - [ ] Local-only ignored assets `.env`, `.venv`, `.geneagent`, and `results` remain intentionally uncommitted and should not be cleaned unless the operator confirms they are disposable.
+  - [ ] This branch still needs the final `git add`, commit, and push after this HANDOFF entry is included.
+- verification_commands:
+  - `git status --short --ignored` -> only tracked knowledge/docs/test changes plus ignored local-only `.env`, `.geneagent`, `.venv`, and `results` after cache cleanup.
+  - `git diff | rg -n "password|PRIVATE KEY|BEGIN OPENSSH|10\.11\.|GENEAGENT_HPC_SSH_PASSWORD|baoxb|Xiaobobai"` -> only generic safety-policy text about password/private-key handling appeared.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass.
+  - `git diff --check -- references tests docs\HANDOFF.md docs\superpowers\plans\2026-06-06-knowledge-completion.md` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `pass`
+- known_risks:
+  - The knowledge base is now cleaner and testable, but not every recent-literature candidate has DOI/PMID verified metadata.
+  - Running tests after cleanup can regenerate ignored caches; these remain outside Git.
+  - Windows line-ending warnings remain a tooling nuisance; no whitespace errors were reported.
+- next_actions:
+  - Stage the tracked changes explicitly, commit on `codex/knowledge-m02-m15`, and push to `origin` (`ssh://git@ssh.github.com:443/baix8576-png/breeding-agent.git`).
+  - After push, verify `git status --short --branch` is clean except ignored local-only assets if queried with `--ignored`.
+- resume_first_command: `git status --short --branch`

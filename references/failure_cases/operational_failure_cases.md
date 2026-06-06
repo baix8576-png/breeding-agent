@@ -1,4 +1,4 @@
-# Operational Failure Cases
+﻿# Operational Failure Cases
 
 ## Scheduler account partition mismatch
 
@@ -142,3 +142,40 @@ Safe response:
 - Record the attempted action and resolution in audit notes.
 
 Retry boundary: any operation that moves raw entity data must be explicitly approved and stay within the cluster/local policy.
+
+## Failure recovery decision matrix
+
+```yaml
+knowledge_item.v2:
+  doc_id: failure_recovery_decision_matrix
+  version: v2
+  species: multi_species
+  blueprint_scope: reporting_audit
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: safety_fuse
+```
+
+Failure recovery must classify the failure before taking action. GeneAgent should prefer a clear blocked state over an unsafe retry.
+
+| Failure class | Automatic action | Manual review required |
+|---|---|---|
+| transient SSH/session failure | retry within configured limit | if repeated |
+| scheduler or shell resource limit | propose capped resource adjustment | before resubmit |
+| missing sidecar or input file | block submit and explain expected file | yes, unless approved generation step exists |
+| path boundary violation | stop immediately | yes |
+| output overwrite risk | stop immediately | yes |
+| tool not found | report tool path and remote-check failure | yes for path/config change |
+| parameter syntax error | classify and suggest corrected command | before resubmit |
+| biological sample filtering change | stop before changing retained cohort | yes |
+| report/audit missing | mark run incomplete and regenerate only from observed artifacts | if metadata must be inferred |
+
+Recovery rules:
+- never retry the identical command after deterministic input or parameter failure
+- preserve failed wrapper, stdout, stderr, state, and run manifest
+- record repair reason and changed fields
+- increment retry count in local run state
+- block when the same failure class repeats beyond policy
+
+Risk boundary: automatic recovery is useful only for low-risk operational failures. Anything that changes data, filters, outputs, or interpretation needs review.

@@ -252,3 +252,139 @@ Failure routing:
 - output overwrite requires higher-level approval
 
 Risk boundary: GeneAgent may prepare and explain genotype-processing plans now, but it should not claim full imputation, phasing, liftover, or cross-build harmonization execution until those wrappers, tests, and reports exist.
+
+## Variant normalization execution checklist
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_genotype_processing_variant_normalization_execution_checklist
+  version: v2
+  species: multi_species
+  blueprint_scope: genotype_processing
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Variant normalization is required before datasets are merged, lifted, annotated, or compared across tools. It should be explicit enough that another operator can recreate the exact marker representation.
+
+Execution checklist:
+- declare whether the input is VCF, BCF, PLINK bed/bim/fam, or PLINK2 pgen/pvar/psam
+- declare reference assembly and reference FASTA when left alignment or REF checks are requested
+- decide whether multiallelic variants are split, retained, or excluded
+- left-align indels only against the declared reference
+- normalize chromosome names and contig aliases through a reviewed mapping table
+- create deterministic variant IDs only when old ID, chromosome, position, REF, and ALT are preserved
+- bgzip and index VCF outputs when random access is expected
+
+Audit artifacts:
+- pre-normalization marker count
+- post-normalization marker count
+- split multiallelic count
+- duplicate coordinate count
+- REF mismatch count
+- unresolved contig count
+- old-to-new variant ID map
+
+Risk boundary: variant normalization changes the shape of the dataset. It must be treated as a transformation step, not as a hidden convenience command.
+
+## PLINK bfile and pfile bridge policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_genotype_processing_plink_bfile_pfile_bridge
+  version: v2
+  species: multi_species
+  blueprint_scope: genotype_processing
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+PLINK1 binary and PLINK2 pfile formats are common interchange points for QC, PCA, GWAS, GRM, and prediction wrappers. GeneAgent should make their differences explicit instead of treating all PLINK prefixes as interchangeable.
+
+PLINK triplet requirements:
+- bfile: `.bed`, `.bim`, `.fam` with matching prefix
+- pfile: `.pgen`, `.pvar`, `.psam` with matching prefix
+- `.fam` and `.psam` sample IDs must map to phenotype/covariate/pedigree IDs
+- `.bim` and `.pvar` marker coordinates must retain assembly context
+
+Bridge rules:
+- PLINK2 commands should use explicit `--threads`, `--memory`, and output prefix inside the run root.
+- Conversion from VCF to pfile or bfile must record whether dosages, hard calls, or genotype probabilities were retained.
+- Conversion from pfile to bfile can lose dosage or richer metadata; report this loss.
+- Never infer that `.bed` and `.pgen` with the same prefix contain the same sample/variant set without count and ID checks.
+
+Risk boundary: PLINK conversion can silently simplify genotype representation. Downstream methods must know whether they received hard calls, dosage-like values, or a pruned marker subset.
+
+## Imputation quality boundary
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_genotype_processing_imputation_quality_boundary
+  version: v2
+  species: multi_species
+  blueprint_scope: genotype_processing
+  evidence_level: expert_opinion
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Imputation can improve marker density, but imputed variants should not be treated as the same evidence level as directly genotyped variants. Every downstream module should know which markers or dosages are imputed.
+
+Minimum imputation quality fields:
+- reference panel name, species, breed composition, genome build, and version
+- phasing method and whether pedigree was used
+- imputation software and version
+- quality metric such as R2, INFO, dosage certainty, or tool-specific equivalent
+- MAF bin or rare-variant summary for quality interpretation
+- retained/excluded imputed variant counts
+
+Downstream rules:
+- GWAS should keep imputation quality and dosage/hard-call status visible.
+- selection scans using haplotypes require phased output provenance.
+- genomic prediction should evaluate whether imputed markers improve validation metrics.
+- functional annotation should not overstate imputed rare variants without quality support.
+
+Submit boundary:
+- GeneAgent can plan and review imputation now.
+- Automated imputation execution requires a dedicated wrapper, reference-panel path contract, scatter/gather policy, and validation report tests.
+
+Risk boundary: a high marker count after imputation is not automatically higher evidence. Quality, panel match, and validation are the deciding context.
+
+## Reference assembly record policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_genotype_processing_reference_assembly_record
+  version: v2
+  species: multi_species
+  blueprint_scope: genotype_processing
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Reference assembly context must travel with genotype data. This is essential for liftover, GWAS/QTL interpretation, selection-signature windows, pangenome evidence, gene annotation, and report traceability.
+
+Assembly record fields:
+- species and assembly name
+- assembly accession or provider when available
+- chromosome naming convention
+- coordinate base and interval convention for derived region files
+- reference FASTA path or external accession
+- annotation resource paired with the assembly
+- liftover source and target when conversion occurred
+
+Operational rules:
+- unknown assembly is allowed for inventory but blocks annotation-heavy interpretation.
+- contig renaming must be recorded as a mapping artifact.
+- candidate regions should always report the assembly used.
+- cross-assembly comparisons should keep both original and transformed coordinates.
+- pangenome or graph-genome interpretation should state how coordinates were mapped to a linear build.
+
+Risk boundary: assembly ambiguity is one of the fastest ways to make candidate genes, QTL overlaps, and selected regions unreproducible.

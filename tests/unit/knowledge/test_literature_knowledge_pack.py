@@ -33,11 +33,15 @@ def test_literature_packs_parse_without_metadata_errors() -> None:
 def test_classic_and_recent_pack_sizes_match_curation_targets() -> None:
     classic = _build([CLASSIC_PACK])
     recent = _build([RECENT_PACK])
+    classic_doc_ids = {item.doc_id for item in classic.items}
+    recent_doc_ids = {item.doc_id for item in recent.items}
 
     assert classic.errors == []
     assert recent.errors == []
-    assert classic.manifest.doc_count == 42
-    assert recent.manifest.doc_count == 72
+    assert len([doc_id for doc_id in classic_doc_ids if doc_id.startswith("paper_")]) == 42
+    assert len([doc_id for doc_id in recent_doc_ids if doc_id.startswith("paper_")]) == 72
+    assert "literature_landmark_method_evidence_matrix" in classic_doc_ids
+    assert "literature_recent_high_impact_evidence_matrix" in recent_doc_ids
 
 
 def test_literature_doc_ids_are_unique_across_references() -> None:
@@ -56,6 +60,35 @@ def test_recent_pack_is_inside_2022_2026_window() -> None:
     assert min(years) >= 2022
     assert max(years) <= 2026
     assert sum(1 for year in years if 2022 <= year <= 2026) / len(years) == 1.0
+
+
+def test_recent_pack_distinguishes_verified_and_candidate_cards() -> None:
+    text = RECENT_PACK.read_text(encoding="utf-8")
+    sections = re.split(r"(?=^## RECENT-\d+ )", text, flags=re.MULTILINE)
+    recent_sections = [section for section in sections if section.startswith("## RECENT-")]
+    verified_count = 0
+    candidate_count = 0
+
+    assert len(recent_sections) == 72
+    for section in recent_sections:
+        heading = section.splitlines()[0]
+        paper_line = next(line for line in section.splitlines() if line.startswith("- Paper:"))
+        doi_line = next(line for line in section.splitlines() if line.startswith("- DOI/PMID:"))
+        source_line = next(line for line in section.splitlines() if line.startswith("- Source links:"))
+        needs_refresh = "verify before citation export" in doi_line
+
+        if needs_refresh:
+            candidate_count += 1
+            assert "DOI to verify before citation export" in doi_line or re.search(r"`10\.[^`]+`", doi_line), heading
+            assert "[Google Scholar]" in source_line, heading
+        else:
+            verified_count += 1
+            assert "*" in paper_line, heading
+            assert re.search(r"`10\.[^`]+`|PMID `\d+`", doi_line), heading
+            assert "[Google Scholar]" not in source_line or source_line.count("](") > 1, heading
+
+    assert verified_count >= 8
+    assert candidate_count >= 1
 
 
 def test_public_knowledge_base_name_is_not_stage_named() -> None:

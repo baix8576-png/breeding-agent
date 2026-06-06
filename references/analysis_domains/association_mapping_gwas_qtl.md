@@ -1,4 +1,4 @@
-# Association Mapping GWAS And QTL Domain
+﻿# Association Mapping GWAS And QTL Domain
 
 This file defines the association-mapping knowledge domain behind the `association_mapping_gwas` execution bridge. It separates first-pass GWAS execution from QTL mapping, fine mapping, and candidate interpretation.
 
@@ -229,3 +229,130 @@ Must remain knowledge/planning only until implemented:
 - candidate gene annotation and biological validation
 
 Risk boundary: this bridge supports first-pass association mapping, not full locus discovery, fine mapping, or functional validation.
+
+## Trait model policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_association_mapping_trait_model_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: association_mapping
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Trait model selection must happen before GWAS command generation. Different phenotype types imply different model families, covariates, diagnostics, and interpretation boundaries.
+
+Trait model mapping:
+- continuous trait: linear or mixed linear model after distribution and covariate review
+- binary trait: logistic or mixed binary model; case/control balance must be visible
+- count trait: count-aware model or transformed first-pass only with caveat
+- ordinal trait: ordinal-aware model or exploratory coding with caveat
+- repeated records: model must account for animal, time, or environment structure
+- EBV or deregressed proof: prediction/evaluation context must be recorded before association claims
+
+Current bridge:
+- PLINK2 `--glm` can support bounded first-pass screening for suitable traits.
+- Mixed-model GWAS, repeated-record models, and family/linkage QTL are planning-only until wrappers exist.
+
+Risk boundary: choosing the wrong trait model can create significant results that are only artifacts of coding or repeated records.
+
+## Covariate and PC policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_association_mapping_covariate_pc_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: association_mapping
+  evidence_level: expert_opinion
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+GWAS covariates should be chosen from phenotype biology, batch design, population structure, and relatedness evidence. GeneAgent should propose covariates with reasons rather than automatically injecting all available columns.
+
+Common covariate classes:
+- biological: sex, age, parity, developmental stage, body weight when not downstream of the trait
+- management: farm, batch, hatch, season, pen, flock, herd
+- technical: chip, sequencing lane, caller, batch
+- population structure: reviewed PC scores or ancestry-like covariates
+- family/relatedness: GRM or mixed-model random effects when supported
+
+PC rules:
+- PCs used as GWAS covariates should come from the same retained genotype cohort or a documented projection.
+- PC count should be justified by structure diagnostics and phenotype association.
+- PCs should not replace GRM correction in close-relative or family-based cohorts.
+- PCs should not absorb the biological contrast under test without review.
+
+Risk boundary: covariates are not neutral. Missing covariates can inflate false positives, while leakage or overcorrection can hide real signals.
+
+## Multiple testing policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_association_mapping_multiple_testing_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: association_mapping
+  evidence_level: expert_opinion
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Multiple testing context must accompany every GWAS or marker-level scan. Reports should never list significant markers without saying how significance or prioritization was defined.
+
+Acceptable reporting modes:
+- Bonferroni threshold with tested-marker count
+- false discovery rate when appropriate
+- permutation threshold when implemented
+- suggestive threshold clearly labeled as exploratory
+- top-N candidate list clearly labeled as ranking, not significance
+
+Minimum fields:
+- number of tested markers
+- number of phenotypes or traits tested
+- threshold method
+- genomic inflation or QQ calibration artifact when available
+- whether relatedness or stratification correction was used
+- lead-marker clumping or region-merging rule when reported
+
+Risk boundary: "top hits" and "significant loci" are different claims. GeneAgent must preserve the claim type.
+
+## QTL overlap evidence policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_association_mapping_qtl_overlap_evidence_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: association_mapping
+  evidence_level: expert_opinion
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Overlap with QTL databases or prior literature is supporting evidence, not validation. QTL evidence must be handled with assembly, trait, population, and interval-width context.
+
+Minimum overlap fields:
+- candidate region and assembly
+- QTL source, version, or citation
+- QTL trait term and trait relationship to the study phenotype
+- overlap type: marker-in-QTL, interval overlap, nearest QTL, or same gene
+- interval width and number of genes
+- species and population of the prior QTL
+
+Interpretation rules:
+- broad QTL intervals provide weak support unless narrowed by independent evidence
+- trait ontology mismatch should be stated
+- cross-species QTL overlap is comparative context only
+- QTL overlap should be routed to functional annotation for gene/regulatory evidence
+- absence of known QTL does not invalidate a new association
+
+Risk boundary: database overlap can make a candidate sound established. GeneAgent should state whether overlap is strong, weak, indirect, missing, or conflicting evidence.

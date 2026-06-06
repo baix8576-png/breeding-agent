@@ -1,4 +1,4 @@
-# Selection Signatures Domain
+﻿# Selection Signatures Domain
 
 This file defines the selection-signature knowledge domain. Some basic statistics are currently available through the population-genetics wrapper, but complete selection-scan workflows require additional contracts.
 
@@ -160,3 +160,132 @@ Must remain knowledge/planning only until implemented:
 - functional annotation of selected windows
 
 Risk boundary: this execution bridge supports descriptive and first-pass selection-adjacent statistics, not a complete selection-signature deliverable.
+
+## Fst window policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_selection_signatures_fst_window_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: population_genetics
+  evidence_level: expert_opinion
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Fst-style statistics require a window and population policy. GeneAgent should distinguish site-level values, window summaries, and candidate-region calls.
+
+Minimum plan fields:
+- population A and population B sample lists
+- sample counts after QC for each population
+- statistic form or tool used
+- window size and step size when windowed
+- marker filters before the scan
+- reference assembly and chromosome scope
+
+Report requirements:
+- show genome-wide distribution or threshold rule
+- report number of variants per candidate window
+- label high-Fst regions as differentiation outliers, not automatically selection targets
+- include sample-size imbalance and missingness caveats
+- connect candidate windows to functional annotation only after coordinate and assembly checks
+
+Risk boundary: Fst can reflect drift, founder effects, sampling, structure, or selection. It is a candidate-generation statistic, not causal evidence.
+
+## Haplotype scan prerequisite policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_selection_signatures_haplotype_scan_prerequisites
+  version: v2
+  species: multi_species
+  blueprint_scope: population_genetics
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Haplotype-based selection scans such as iHS, XP-EHH, nSL, and related EHH-family methods require inputs that the current first-pass wrapper does not guarantee.
+
+Prerequisites:
+- phased haplotypes with phasing method and quality context
+- genetic or physical map positions appropriate for the method
+- ancestral allele status when the statistic requires it, or a documented workaround
+- population labels and sample counts
+- compatible genome build and chromosome naming
+- filtering of low-quality, low-frequency, or poorly imputed variants
+
+Current automation boundary:
+- GeneAgent may produce a planning checklist and report caveats.
+- It must not claim to have run iHS, XP-EHH, or EHH-family scans unless a dedicated wrapper, tool manifest, and tested artifact contract are present.
+
+Risk boundary: haplotype scans are highly sensitive to phasing, allele orientation, and population definition. Missing prerequisites should block execution, not merely warn.
+
+## Composite consensus policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_selection_signatures_composite_consensus_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: population_genetics
+  evidence_level: expert_opinion
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Composite selection evidence can be useful only when each statistic's assumptions and parameter choices are visible. A consensus table should not hide weak or incompatible evidence behind a single score.
+
+Supported evidence classes:
+- differentiation: Fst, PBS-like contrasts, dXY-like summaries
+- frequency spectrum: Tajima's D and related window summaries
+- haplotype: iHS, XP-EHH, nSL when phased prerequisites exist
+- composite likelihood: XP-CLR or CLR-style scans when implemented
+- ROH islands or shared autozygosity regions
+
+Consensus rules:
+- keep one row per candidate interval with one column per statistic family
+- record whether evidence is direct, supporting, missing, or not applicable
+- do not combine statistics from different sample sets without flagging the difference
+- rank regions by transparent criteria, not by unreviewed weighted sums
+- require functional annotation as a separate evidence layer
+
+Risk boundary: consensus does not eliminate demographic confounding. It only makes multi-statistic evidence easier to review.
+
+## Candidate region merge policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_selection_signatures_candidate_region_merge_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: population_genetics
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Candidate selection regions should be merged by explicit interval logic. This prevents a report from counting the same signal many times or merging unrelated nearby signals without explanation.
+
+Merge fields:
+- source statistic and input file
+- chromosome, start, end, and assembly
+- window size and step
+- threshold or ranking rule
+- overlap or distance rule for merging
+- number of supporting windows or markers
+- population contrast
+
+Recommended merge policy:
+- merge overlapping windows from the same statistic when they meet the threshold
+- keep adjacent windows separate unless a maximum-gap rule is declared
+- preserve statistic-specific peaks inside a merged region
+- do not merge across chromosomes, contigs, or assembly versions
+- route merged regions to functional annotation with the original evidence columns intact
+
+Risk boundary: candidate interval merging is an interpretation step. It must not erase weak support, missing evidence, or statistic-specific caveats.

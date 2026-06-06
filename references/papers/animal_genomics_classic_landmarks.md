@@ -1,6 +1,40 @@
-# Animal Genomics Classic Landmark Papers
+﻿# Animal Genomics Classic Landmark Papers
 
 This pack complements the existing `qc/pca/grm/genomic_prediction` seed packs and the separated association-mapping domain. It stores durable landmark evidence for GeneAgent knowledge retrieval without duplicating every already-indexed core card.
+
+## Landmark method evidence matrix
+
+```yaml
+knowledge_item.v2:
+  doc_id: literature_landmark_method_evidence_matrix
+  version: v2
+  species: multi_species
+  blueprint_scope: knowledge_governance
+  evidence_level: sop
+  source: paper
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+This matrix tells GeneAgent how to use landmark papers without pretending that historical papers provide modern software defaults.
+
+| Method family | Landmark evidence use | Current GeneAgent route |
+|---|---|---|
+| quantitative genetics foundation | Fisher, Lush, Henderson-style theory explains inheritance, selection, and mixed model origins | `quantitative_genetics`, reports, model caveats |
+| population differentiation and structure | Wright and related population-genetic theory supports drift, Fst, structure, and inbreeding concepts | `population_genetics`, PCA/selection interpretation |
+| BLUP and mixed models | Henderson and follow-on mixed-model literature explains fixed/random effects, relationship matrices, and prediction | `relationship_matrix_variance_components`, `genomic_prediction_breeding_value` |
+| genomic selection | Meuwissen, Hayes, Goddard and later GBLUP/ssGBLUP papers anchor prediction logic | `genomic_prediction_breeding_value` |
+| GRM and relationship matrices | VanRaden, Legarra, and related GRM/ssGBLUP papers anchor `G`, `A`, and `H` matrix language | `relationship_matrix_variance_components` |
+| association and multiple testing | GWAS and QTL landmark methods anchor statistical association claims | `association_mapping_gwas_qtl` |
+| imputation and genotype processing | Beagle/FImpute-style method cards explain imputation assumptions | `genotype_processing` |
+
+Use rules:
+- Cite landmark papers for origin, terminology, and durable concepts.
+- Pair landmarks with recent primary or benchmark evidence when giving operational advice.
+- Do not derive tool parameters from historical theory alone.
+- Keep historical evidence separate from current species-specific validation.
+
+Risk boundary: landmark evidence prevents conceptual drift, but it is not enough to justify modern automated execution settings.
 
 ## CLASSIC-01 Fisher 1918 infinitesimal model
 ```yaml

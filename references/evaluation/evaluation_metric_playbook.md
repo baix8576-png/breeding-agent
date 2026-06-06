@@ -1,4 +1,4 @@
-# Evaluation Metric Playbook
+﻿# Evaluation Metric Playbook
 
 ## Cross validation patterns
 
@@ -147,3 +147,37 @@ Minimum fields:
 - manual confirmation requirement
 
 Risk boundary: a diagnostic suggestion must not automatically resubmit a failed cluster job.
+
+## Operational acceptance gate
+
+```yaml
+knowledge_item.v2:
+  doc_id: evaluation_operational_acceptance_gate
+  version: v2
+  species: multi_species
+  blueprint_scope: reporting_audit
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: test_eval
+```
+
+Operational acceptance decides whether a GeneAgent run is complete enough for delivery, independent of whether the scientific result is impressive.
+
+Gate checklist:
+- input validation completed with no blocking ID, sidecar, or path errors
+- dry-run or submit-preview was recorded before execution
+- execution mode and resource caps are visible
+- submitted command, wrapper path, job ID or shell PID, stdout, and stderr paths are recorded
+- report index and audit bundle exist
+- every expected artifact is present or has an explicit missing-artifact diagnostic
+- no breaker condition is unresolved
+- manual-review items are listed separately from automated actions
+
+Failure states:
+- `accepted`: all required traces and artifacts exist
+- `accepted_with_caveat`: artifact exists but scientific interpretation has stated limits
+- `blocked`: missing critical input, execution trace, report index, audit bundle, or safety approval
+- `diagnostic_only`: execution did not run, but the failure explanation is complete
+
+Risk boundary: a run can be computationally successful and operationally incomplete if traceability, logs, or report artifacts are missing.

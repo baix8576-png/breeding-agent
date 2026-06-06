@@ -1,4 +1,4 @@
-# Literature Curation Policy
+﻿# Literature Curation Policy
 
 This policy defines how papers enter the GeneAgent knowledge base.
 
@@ -86,3 +86,41 @@ knowledge_item.v2:
 - Local-only knowledge: original PDFs, GROBID TEI, extracted full text, chunks, BM25 indexes, embedding indexes.
 - Source links may point to publishers, PubMed, CrossRef, Semantic Scholar, or Google Scholar.
 - Do not commit copyrighted PDFs or full-text extraction outputs without explicit license review.
+
+## Card update and dedup policy
+```yaml
+knowledge_item.v2:
+  doc_id: "literature_card_update_and_dedup_policy"
+  version: "v2"
+  species: "multi_species"
+  blueprint_scope: knowledge_governance
+  evidence_level: "sop"
+  source: "ontology"
+  updated_at: "2026-06-06T21:30:00+08:00"
+  owner: "llm_orchestrator"
+```
+
+Paper cards should be updated rather than duplicated when the same work appears in multiple packs. A card can be referenced by species, method family, or module, but the canonical bibliographic facts should remain traceable to one `doc_id`.
+
+Dedup keys:
+- DOI when available
+- PMID or PubMed record when available
+- title normalized for case, punctuation, and subtitle
+- first author plus year when DOI/PMID is absent
+- publisher URL or stable resource accession for resource papers
+
+Update rules:
+- Prefer adding module-use bullets to an existing card over creating a second card for the same paper.
+- If a landmark paper appears in both classic and method-specific packs, keep one card as canonical and use indexes to route retrieval.
+- If a recent resource paper has species-specific companion papers, keep the overview and species cards separate.
+- Mark uncertain metadata as `verify before citation export`.
+- Do not replace a curated boundary/risk note with a citation-only entry.
+
+Review triggers:
+- duplicate DOI across paper files
+- the same title with different year or journal
+- a paper moved from preprint to peer-reviewed publication
+- a DOI corrected by CrossRef, PubMed, Semantic Scholar, publisher page, or Zotero
+- a low-quality or restricted source discovered after initial curation
+
+Risk boundary: duplicate cards make retrieval look stronger than the evidence really is. Deduplication keeps evidence counts honest.

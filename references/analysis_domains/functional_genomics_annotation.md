@@ -1,4 +1,4 @@
-# Functional Genomics Annotation Domain
+﻿# Functional Genomics Annotation Domain
 
 This file defines the interpretation domain used after GWAS, QTL, fine-mapping, selection scans, ROH islands, and other candidate-region discovery steps. It keeps functional evidence separate from statistical discovery and from causal validation.
 
@@ -292,3 +292,105 @@ Submit boundary:
 - Raw FASTA/GFF/GTF/VCF/BAM/reference panels must remain outside Git and inside approved local or remote work roots.
 
 Risk boundary: current automation can explain and structure evidence, but it must not invent annotation results or pretend that external databases were queried when they were not.
+
+## Coordinate liftover check
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_functional_genomics_annotation_coordinate_liftover_check
+  version: v2
+  species: multi_species
+  blueprint_scope: association_mapping
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Functional annotation starts with coordinates. Before a candidate region is compared with genes, QTL, eQTL, pangenome, SV, or single-cell resources, GeneAgent must confirm that the coordinate system is compatible.
+
+Coordinate checklist:
+- source analysis domain and candidate ID
+- chromosome, start, end, and genome assembly
+- whether coordinates are one-based or zero-based in the source artifact
+- whether interval end is inclusive or half-open
+- liftover source assembly and target assembly if translation occurred
+- number of unresolved or multi-mapped candidates
+- original coordinate retained in the report table
+
+Blocking conditions:
+- candidate region lacks assembly
+- annotation resource uses a different assembly and no liftover policy is available
+- chromosome naming cannot be mapped
+- liftover creates multiple incompatible target intervals
+- candidate interval crosses contig or assembly-gap ambiguity
+
+Risk boundary: annotation on the wrong assembly can make the nearest gene, QTL overlap, and regulatory evidence entirely wrong.
+
+## Tissue relevance matrix
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_functional_genomics_annotation_tissue_relevance_matrix
+  version: v2
+  species: multi_species
+  blueprint_scope: association_mapping
+  evidence_level: expert_opinion
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Tissue and cell relevance should be recorded as a matrix rather than a single narrative sentence. This is especially important when using FarmGTEx, PigGTEx, ChickenGTEx, cattle regulatory atlases, single-cell atlases, or cross-species expression evidence.
+
+Recommended matrix columns:
+- candidate gene or region
+- trait or biological process
+- tissue or cell type
+- evidence source and species
+- genome build or annotation version
+- evidence type: expression, eQTL, sQTL, chromatin, marker gene, literature
+- relevance label: direct, context, indirect, missing, conflicting, or not applicable
+- caveat about breed, age, sex, environment, or developmental stage
+
+Interpretation rules:
+- prioritize tissues directly related to the trait biology
+- distinguish gene expression from variant-to-expression association
+- keep single-cell cell-type evidence separate from bulk tissue evidence
+- flag cross-species evidence as indirect unless species-specific data exist
+- show missing evidence instead of implying absence of biology
+
+Risk boundary: tissue relevance is context-specific. A gene expressed in many tissues is not automatically the causal gene for the studied trait.
+
+## SV gene disruption policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_functional_genomics_annotation_sv_gene_disruption_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: association_mapping
+  evidence_level: expert_opinion
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Structural variants and copy-number variants can disrupt genes, regulatory elements, dosage, or haplotype context. Their interpretation must distinguish direct cohort evidence from literature or pangenome-derived context.
+
+SV/CNV annotation fields:
+- variant class: deletion, insertion, inversion, duplication, translocation, CNV, or presence/absence
+- coordinate system and assembly
+- detection source: user dataset, public pangenome, paper card, or curated database
+- overlap with exon, intron, UTR, promoter, enhancer, or intergenic region
+- affected transcript or gene model version
+- dosage or presence/absence evidence when available
+- relationship to GWAS/QTL/selection/ROH candidate interval
+
+Do not overclaim:
+- an SV overlap does not prove gene disruption without breakpoint and transcript context
+- CNV dosage evidence from another breed may not apply to the current cohort
+- pangenome presence/absence evidence is not equivalent to individual genotypes
+- structural annotation should not be mixed with SNP-only evidence without stating representation differences
+
+Risk boundary: SV/CNV evidence can be decisive when directly genotyped, but only contextual when inferred from literature or incompatible resources.

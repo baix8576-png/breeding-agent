@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Complete the GeneAgent knowledge base by small reviewable modules, with a safe local batch source-fetch tool for open/public documents.
+**Goal:** Complete the GeneAgent knowledge base by small reviewable modules, with a safe local batch source-fetch tool for open/public documents. The 2026-06-06 pass completes structural/index coverage and operational knowledge coverage; manuscript-grade DOI/PMID refresh for all candidate recent-literature cards remains a separate curation follow-up.
 
 **Architecture:** Static, copyright-safe knowledge assets live in `references/*` and are indexed by `ReferenceKnowledgeIndexer`; local raw sources live only in `.geneagent/knowledge/*`. Scientific organization is driven by `domain_scope` and `references/analysis_domains/*`, while `blueprint_scope` stores the current knowledge/execution module scope (`knowledge_governance`, `genotype_processing`, `population_genetics`, `quantitative_genetics`, `association_mapping`, or `reporting_audit`).
 
@@ -101,15 +101,15 @@ Expected after implementation: PASS.
 - Modify: `references/input_specs/dataset-bundle-template.md`
 - Test: `tests/unit/knowledge/test_references_coverage.py`
 
-- [ ] **Step 1: Add regression query**
+- [x] **Step 1: Add regression query**
 
 Add a query expectation for `sample manifest phenotype covariate pedigree sex batch family id sidecar checksum`.
 
-- [ ] **Step 2: Expand knowledge assets**
+- [x] **Step 2: Expand knowledge assets**
 
 Add `##` sections for phenotype dictionaries, covariate typing, pedigree consistency, sidecar checksums, and missing-file diagnostics.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 Run: `.\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py`.
 
@@ -123,15 +123,15 @@ Expected: PASS with no metadata errors.
 - Modify: `references/parameter_playbooks/qc_defaults.md`
 - Test: `tests/unit/knowledge/test_references_coverage.py`
 
-- [ ] **Step 1: Add regression queries**
+- [x] **Step 1: Add regression queries**
 
 Add queries for `variant missingness sample missingness MAF HWE heterozygosity sex check duplicate samples` and `bcftools norm plink make-bed allele flip liftover imputation reference panel`.
 
-- [ ] **Step 2: Expand knowledge assets**
+- [x] **Step 2: Expand knowledge assets**
 
 Add focused sections for each QC decision point and state operator-review thresholds for high missingness, relatedness surprises, and allele-strand ambiguity.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 Run: `.\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py`.
 
@@ -146,15 +146,15 @@ Expected: PASS with query hits from QC and genotype-processing assets.
 - Modify: `references/analysis_domains/association_mapping_gwas_qtl.md`
 - Test: `tests/unit/knowledge/test_references_coverage.py`
 
-- [ ] **Step 1: Add regression queries**
+- [x] **Step 1: Add regression queries**
 
 Add queries for PCA/admixture, ROH/LD/diversity, Fst/iHS/XP-EHH/XP-CLR, and GWAS/QTL mixed-model correction.
 
-- [ ] **Step 2: Expand knowledge assets**
+- [x] **Step 2: Expand knowledge assets**
 
 Add sections for method family selection, population definition, candidate interval reporting, covariate correction, and false-positive risk.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 Run: `.\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py`.
 
@@ -172,19 +172,19 @@ Expected: PASS and at least one hit per population/association module query.
 - Test: `tests/unit/knowledge/test_literature_knowledge_pack.py`
 - Test: `tests/unit/knowledge/test_references_coverage.py`
 
-- [ ] **Step 1: Add regression queries**
+- [x] **Step 1: Add regression queries**
 
 Add queries for `FarmGTEx eQTL single-cell regulatory atlas pangenome SV CNV candidate gene`, `GRM REML heritability variance components`, and `GEBV genomic prediction bias calibration validation`.
 
-- [ ] **Step 2: Expand knowledge assets**
+- [x] **Step 2: Expand knowledge assets**
 
-Add cards and domain sections only after DOI/PMID/publisher metadata is checked; store raw PDFs only in `.geneagent/knowledge/raw_pdfs` when license permits.
+Add cards and domain sections with an explicit distinction between verified cards and candidate retrieval cards. Verified cards must include DOI/PMID or publisher links; candidate cards must keep `verify before citation export` so they are never used as manuscript-grade citations without a refresh. Store raw PDFs only in `.geneagent/knowledge/raw_pdfs` when license permits.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 Run: `.\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_literature_knowledge_pack.py tests\unit\knowledge\test_references_coverage.py`.
 
-Expected: PASS with unique doc IDs and recent-literature coverage retained.
+Expected: PASS with unique doc IDs, recent-literature coverage retained, and candidate citation-refresh boundaries explicit.
 
 ### Task 7: Complete M14-M15 Operational And Retrieval QA
 
@@ -195,15 +195,15 @@ Expected: PASS with unique doc IDs and recent-literature coverage retained.
 - Modify: `references/report_templates/*`
 - Modify: `tests/unit/knowledge/test_references_coverage.py`
 
-- [ ] **Step 1: Add operational regression queries**
+- [x] **Step 1: Add operational regression queries**
 
 Add queries for `remote execution logs stdout stderr report index audit bundle`, `plink2 bcftools gcta failure recovery`, and `knowledge retrieval trace source path anchor evidence level`.
 
-- [ ] **Step 2: Expand knowledge assets**
+- [x] **Step 2: Expand knowledge assets**
 
 Add sections for safe retry, no-overwrite rules, report review, diagnostic escalation, and audit bundle traceability.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 Run: `.\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge`.
 
@@ -214,30 +214,38 @@ Expected: PASS for all knowledge tests.
 **Files:**
 - Modify: `docs/HANDOFF.md`
 
-- [ ] **Step 1: Run targeted knowledge gate**
+- [x] **Step 1: Run targeted knowledge gate**
 
 Run: `.\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge`.
 
 Expected: PASS.
 
-- [ ] **Step 2: Run compile gate**
+- [x] **Step 2: Run compile gate**
 
 Run: `$env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests`.
 
 Expected: PASS.
 
-- [ ] **Step 3: Run full test gate**
+- [x] **Step 3: Run full test gate**
 
 Run: `.\.venv\Scripts\python.exe -m pytest -q`.
 
 Expected: PASS before claiming a batch complete.
 
-- [ ] **Step 4: Run diff check**
+- [x] **Step 4: Run diff check**
 
 Run: `git diff --check -- references src tests docs\HANDOFF.md`.
 
 Expected: PASS, with only line-ending warnings allowed.
 
-- [ ] **Step 5: Update HANDOFF**
+- [x] **Step 5: Update HANDOFF**
 
 Append a new session entry to `docs/HANDOFF.md` with `completed_checklist`, `not_yet_done_checklist`, commands, gate result, risks, and next actions.
+
+---
+
+## Cleanup Publication Status
+
+- [x] M02-M15 structural/index coverage has been expanded across `references/*`.
+- [x] Knowledge tests distinguish verified recent-literature cards from internal candidate cards that require citation refresh.
+- [ ] Future literature curation should replace every `verify before citation export` candidate with a DOI/PMID-confirmed publisher card before manuscript-grade citation export.

@@ -1,4 +1,4 @@
-# Knowledge Ontology Controls
+﻿# Knowledge Ontology Controls
 
 ## Terminology glossary
 
@@ -141,3 +141,106 @@ Trace requirements:
 - Mark external fallback evidence separately from local `references/*` assets.
 
 Risk boundary: an answer without trace should be treated as advisory, not as a production planning rule.
+
+## Retrieval regression query catalog
+
+```yaml
+knowledge_item.v2:
+  doc_id: ontology_retrieval_regression_query_catalog
+  version: v2
+  species: multi_species
+  blueprint_scope: knowledge_governance
+  evidence_level: sop
+  source: ontology
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: llm_orchestrator
+```
+
+Retrieval regression queries prove that the GeneAgent knowledge base can answer across all completion modules, not only the most common QC/PCA/GRM paths.
+
+Required query families:
+- input bundle, sample ID, phenotype dictionary, covariate typing, pedigree consistency
+- genotype QC, missingness, MAF, HWE, heterozygosity, sex check, duplicate samples
+- VCF/PLINK normalization, allele alignment, liftover, phasing, imputation, reference assembly
+- PCA, admixture, cluster naming, LD, ROH, diversity, selection signatures
+- GWAS, QTL, multiple testing, covariate/PC policy, candidate interpretation
+- functional annotation, FarmGTEx, eQTL, single-cell, pangenome, SV/CNV
+- GRM, A/G/H matrices, REML, heritability, GBLUP, GEBV, validation, calibration
+- remote execution, failure recovery, report index, audit bundle, traceability
+
+Maintenance rule:
+- Every new formal knowledge module should add or reuse at least one regression query.
+- Query expectations should assert a doc ID family, not a fragile exact ranking.
+- Query failures should trigger either content improvement or test expectation review, not keyword stuffing.
+
+Risk boundary: a knowledge file that cannot be retrieved is not operationally useful, even if it is well written.
+
+## Index health check policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: ontology_index_health_check_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: knowledge_governance
+  evidence_level: sop
+  source: ontology
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: llm_orchestrator
+```
+
+Index health checks determine whether `references/*` is ready for local-first RAG.
+
+Minimum checks:
+- `ReferenceKnowledgeIndexer(Path("references")).build()` returns no metadata errors
+- every formal Markdown file outside the allowlist contains `knowledge_item.v2`
+- doc IDs are globally unique
+- every standard reference directory contributes searchable chunks
+- formal metadata uses current `blueprint_scope` values
+- raw PDFs, TEI/XML, extracted full text, VCF, BAM, FASTQ, FASTA, and index artifacts are absent from Git-tracked references
+- retrieval query catalog passes with at least one expected hit per major module
+
+Health states:
+- `healthy`: all checks pass
+- `degraded`: content exists but one or more retrieval families is weak
+- `blocked`: metadata errors, duplicate doc IDs, forbidden raw artifacts, or missing standard directory coverage
+
+Risk boundary: green runtime tests do not prove knowledge health unless they include indexer and retrieval coverage gates.
+
+## Chunk traceability review gate
+
+```yaml
+knowledge_item.v2:
+  doc_id: ontology_chunk_traceability_review_gate
+  version: v2
+  species: multi_species
+  blueprint_scope: knowledge_governance
+  evidence_level: sop
+  source: ontology
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: llm_orchestrator
+```
+
+Every chunk used for planning, parameter advice, diagnostic repair, or report interpretation must preserve traceability from answer back to source.
+
+Traceability fields:
+- `chunk_id`
+- `doc_id`
+- `source_path`
+- `section`
+- `page_or_anchor`
+- `blueprint_scope`
+- `species`
+- `evidence_level`
+- `source`
+- `updated_at`
+- `owner`
+
+Review rules:
+- Answers should cite or internally retain the `doc_id` and section for influential knowledge.
+- Low-confidence hits should not become hard execution defaults.
+- External fallback sources must be labeled separately from local `references/*`.
+- When two chunks conflict, prefer higher evidence level, newer curated SOP, or explicit species match, and record the conflict.
+- If no traceable chunk exists, return a coverage gap and add a curation task.
+
+Risk boundary: traceability is the difference between a helpful suggestion and an auditable production rule.

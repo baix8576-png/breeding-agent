@@ -1,6 +1,39 @@
-# Animal Genomics Recent High-Impact Papers (2022-2026)
+﻿# Animal Genomics Recent High-Impact Papers (2022-2026)
 
 This pack seeds GeneAgent knowledge retrieval with recent animal genomics literature anchors. Papers marked "verify before citation export" are accepted for internal retrieval and planning, but their DOI/PMID should be refreshed through CrossRef, PubMed, Semantic Scholar, or Zotero before manuscript-grade citation output.
+
+## Recent high impact evidence matrix
+
+```yaml
+knowledge_item.v2:
+  doc_id: literature_recent_high_impact_evidence_matrix
+  version: v2
+  species: multi_species
+  blueprint_scope: knowledge_governance
+  evidence_level: sop
+  source: paper
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+This matrix maps 2022-2026 high-impact literature cards to GeneAgent interpretation layers. It is for retrieval and report planning; citation exports must still refresh DOI/PMID and publisher metadata.
+
+| Evidence family | Typical recent anchors | GeneAgent use |
+|---|---|---|
+| FarmGTEx and species GTEx atlases | FarmGTEx, PigGTEx, ChickenGTEx, cattle regulatory atlas | tissue eQTL, regulatory variant, and candidate-gene context |
+| single-cell atlases | cattle and other livestock single-cell resources | cell-type relevance and tissue-context labels |
+| pangenome and T2T assemblies | bovine pangenome, indicine diversity, domestic animal pangenome reviews | SV/CNV and reference-bias caveats |
+| WGS and multi-omics prediction | WGS prediction, regulatory-feature prediction, multi-omics breeding papers | model feature evidence and validation caution |
+| adaptation and disease resistance | climate/adaptation, immunity, disease-resistance studies | selection-scan interpretation and species overlays |
+| species-focused resources | cattle, pig, poultry, sheep/goat, aquaculture papers | species-specific retrieval and report defaults |
+
+Use rules:
+- Use recent cards to update functional interpretation and species context.
+- Keep resource papers separate from cohort-specific validation.
+- Do not transfer evidence across species without marking it indirect.
+- Require `verify before citation export` review when a card was accepted for internal planning but not refreshed for manuscript use.
+
+Risk boundary: high-impact resource papers are strong context, but they do not automatically validate a user's cohort, trait, or candidate locus.
 
 ## RECENT-01 FarmGTEx project overview
 ```yaml

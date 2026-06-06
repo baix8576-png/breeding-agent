@@ -97,3 +97,182 @@ Sidecar handling:
 - Input files must remain inside the user-approved local or cluster workspace.
 
 This policy protects reproducibility and avoids submitting jobs that fail immediately on missing index or companion files.
+
+## Phenotype dictionary policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: input_phenotype_dictionary_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: genotype_processing
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Phenotype tables must be accompanied by a phenotype dictionary before they are used for GWAS, variance components, or genomic prediction. The dictionary can be a formal sidecar or a curated section in the run plan, but it must make trait meaning explicit.
+
+Minimum dictionary fields:
+- trait column name exactly as it appears in the file
+- biological trait name and measurement unit
+- trait direction where relevant, such as higher is better or lower is better
+- missing-value codes, censoring rules, and impossible-value ranges
+- phenotype type: continuous, binary, count, ordinal, repeated record, survival-like, EBV, deregressed proof, or adjusted phenotype
+- measurement context such as age, sex, farm, batch, season, tissue, or test environment
+
+Planning rules:
+- Do not silently choose the first numeric column as the target trait.
+- Do not transform traits without recording the transformation and whether original values remain available.
+- Treat repeated records as a modeling-design issue, not a duplicate-row error, when an animal can legitimately have multiple measurements.
+- Record whether the phenotype is raw, pre-adjusted, deregressed, or already model-derived.
+
+Submit blockers:
+- no trait column is identified
+- duplicate trait names map to different columns
+- binary traits are encoded ambiguously
+- missing-value codes overlap valid biological values
+- phenotype IDs cannot be linked to genotype IDs
+
+Risk boundary: phenotype semantics define the analysis. A perfectly valid genotype workflow can produce misleading results if trait units, missingness, repeated records, or adjustment status are unknown.
+
+## Covariate type policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: input_covariate_type_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: genotype_processing
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Covariates must be typed before a model is planned. Animal breeding datasets often contain sex, farm, batch, line, hatch, parity, age, environmental group, sequencing lane, chip version, and principal components in the same table; they cannot be treated as interchangeable numeric columns.
+
+Covariate typing checklist:
+- `categorical_fixed_effect`: sex, farm, line, hatch, batch, chip, lane, management group
+- `continuous_fixed_effect`: age, weight, parity number, inbreeding coefficient, dosage summary
+- `derived_structure_covariate`: PC scores or ancestry proportions after review
+- `blocking_or_split_variable`: family, farm, generation, year, line, or validation group
+- `do_not_model_without_review`: variables downstream of the trait, leakage-prone summaries, or post-outcome measurements
+
+Operational rules:
+- Keep sample ID, trait, and covariate columns distinct.
+- Record the intended model role of every covariate.
+- Treat covariates with many missing values as review items before imputation or row removal.
+- Do not add PCs, breed labels, or batch variables automatically; propose them with evidence from structure/QC reports.
+- Preserve categorical level counts and rare-level warnings.
+
+Risk boundary: covariates can remove confounding or introduce leakage. GeneAgent should expose covariate intent and require review when a variable could encode the outcome or validation split.
+
+## Pedigree consistency policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: input_pedigree_consistency_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: genotype_processing
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Pedigree inputs are optional for many first-pass workflows, but once supplied they become part of the identity and model contract. Pedigree consistency checks should run before GRM comparison, ssGBLUP planning, family-blocked validation, or relatedness interpretation.
+
+Minimum pedigree columns:
+- animal ID
+- sire ID
+- dam ID
+- optional sex, birth year, breed, flock/herd, family, generation, or line
+
+Consistency checks:
+- animal IDs must not be duplicated
+- sire and dam IDs should not equal the animal ID
+- parent IDs should either appear as animals or be marked as founders/missing
+- sex-coded parent roles should be plausible when sex metadata exists
+- cycles in parentage should block pedigree-based modeling
+- genotype IDs should map to pedigree IDs with an explicit genotyped-animal subset
+
+Use in downstream planning:
+- compare pedigree relationship and genomic relationship only after ID mapping is verified
+- use family or generation labels for validation splits when leakage risk matters
+- treat missing parents as ordinary pedigree information, not as file corruption
+- keep pedigree-derived exclusions separate from genotype QC exclusions
+
+Risk boundary: pedigree errors can silently distort ssGBLUP, family validation, relatedness interpretation, and inbreeding summaries.
+
+## Sidecar checksum policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: input_sidecar_checksum_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: genotype_processing
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Input sidecars and checksums protect reproducibility. GeneAgent should identify required companion files and record stable fingerprints for inputs that will be used in remote execution or repeated analysis.
+
+Sidecar examples:
+- VCF/BCF: `.tbi` or `.csi` index when random access is required
+- PLINK1: `.bed`, `.bim`, `.fam`
+- PLINK2: `.pgen`, `.pvar`, `.psam`
+- phenotype/covariate/pedigree: dictionary, schema, or column-role sidecar
+- annotation and reference resources: version manifest, genome build statement, and optional checksum file
+
+Checksum rules:
+- compute or accept SHA256 checksums for small metadata files when practical
+- record file size and modification time when hashing large genotype files is deferred
+- never modify a source file while calculating sidecars
+- store checksum reports in run artifacts, not by overwriting user inputs
+- flag checksum drift between dry-run and submit
+
+Submit blockers:
+- missing required sidecar for a declared input format
+- PLINK triplet prefix mismatch
+- VCF index older than the VCF when random access is required
+- checksum mismatch for a file with an expected checksum
+
+Risk boundary: sidecar drift is a reproducibility failure. A job that reads a changed VCF, phenotype table, or annotation file is a different analysis.
+
+## Missing file diagnostic policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: input_missing_file_diagnostic_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: genotype_processing
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Missing-file diagnostics should be helpful without guessing. The validator must explain which role is missing, which downstream stage is blocked, and which file or sidecar would unblock it.
+
+Diagnostic output should include:
+- requested role and original user-supplied path
+- normalized path with `/` separators
+- whether the primary file is missing or a sidecar is missing
+- expected suffixes or companion files
+- affected modules such as QC, PCA, GRM, GWAS, prediction, or report generation
+- whether a diagnostic-only plan can still be produced
+
+Recommended response:
+- use `blocked_for_submit` when the missing file prevents execution
+- use `warning_for_report` when the file is optional but limits interpretation
+- show exact examples of valid alternatives, such as `.bed/.bim/.fam` triplet or bgzip-indexed VCF
+- keep missing-file errors out of remote scripts; block before scheduler materialization
+
+Risk boundary: a missing file should never become a remote job failure when it could have been detected locally.

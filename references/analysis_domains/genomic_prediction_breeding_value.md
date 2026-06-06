@@ -1,4 +1,4 @@
-# Genomic Prediction And Breeding Value Domain
+﻿# Genomic Prediction And Breeding Value Domain
 
 This file defines the quantitative-genetics domain for genomic prediction, GBLUP/ssGBLUP boundaries, GEBV outputs, validation, and breeding-decision safeguards.
 
@@ -178,3 +178,144 @@ Submit blockers:
 - output overwrite without approval
 
 Risk boundary: this bridge produces first-pass prediction artifacts. It does not by itself establish validated breeding decisions.
+
+## Training and validation split policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_genomic_prediction_training_validation_split_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: quantitative_genetics
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Training and validation split design is part of the genomic prediction method. GeneAgent should not report model performance without stating how animals and records were split.
+
+Split types:
+- random individual split for first-pass internal checks
+- family-blocked split to reduce close-relative leakage
+- breed- or line-blocked split for transferability
+- farm, herd, flock, or batch-blocked split for environment robustness
+- time-forward or generation-forward split for deployment realism
+- external validation set when a target population is available
+
+Minimum split record:
+- split variable and random seed if used
+- number of animals and records per split
+- relatedness or family leakage summary when available
+- trait distribution per split
+- breed/line/farm/batch balance
+- whether repeated records from one animal are kept in one split
+
+Risk boundary: prediction accuracy from a leaked split can look excellent and fail in deployment. Split design must be visible before any performance claim.
+
+## Multi-breed validation policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_genomic_prediction_multi_breed_validation_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: quantitative_genetics
+  evidence_level: expert_opinion
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Multi-breed and cross-line prediction need explicit subgroup validation. A model that performs well in the combined cohort may fail in a smaller breed, line, or family group.
+
+Required subgroup checks:
+- sample count by breed, line, farm, batch, and generation when available
+- prediction metric by subgroup
+- bias or regression slope by subgroup
+- calibration plot or summary by subgroup when supported
+- marker and imputation quality differences by subgroup
+- whether training contains close relatives of validation animals
+
+Interpretation rules:
+- report pooled and subgroup metrics separately
+- do not claim cross-breed deployment from random split alone
+- treat severe subgroup bias as a deployment blocker
+- state when subgroup sample size is too small for reliable metrics
+- document whether breed labels are user-supplied, metadata-derived, or inferred
+
+Risk boundary: pooled performance can hide inequity and transfer failure. Breeding decisions need target-population evidence.
+
+## Model comparison policy
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_genomic_prediction_model_comparison_policy
+  version: v2
+  species: multi_species
+  blueprint_scope: quantitative_genetics
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Model comparison should be fair, reproducible, and tied to validation design. More complex models should be compared with the GBLUP baseline under the same split and metric definitions.
+
+Comparison requirements:
+- same training/validation/test split across models
+- same phenotype target and covariate policy
+- same marker set or documented feature differences
+- same metric definitions and denominators
+- hyperparameter tuning kept inside training data
+- uncertainty or repeated-split summary when available
+
+Model families:
+- GBLUP or ridge-like baseline
+- ssGBLUP only when pedigree and non-genotyped-animal scope are supported
+- Bayesian variable-selection models when trait architecture justifies them
+- machine-learning models only with adequate sample size, leakage control, and external validation
+
+Report rules:
+- show model complexity and compute cost
+- separate accuracy, bias, calibration, and subgroup transferability
+- avoid "best model" language when differences are within uncertainty
+- keep failed or non-converged model attempts visible in audit logs
+
+Risk boundary: model comparison is vulnerable to leakage and tuning bias. A higher metric is not meaningful unless the comparison is controlled.
+
+## Deployment decision gate
+
+```yaml
+knowledge_item.v2:
+  doc_id: domain_genomic_prediction_deployment_decision_gate
+  version: v2
+  species: multi_species
+  blueprint_scope: quantitative_genetics
+  evidence_level: sop
+  source: sop
+  updated_at: 2026-06-06T21:30:00+08:00
+  owner: popgen_quantgen
+```
+
+Prediction artifacts are not automatically deployment-ready. GeneAgent should require a deployment decision gate before any breeding action, marker deployment, or operational selection recommendation.
+
+Gate checklist:
+- target population is defined
+- validation split matches intended deployment scenario
+- accuracy, bias, calibration, and subgroup metrics are reviewed
+- phenotype target and economic direction are approved
+- input data provenance and model version are auditable
+- uncertainty or reliability labels are available or limitations are stated
+- fairness or subgroup risk is reviewed for breeds, lines, farms, or generations
+- human reviewer approves use beyond exploratory reporting
+
+Automatic blockers:
+- no held-out validation
+- strong calibration failure
+- severe subgroup failure in target population
+- missing audit trail from inputs to predictions
+- model trained on data outside the approved scope
+- output requested as a culling or final selection decision without review
+
+Risk boundary: GeneAgent can support genomic prediction, but final breeding decisions are domain-governed actions and must stay review-gated.
