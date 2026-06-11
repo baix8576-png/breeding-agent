@@ -70,6 +70,7 @@ def knowledge_search(
     include_embedding: bool = typer.Option(True, "--include-embedding/--no-include-embedding"),
     use_persisted_bm25: bool = typer.Option(True, "--use-persisted-bm25/--rebuild-bm25"),
     use_query_router: bool = typer.Option(True, "--planned/--raw"),
+    rerank: bool = typer.Option(True, "--rerank/--no-rerank"),
 ) -> None:
     """Search the persisted local runtime knowledge store."""
 
@@ -83,6 +84,7 @@ def knowledge_search(
             include_embedding=include_embedding,
             use_persisted_bm25=use_persisted_bm25,
             use_query_router=use_query_router,
+            rerank=rerank,
         )
     except (FileNotFoundError, ValueError) as error:
         console.print_json(json.dumps({"error": str(error), "action": "knowledge_search"}))

@@ -3634,3 +3634,49 @@ Paste this into a new session:
   - Start R05 by adding optional local reranking with deterministic defaults and no external embedding dependency.
   - Keep the active phased RAG goal open until R05-R06 are implemented and verified.
 - resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-11 17:11 +08:00 (R05 offline deterministic rerank)
+- intent_domain: `knowledge`, `system`
+- stage_id: `Local-first RAG`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\src\knowledge`, `D:\geneagent\src\cli`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\tests\e2e\cli`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`; this was local rerank work only. No SSH, remote shell, scheduler submit, bio tool execution, raw PDF handling, TEI extraction, external embedding service, external network call, or raw entity-data movement was performed.
+- contracts_impacted:
+  - No external API/runtime scheduler contracts changed.
+  - Added `KnowledgeRerankConfig` and `KnowledgeReranker` in `src/knowledge/rerank.py`.
+  - `RuntimeKnowledgeSearchResult` now exposes `rerank_applied` and `rerank_mode`.
+  - CLI `knowledge search` now supports `--rerank/--no-rerank`.
+- files_changed:
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\src\cli\app.py`
+  - `D:\geneagent\src\knowledge\__init__.py`
+  - `D:\geneagent\src\knowledge\rerank.py`
+  - `D:\geneagent\src\knowledge\runtime_store.py`
+  - `D:\geneagent\tests\unit\knowledge\test_rerank.py`
+  - `D:\geneagent\tests\e2e\cli\test_knowledge_cli.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added offline deterministic reranker with blueprint, species, evidence, source, and section-token bonuses.
+  - [x] Reranker appends explicit `rerank:offline_deterministic` and `rerank_bonus:*` hit reasons.
+  - [x] Runtime search applies rerank by default after retrieval and metadata fallback.
+  - [x] Runtime search can disable rerank with `rerank=False`; CLI can disable it with `--no-rerank`.
+  - [x] Trace reflects reranked hit order and rerank hit reasons because trace is built after rerank.
+  - [x] Added tests for default rerank, disabled rerank, and CLI serialization.
+- not_yet_done_checklist:
+  - [ ] R06: connect PDF/GROBID ingestion outputs to runtime chunks without committing restricted full text.
+  - [ ] Optional future expansion: add pluggable local embedding vectors only after privacy, cache, and model-version policies are defined.
+  - [ ] Optional future expansion: benchmark rerank weights on audited project queries before treating weights as production science defaults.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_rerank.py tests\unit\knowledge\test_traceability.py tests\unit\knowledge\test_runtime_store.py tests\e2e\cli\test_knowledge_cli.py` -> pass, `9 passed`.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge tests\e2e\cli` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass with expected skips.
+  - `git diff --check -- README.md src\cli\app.py src\knowledge\__init__.py src\knowledge\rerank.py src\knowledge\runtime_store.py tests\unit\knowledge\test_rerank.py tests\e2e\cli\test_knowledge_cli.py` -> pass with Windows line-ending warnings only.
+- gate_result: `pass` (R05 offline deterministic rerank is implemented, tested, and documented; R06 ingestion bridge remains open)
+- known_risks:
+  - Rerank weights are engineering heuristics for retrieval ordering, not validated biological effect-size or evidence-quality weights.
+  - No external embedding model is used in R05; any future embedding integration must remain opt-in and local-first by default.
+- next_actions:
+  - Stage and commit R05 changes.
+  - Start R06 by connecting GROBID/TEI extracted local text to runtime chunks with provenance and copyright boundaries.
+  - Keep the active phased RAG goal open until R06 is implemented and verified.
+- resume_first_command: `git status --short --branch`

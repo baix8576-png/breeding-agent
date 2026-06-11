@@ -25,6 +25,7 @@ from knowledge.indexing import (
     tokenize_knowledge_text,
 )
 from knowledge.query_router import KnowledgeQueryRouter, KnowledgeRetrievalPlan
+from knowledge.rerank import KnowledgeReranker
 from knowledge.traceability import KnowledgeRetrievalTrace, build_retrieval_trace
 
 
@@ -92,6 +93,8 @@ class RuntimeKnowledgeSearchResult(BaseModel):
     chunk_count: int = Field(ge=0)
     plan: KnowledgeRetrievalPlan | None = None
     metadata_fallbacks: list[str] = Field(default_factory=list)
+    rerank_applied: bool = False
+    rerank_mode: str | None = None
     trace: KnowledgeRetrievalTrace | None = None
     hits: list[KnowledgeSearchHit] = Field(default_factory=list)
 
@@ -269,6 +272,7 @@ class KnowledgeRuntimeStore:
         embedding_model: str | None = "keyword-overlap-v1",
         use_persisted_bm25: bool = True,
         use_query_router: bool = False,
+        rerank: bool = True,
     ) -> RuntimeKnowledgeSearchResult:
         """Search persisted runtime chunks with traceable hybrid retrieval."""
 
@@ -324,6 +328,11 @@ class KnowledgeRuntimeStore:
                 limit=limit,
                 include_embedding=include_embedding,
             )
+        rerank_mode = None
+        if rerank and hits:
+            reranker = KnowledgeReranker()
+            rerank_mode = reranker.config.mode
+            hits = reranker.rerank(query=query, hits=hits, plan=plan, limit=limit)
         trace = build_retrieval_trace(
             user_query=query,
             plan=plan,
@@ -341,6 +350,8 @@ class KnowledgeRuntimeStore:
             chunk_count=len(chunks),
             plan=plan,
             metadata_fallbacks=metadata_fallbacks,
+            rerank_applied=bool(rerank and hits),
+            rerank_mode=rerank_mode,
             trace=trace,
             hits=hits,
         )

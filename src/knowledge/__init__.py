@@ -9,6 +9,7 @@ from knowledge.indexing import (
     tokenize_knowledge_text,
 )
 from knowledge.query_router import KnowledgeQueryRouter, KnowledgeRetrievalPlan
+from knowledge.rerank import KnowledgeRerankConfig, KnowledgeReranker
 from knowledge.retrieval import (
     ExternalKnowledgeRetriever,
     KnowledgeResolver,
@@ -50,6 +51,8 @@ __all__ = [
     "KnowledgeQueryRouter",
     "KnowledgeRetrievalPlan",
     "KnowledgeRetrievalTrace",
+    "KnowledgeRerankConfig",
+    "KnowledgeReranker",
     "LocalKnowledgeRetriever",
     "ReferenceKnowledgeIndexer",
     "RetrievalBundle",

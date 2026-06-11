@@ -191,6 +191,7 @@ flowchart TD
 - 运行期 chunk store 由 `references/*` 构建到 `.geneagent/knowledge/*`，该目录只保存本地生成物，不提交 Git
 - `knowledge build-index` 会同步生成 `chunks/references.jsonl`、`indexes/manifest.json` 和 `indexes/bm25/references_bm25.json`
 - `knowledge search` 输出包含 `trace`，保留 `user_query -> filters -> doc_id/chunk_id/source_path/page_or_anchor/evidence_level` 证据链
+- `knowledge search` 默认启用离线 deterministic rerank；可用 `--no-rerank` 做排障对照
 - 可执行入口：
   - `geneagent knowledge build-index --runtime-root .geneagent/knowledge --references-root references`
   - `geneagent knowledge plan-query "猪 FarmGTEx eQTL 文献"`
