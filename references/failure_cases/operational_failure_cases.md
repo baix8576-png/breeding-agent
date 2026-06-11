@@ -179,3 +179,27 @@ Recovery rules:
 - block when the same failure class repeats beyond policy
 
 Risk boundary: automatic recovery is useful only for low-risk operational failures. Anything that changes data, filters, outputs, or interpretation needs review.
+
+## Remote shell execution failure matrix
+
+```yaml
+knowledge_item.v2:
+  doc_id: failure_remote_shell_execution_matrix
+  version: v2
+  species: multi_species
+  blueprint_scope: reporting_audit
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-06-11T00:00:00+08:00
+  owner: safety_fuse
+```
+
+| Failure | Detection pattern | Likely cause | Safe repair | Breaker rule | Report wording |
+|---|---|---|---|---|---|
+| SSH permission denied | `Permission denied`, `publickey`, `password`, `BatchMode=yes` | key/control session missing, password mode disabled, wrong user/host | run remote-check, ask operator to open approved password/control session, keep password out of logs | do not retry blindly after repeated authentication failure; operator review required | "Remote execution did not start because SSH authentication failed before wrapper materialization." |
+| nohup launch failed | `nohup: failed to run command`, shell exits before PID | missing bash, bad command quoting, work root not writable | create run root, validate wrapper with `bash -n`, retry once after quoting/path fix | do not retry if wrapper path is outside work root or command contains secrets | "Remote wrapper launch failed; no scientific command output should be interpreted." |
+| lost PID without state sentinel | no `state/pid`, no `state/done`, no `state/failed`, unknown process | interrupted SSH submit, filesystem delay, manual deletion | inspect run root and logs; if wrapper exists but no PID, mark `UNKNOWN` and request operator review | do not auto-resubmit when PID is lost and no state sentinel exists | "Run state is ambiguous; GeneAgent stopped rather than risk duplicate execution." |
+| output directory exists | result directory exists and is non-empty | prior run, manual files, partial retry | require `--force` or a new run ID; preserve existing output | do not overwrite or delete results automatically | "Output overwrite was blocked to preserve reproducibility." |
+| disk quota or filesystem full | `No space left on device`, `Disk quota exceeded`, failed write | quota, full work root, large GRM/VCF intermediate | stop, report path and operation, suggest cleanup outside Agent or larger approved work root | do not retry until operator confirms capacity; do not delete files automatically | "Execution stopped because storage capacity prevented safe output writing." |
+
+Policy terms for retrieval: safe repair, breaker, do not retry, operator review.

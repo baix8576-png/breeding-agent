@@ -184,6 +184,129 @@ bcftools view -h input.vcf.gz | head
   1. `bcftools index -n input.vcf.gz` returns valid contig index summary.
   2. Downstream region queries (`-r chr:start-end`) run successfully.
 
+## ENTRY: rscript.package_or_version_missing
+
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_bio_tool_rscript_package_or_version_missing
+  version: v2
+  species: multi_species
+  blueprint_scope: reporting_audit
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-06-11T00:00:00+08:00
+  owner: popgen_quantgen
+```
+
+- pattern_id: `rscript.package_or_version_missing`
+- component: `tools.rscript`
+- stage: `execution,reporting`
+- severity: `medium`
+- trigger_keywords:
+  - `there is no package called`
+  - `package or namespace load failed`
+  - `Rscript`
+  - `version`
+- trigger_regex:
+  - `(?i)there is no package called`
+  - `(?i)package or namespace load failed`
+  - `(?i)Rscript.*not found`
+- likely_root_causes:
+  1. R package absent from the selected environment.
+  2. Package compiled against a different R version.
+  3. Report helper was run outside the expected conda/module environment.
+- executable_fix_steps:
+  1. Record `Rscript --version` and `.libPaths()` if available.
+  2. Stop before installing packages unless the operator has approved environment changes.
+  3. Re-run only after the environment is fixed or the report step is explicitly skipped.
+- safe_repair:
+  - Generate a diagnostic report and mark plots/tables requiring R as missing.
+  - Re-run reporting after operator review confirms the R environment.
+- breaker:
+  - Do not retry the same Rscript command repeatedly.
+  - Do not install packages into shared environments automatically.
+- report_wording:
+  - "Rscript execution failed because a package or version dependency was missing; scientific results were not changed."
+
+## ENTRY: gcta.memory_or_non_positive_definite_grm
+
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_bio_tool_gcta_memory_or_non_positive_definite_grm
+  version: v2
+  species: multi_species
+  blueprint_scope: reporting_audit
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-06-11T00:00:00+08:00
+  owner: popgen_quantgen
+```
+
+- pattern_id: `gcta.memory_or_non_positive_definite_grm`
+- component: `tools.gcta`
+- stage: `execution`
+- severity: `high`
+- trigger_keywords:
+  - `Out of memory`
+  - `Cannot allocate memory`
+  - `not positive definite`
+  - `matrix is singular`
+  - `GCTA`
+- trigger_regex:
+  - `(?i)out of memory|cannot allocate memory`
+  - `(?i)not positive definite|matrix is singular`
+- likely_root_causes:
+  1. GRM too large for requested memory.
+  2. Duplicate or near-duplicate samples create singular structure.
+  3. Phenotype/covariate design is rank deficient.
+- safe_repair:
+  - Increase memory only within configured caps and after recording the estimate.
+  - Generate duplicate/relatedness diagnostics for operator review.
+- breaker:
+  - Do not auto-drop samples or covariates to make REML converge.
+  - Do not retry if memory request would exceed server or scheduler caps.
+- report_wording:
+  - "GCTA failed due to memory or matrix conditioning; sample/covariate review is required before model resubmission."
+
+## ENTRY: gwas.covariate_rank_deficiency
+
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_bio_tool_gwas_covariate_rank_deficiency
+  version: v2
+  species: multi_species
+  blueprint_scope: reporting_audit
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-06-11T00:00:00+08:00
+  owner: popgen_quantgen
+```
+
+- pattern_id: `gwas.covariate_rank_deficiency`
+- component: `tools.plink2,gwas`
+- stage: `execution`
+- severity: `high`
+- trigger_keywords:
+  - `covariate`
+  - `rank deficient`
+  - `linear dependency`
+  - `VIF`
+- trigger_regex:
+  - `(?i)rank deficient|linear depend`
+  - `(?i)covariate.*constant|covariate.*missing`
+- likely_root_causes:
+  1. Duplicate covariate columns or constant covariates.
+  2. Too many PCs/covariates for the available samples.
+  3. Complete separation or missingness in a subgroup.
+- safe_repair:
+  - Produce covariate missingness and rank diagnostics.
+  - Ask for operator review before removing or recoding covariates.
+- breaker:
+  - Do not auto-remove covariates, samples, or phenotypes.
+  - Do not report association results from a failed or partially skipped model.
+- report_wording:
+  - "GWAS covariate design was rank deficient; association output is blocked until model design is reviewed."
+
 ## ENTRY: bcftools.malformed_header_or_fields
 
 ```yaml

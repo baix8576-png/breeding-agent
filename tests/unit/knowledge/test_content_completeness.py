@@ -112,3 +112,17 @@ def test_parameter_playbooks_name_tools_threads_and_breakers() -> None:
     assert playbooks
     for term in required_terms:
         assert term in combined, term
+
+
+def test_diagnostics_cover_major_tools_and_breakers() -> None:
+    paths = [
+        Path("references/failure_cases/operational_failure_cases.md"),
+        Path("references/evaluation/diagnostics/bio_tool_error_patterns.md"),
+        Path("references/evaluation/diagnostics/scheduler_error_patterns.md"),
+    ]
+    text = "\n".join(path.read_text(encoding="utf-8").lower() for path in paths)
+
+    for term in ["plink", "plink2", "bcftools", "gcta", "rscript", "ssh", "nohup", "permission denied"]:
+        assert term in text, term
+    for term in ["safe repair", "breaker", "do not retry", "operator review"]:
+        assert term in text, term

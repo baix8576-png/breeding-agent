@@ -186,6 +186,86 @@ qsub -q <valid_queue> job.pbs
   1. `qsub` returns a job id (for example `12345.server`).
   2. `qstat -f <job_id>` shows `queue = <valid_queue>`.
 
+## ENTRY: ssh.permission_denied
+
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_scheduler_ssh_permission_denied
+  version: v2
+  species: multi_species
+  blueprint_scope: reporting_audit
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-06-11T00:00:00+08:00
+  owner: hpc_scheduler
+```
+
+- pattern_id: `ssh.permission_denied`
+- component: `scheduler.ssh_shell`
+- stage: `remote_check,submit,poll`
+- severity: `high`
+- trigger_keywords:
+  - `Permission denied`
+  - `publickey`
+  - `password`
+  - `BatchMode=yes`
+- trigger_regex:
+  - `(?i)permission denied`
+  - `(?i)publickey.*password|password.*publickey`
+- likely_root_causes:
+  1. No valid key/control-master/password_env mode for the remote account.
+  2. Wrong username, host, or port.
+  3. SSH server policy rejects batch authentication.
+- safe_repair:
+  - Run `remote-check` and ask the operator to open an approved local-only session.
+  - Keep passwords and private keys out of command arguments, state, logs, and reports.
+- breaker:
+  - Do not retry indefinitely after repeated authentication failure.
+  - Do not store credentials in tracked files.
+- report_wording:
+  - "SSH authentication failed before remote execution; no job was submitted."
+
+## ENTRY: ssh_shell.nohup_or_pid_state_lost
+
+```yaml
+knowledge_item.v2:
+  doc_id: diagnostic_scheduler_ssh_shell_nohup_or_pid_state_lost
+  version: v2
+  species: multi_species
+  blueprint_scope: reporting_audit
+  evidence_level: incident_verified
+  source: failure_case
+  updated_at: 2026-06-11T00:00:00+08:00
+  owner: hpc_scheduler
+```
+
+- pattern_id: `ssh_shell.nohup_or_pid_state_lost`
+- component: `scheduler.ssh_shell`
+- stage: `submit,poll,recovery`
+- severity: `high`
+- trigger_keywords:
+  - `nohup`
+  - `state/pid`
+  - `state/done`
+  - `state/failed`
+  - `No such process`
+- trigger_regex:
+  - `(?i)nohup: failed`
+  - `(?i)no such process`
+  - `(?i)state/(pid|done|failed)`
+- likely_root_causes:
+  1. Wrapper failed before writing PID or sentinel files.
+  2. SSH session interrupted during submit.
+  3. Run state files were manually deleted or written outside the work root.
+- safe_repair:
+  - Inspect wrapper, stdout, stderr, and state directory.
+  - Mark run as `UNKNOWN` and request operator review when no sentinel exists.
+- breaker:
+  - Do not auto-resubmit when PID is lost and no terminal state sentinel exists.
+  - Do not delete or overwrite partial outputs to recover.
+- report_wording:
+  - "Remote shell state is ambiguous; GeneAgent stopped to avoid duplicate or destructive execution."
+
 ## ENTRY: pbs.resource_limit_exceeded
 
 ```yaml

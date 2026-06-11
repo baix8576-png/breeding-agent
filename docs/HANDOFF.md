@@ -3308,3 +3308,43 @@ Paste this into a new session:
   - Start B06 failure-case and diagnostics expansion.
   - Keep the active goal open until B00-B08 are implemented and verified.
 - resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-11 13:18 +08:00 (B06 diagnostic failure knowledge)
+- intent_domain: `knowledge`, `system`
+- stage_id: `Resource + Safety Gate`, `Execution`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\references\failure_cases`, `D:\geneagent\references\evaluation\diagnostics`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`; this was local diagnostic knowledge and test work only. No SSH, remote shell, scheduler submit, bio tool execution, raw PDF handling, TEI extraction, chunk/index artifact generation, or raw entity-data movement was performed.
+- contracts_impacted:
+  - No runtime or Pydantic contracts changed.
+  - Added indexed diagnostic/failure entries for remote shell execution, Rscript dependencies, GCTA memory/GRM conditioning, GWAS covariate rank deficiency, SSH permission denied, and nohup/PID state ambiguity.
+- files_changed:
+  - `D:\geneagent\references\failure_cases\operational_failure_cases.md`
+  - `D:\geneagent\references\evaluation\diagnostics\bio_tool_error_patterns.md`
+  - `D:\geneagent\references\evaluation\diagnostics\scheduler_error_patterns.md`
+  - `D:\geneagent\tests\unit\knowledge\test_content_completeness.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added remote shell failure matrix covering SSH permission denied, nohup launch failure, lost PID without sentinel, output-directory exists, and disk/quota failures.
+  - [x] Added Rscript package/version missing diagnostic with safe repair, breaker, and report wording.
+  - [x] Added GCTA memory/non-positive-definite GRM diagnostic.
+  - [x] Added GWAS covariate rank-deficiency diagnostic.
+  - [x] Added scheduler-side SSH permission denied and nohup/PID state lost diagnostics.
+  - [x] Added `test_diagnostics_cover_major_tools_and_breakers`.
+  - [x] Confirmed new diagnostic doc IDs enter the reference index and total indexed content reaches `386` docs/chunks.
+  - [x] Confirmed B00/B03/B04/B06 knowledge checks now fail only on remaining recent-literature candidate-card DOI/PMID traceability.
+- not_yet_done_checklist:
+  - [ ] Remaining recent-literature candidate cards still need DOI/PMID/source verification or a final policy change before `test_content_completeness.py` is fully green.
+  - [ ] B07 species overlays still need explicit input types, marker densities, reference genome caveats, traits, QC cautions, population-structure pitfalls, literature anchors, and report wording boundaries.
+  - [ ] B08 final gate, safety scan, compileall/full pytest, push/publication remain incomplete.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_content_completeness.py tests\unit\knowledge\test_references_coverage.py` -> expected fail only on `test_recent_literature_cards_have_required_card_fields`; all other checks passed.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; ReferenceKnowledgeIndexer(Path('references')).build()` -> pass with `items=386`, `chunks=386`, `errors=0`, and new diagnostic doc IDs present.
+- gate_result: `partial` (B06 diagnostic knowledge is complete; final content-completeness remains open for recent-literature candidate cleanup and species/final gates)
+- known_risks:
+  - Diagnostic safe repairs are policy guidance; runtime automation must still enforce caps and breaker logic in code.
+  - Some error wording varies by tool version and locale, so regex/patterns should be expanded as real incidents are observed.
+- next_actions:
+  - Commit the B06 diagnostic knowledge batch.
+  - Start B07 species overlays or complete remaining recent-literature candidate cleanup.
+  - Keep the active goal open until B00-B08 are implemented and verified.
+- resume_first_command: `git status --short --branch`
