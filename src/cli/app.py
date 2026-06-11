@@ -6,6 +6,7 @@ import json
 import shutil
 import shlex
 import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 
 import typer
@@ -15,7 +16,9 @@ from scheduler.remote import SshControlMasterManager
 
 from contracts.api import RequestIdentity
 from contracts.common import ExecutionMode, SshAuthMode
+from contracts.knowledge import KnowledgeItemV2
 from contracts.validation import InputBundle, InputBundleEntry
+from knowledge.ingestion import KnowledgeIngestionBridge
 from knowledge.query_router import KnowledgeQueryRouter
 from knowledge.runtime_store import KnowledgeRuntimeStore
 from runtime.bootstrap import create_application_context
@@ -88,6 +91,44 @@ def knowledge_search(
         )
     except (FileNotFoundError, ValueError) as error:
         console.print_json(json.dumps({"error": str(error), "action": "knowledge_search"}))
+        raise typer.Exit(code=1) from error
+    console.print_json(json.dumps(payload.model_dump(mode="json")))
+
+
+@knowledge_app.command("ingest-tei")
+def knowledge_ingest_tei(
+    tei_path: str,
+    doc_id: str = typer.Option(..., "--doc-id"),
+    species: str = typer.Option(..., "--species"),
+    blueprint_scope: str = typer.Option(..., "--blueprint-scope"),
+    evidence_level: str = typer.Option(..., "--evidence-level"),
+    source: str = typer.Option("paper", "--source"),
+    owner: str = typer.Option("geneagent", "--owner"),
+    updated_at: str | None = typer.Option(None, "--updated-at"),
+    runtime_root: str = typer.Option(
+        ".geneagent/knowledge",
+        "--runtime-root",
+        help="Local ignored runtime knowledge root.",
+    ),
+    rebuild_index: bool = typer.Option(True, "--rebuild-index/--no-rebuild-index"),
+) -> None:
+    """Ingest a local GROBID TEI file into the runtime knowledge store."""
+
+    item = KnowledgeItemV2(
+        doc_id=doc_id,
+        version="v2",
+        species=species,
+        blueprint_scope=blueprint_scope,
+        evidence_level=evidence_level,
+        source=source,
+        updated_at=updated_at or datetime.now(timezone.utc).isoformat(),
+        owner=owner,
+    )
+    bridge = KnowledgeIngestionBridge(KnowledgeRuntimeStore(runtime_root=Path(runtime_root)))
+    try:
+        payload = bridge.ingest_grobid_tei(Path(tei_path), item=item, rebuild_index=rebuild_index)
+    except (FileNotFoundError, ValueError) as error:
+        console.print_json(json.dumps({"error": str(error), "action": "knowledge_ingest_tei"}))
         raise typer.Exit(code=1) from error
     console.print_json(json.dumps(payload.model_dump(mode="json")))
 

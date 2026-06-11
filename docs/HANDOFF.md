@@ -3680,3 +3680,54 @@ Paste this into a new session:
   - Start R06 by connecting GROBID/TEI extracted local text to runtime chunks with provenance and copyright boundaries.
   - Keep the active phased RAG goal open until R06 is implemented and verified.
 - resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-11 17:24 +08:00 (R06 local TEI ingestion bridge and phased RAG completion)
+- intent_domain: `knowledge`, `system`
+- stage_id: `Local-first RAG`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\src\knowledge`, `D:\geneagent\src\cli`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\tests\e2e\cli`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`; this was local ingestion-bridge work only. No SSH, remote shell, scheduler submit, bio tool execution, raw PDF commit, TEI commit, external GROBID service call, external network call, or raw entity-data movement was performed.
+- contracts_impacted:
+  - No external API/runtime scheduler contracts changed.
+  - Added `KnowledgeIngestionBridge` and `KnowledgeIngestionResult` in `src/knowledge/ingestion.py`.
+  - `KnowledgeRuntimeStore` now supports `chunks/*.jsonl`, `local_ingestion.jsonl`, local-ingestion upsert, and runtime index rebuild from all local chunk files.
+  - CLI `knowledge ingest-tei` ingests local GROBID TEI into ignored runtime chunks with explicit metadata.
+- files_changed:
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\src\cli\app.py`
+  - `D:\geneagent\src\knowledge\__init__.py`
+  - `D:\geneagent\src\knowledge\ingestion.py`
+  - `D:\geneagent\src\knowledge\runtime_store.py`
+  - `D:\geneagent\tests\unit\knowledge\test_ingestion.py`
+  - `D:\geneagent\tests\e2e\cli\test_knowledge_cli.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added local GROBID TEI ingestion bridge from parsed TEI/document sections to traceable `KnowledgeChunk` objects.
+  - [x] Ingested chunks are written to `.geneagent/knowledge/chunks/local_ingestion.jsonl`, not to `references/`.
+  - [x] Runtime store now loads all local JSONL chunk files and can rebuild manifest/BM25 from the combined runtime chunk set.
+  - [x] Ingestion result records `copyright_boundary=local_runtime_only_no_git` and explicit no-commit messages.
+  - [x] Added CLI `knowledge ingest-tei` with required metadata fields: `doc_id/species/blueprint_scope/evidence_level/source/owner`.
+  - [x] Added tests proving local TEI ingestion rebuilds BM25/manifest and becomes searchable with trace.
+  - [x] Added CLI e2e test for build-index -> ingest-tei -> search.
+  - [x] Completed the staged RAG implementation sequence R01-R06: runtime chunks, persisted BM25, query router, evidence trace, offline rerank, and local TEI ingestion bridge.
+- not_yet_done_checklist:
+  - [ ] Optional future expansion: add operator-facing API routes for `knowledge build/search/ingest` if CLI-only is not enough.
+  - [ ] Optional future expansion: integrate `KnowledgeRetrievalTrace` into report/audit generation outputs.
+  - [ ] Optional future expansion: add local vector embeddings only after model-version, cache, privacy, and benchmark policies are set.
+  - [ ] Optional future expansion: run an operator-local real PDF -> GROBID -> TEI -> ingest smoke test outside CI.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_ingestion.py tests\unit\knowledge\test_grobid.py tests\unit\knowledge\test_runtime_store.py tests\e2e\cli\test_knowledge_cli.py` -> pass, `8 passed`.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge tests\e2e\cli` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass with expected skips.
+  - `git diff --check -- README.md src\cli\app.py src\knowledge\__init__.py src\knowledge\ingestion.py src\knowledge\runtime_store.py tests\unit\knowledge\test_ingestion.py tests\e2e\cli\test_knowledge_cli.py` -> pass with Windows line-ending warnings only.
+  - `rg --files | rg "(^|/)(\.geneagent|results|reports|logs)/|\.(bam|bcf|cram|fasta|fastq|fq|pdf|tei|vcf|xml)$"` -> no matches in tracked/unignored file list.
+- gate_result: `pass` (R01-R06 phased RAG build-out is implemented, tested, documented, and ready to commit/push)
+- known_risks:
+  - Ingestion bridge assumes TEI is already local and operator-authorized; it does not run GROBID or download copyrighted PDFs.
+  - CLI `ingest-tei` requires the operator to provide correct metadata; it does not infer evidence level or citation validity.
+  - Runtime chunk and index artifacts are local generated files and must remain ignored.
+- next_actions:
+  - Stage and commit R06 changes.
+  - Push `codex/knowledge-m02-m15`.
+  - Mark the active phased RAG goal complete after push succeeds.
+- resume_first_command: `git status --short --branch`

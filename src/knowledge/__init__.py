@@ -8,6 +8,7 @@ from knowledge.indexing import (
     ReferenceKnowledgeIndexer,
     tokenize_knowledge_text,
 )
+from knowledge.ingestion import KnowledgeIngestionBridge, KnowledgeIngestionResult
 from knowledge.query_router import KnowledgeQueryRouter, KnowledgeRetrievalPlan
 from knowledge.rerank import KnowledgeRerankConfig, KnowledgeReranker
 from knowledge.retrieval import (
@@ -51,6 +52,8 @@ __all__ = [
     "KnowledgeQueryRouter",
     "KnowledgeRetrievalPlan",
     "KnowledgeRetrievalTrace",
+    "KnowledgeIngestionBridge",
+    "KnowledgeIngestionResult",
     "KnowledgeRerankConfig",
     "KnowledgeReranker",
     "LocalKnowledgeRetriever",

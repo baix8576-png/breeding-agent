@@ -129,6 +129,10 @@ class KnowledgeRuntimeStore:
         return self.chunks_dir / "references.jsonl"
 
     @property
+    def local_ingestion_chunks_path(self) -> Path:
+        return self.chunks_dir / "local_ingestion.jsonl"
+
+    @property
     def bm25_artifact_path(self) -> Path:
         return self.bm25_dir / "references_bm25.json"
 
@@ -160,10 +164,7 @@ class KnowledgeRuntimeStore:
         self.chunks_dir.mkdir(parents=True, exist_ok=True)
         self.indexes_dir.mkdir(parents=True, exist_ok=True)
         self.bm25_dir.mkdir(parents=True, exist_ok=True)
-        _write_text_atomic(
-            self.references_chunks_path,
-            "".join(f"{chunk.model_dump_json()}\n" for chunk in chunks),
-        )
+        _write_chunks_jsonl(self.references_chunks_path, chunks)
         bm25_artifact = _build_bm25_artifact(
             chunks=chunks,
             index_id=result.manifest.index_id,
@@ -203,7 +204,19 @@ class KnowledgeRuntimeStore:
     def load_chunks(self, chunks_path: Path | str | None = None) -> list[KnowledgeChunk]:
         """Load persisted chunks from the runtime JSONL cache."""
 
-        path = Path(chunks_path or self.references_chunks_path)
+        if chunks_path is None:
+            if not self.chunks_dir.is_dir():
+                raise FileNotFoundError(f"runtime knowledge chunks not found: {self.chunks_dir}")
+            chunks: list[KnowledgeChunk] = []
+            for path in sorted(self.chunks_dir.glob("*.jsonl")):
+                chunks.extend(self._load_chunks_file(path))
+            if not chunks:
+                raise FileNotFoundError(f"runtime knowledge chunks not found: {self.chunks_dir}")
+            return chunks
+        path = Path(chunks_path)
+        return self._load_chunks_file(path)
+
+    def _load_chunks_file(self, path: Path) -> list[KnowledgeChunk]:
         if not path.is_file():
             raise FileNotFoundError(f"runtime knowledge chunks not found: {path}")
         chunks: list[KnowledgeChunk] = []
@@ -216,6 +229,58 @@ class KnowledgeRuntimeStore:
             except (ValueError, json.JSONDecodeError) as error:
                 raise ValueError(f"invalid knowledge chunk JSONL at {path}:{line_number}: {error}") from error
         return chunks
+
+    def write_local_ingestion_chunks(self, chunks: list[KnowledgeChunk]) -> None:
+        """Upsert locally ingested chunks into the runtime ingestion JSONL cache."""
+
+        self.chunks_dir.mkdir(parents=True, exist_ok=True)
+        existing = []
+        if self.local_ingestion_chunks_path.exists():
+            existing = [
+                chunk for chunk in self._load_chunks_file(self.local_ingestion_chunks_path)
+                if chunk.doc_id not in {new_chunk.doc_id for new_chunk in chunks}
+            ]
+        merged = sorted([*existing, *chunks], key=lambda chunk: (chunk.source_path, chunk.doc_id, chunk.chunk_id))
+        _write_chunks_jsonl(self.local_ingestion_chunks_path, merged)
+
+    def rebuild_runtime_index_from_chunks(
+        self,
+        *,
+        embedding_model: str | None = "keyword-overlap-v1",
+    ) -> RuntimeKnowledgeBuildResult:
+        """Rebuild manifest and BM25 artifact from all runtime chunk files."""
+
+        chunks = sorted(self.load_chunks(), key=lambda chunk: (chunk.source_path, chunk.doc_id, chunk.chunk_id))
+        self.indexes_dir.mkdir(parents=True, exist_ok=True)
+        self.bm25_dir.mkdir(parents=True, exist_ok=True)
+        index_id = f"runtime-{len({chunk.doc_id for chunk in chunks})}-docs-{len(chunks)}-chunks"
+        bm25_artifact = _build_bm25_artifact(
+            chunks=chunks,
+            index_id=index_id,
+            chunks_path=_display_path(self.chunks_dir, self.project_root),
+        )
+        _write_text_atomic(self.bm25_artifact_path, bm25_artifact.model_dump_json(indent=2) + "\n")
+        manifest = RuntimeKnowledgeManifest(
+            index_id=index_id,
+            created_at=bm25_artifact.created_at,
+            references_root=_display_path(self.project_root / "references", self.project_root),
+            runtime_root=_display_path(self.runtime_root, self.project_root),
+            chunks_path=_display_path(self.chunks_dir, self.project_root),
+            manifest_path=_display_path(self.manifest_path, self.project_root),
+            doc_count=len({chunk.doc_id for chunk in chunks}),
+            chunk_count=len(chunks),
+            bm25_index_path=_display_path(self.bm25_artifact_path, self.project_root),
+            embedding_index_path=None,
+            embedding_model=embedding_model,
+            sources=sorted({chunk.source_path for chunk in chunks}),
+        )
+        _write_text_atomic(self.manifest_path, manifest.model_dump_json(indent=2) + "\n")
+        return RuntimeKnowledgeBuildResult(
+            manifest=manifest,
+            chunks_path=manifest.chunks_path,
+            manifest_path=manifest.manifest_path,
+            errors=[],
+        )
 
     def load_bm25_artifact(self) -> RuntimeBm25IndexArtifact:
         """Load persisted BM25/keyword statistics."""
@@ -382,6 +447,10 @@ def _write_text_atomic(path: Path, text: str) -> None:
     temporary_path = path.with_name(f"{path.name}.tmp")
     temporary_path.write_text(text, encoding="utf-8", newline="\n")
     temporary_path.replace(path)
+
+
+def _write_chunks_jsonl(path: Path, chunks: list[KnowledgeChunk]) -> None:
+    _write_text_atomic(path, "".join(f"{chunk.model_dump_json()}\n" for chunk in chunks))
 
 
 def _display_path(path: Path, root: Path) -> str:
