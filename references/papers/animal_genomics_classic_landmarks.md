@@ -36,6 +36,35 @@ Use rules:
 
 Risk boundary: landmark evidence prevents conceptual drift, but it is not enough to justify modern automated execution settings.
 
+## Classic method-family GeneAgent crosswalk
+
+```yaml
+knowledge_item.v2:
+  doc_id: literature_classic_method_family_crosswalk
+  version: v2
+  species: multi_species
+  blueprint_scope: knowledge_governance
+  evidence_level: sop
+  source: paper
+  updated_at: 2026-06-11T00:00:00+08:00
+  owner: popgen_quantgen
+```
+
+This crosswalk is the delivery-facing bridge from historical landmark evidence to GeneAgent's animal genetics workflow language. It is intentionally a method-family guide, not a modern parameter default table.
+
+| Method family | Landmark anchor | GeneAgent method-use note | Not-applicable boundary | Report-explanation sentence |
+|---|---|---|---|---|
+| animal model and BLUP | Henderson mixed model equations and animal breeding linear models | Use to explain fixed effects, random animal effects, pedigree relationship structure, and why BLUP estimates breeding values under a linear mixed model. | Do not use Henderson-era texts as software defaults for current SNP-chip QC, genomic relationship scaling, or cross-validation design. | "The animal model/BLUP result is a mixed-model prediction conditioned on the declared fixed/random effects and relationship information, not a raw phenotype ranking." |
+| genomic selection and GBLUP | Meuwissen-Hayes-Goddard genomic selection and VanRaden genomic relationship methods | Use to explain how dense markers replace or augment pedigree relationships in GBLUP and genomic prediction reports. | Do not infer deployment accuracy without population-specific validation and trait-specific phenotyping. | "GBLUP predictions depend on the marker-derived relationship matrix and must be interpreted together with validation accuracy, bias, and relatedness between training and target animals." |
+| single-step GBLUP | Legarra, Aguilar, Christensen/Lund, and Misztal ssGBLUP literature | Use to explain how pedigree `A`, genomic `G`, and combined `H` matrices connect genotyped and non-genotyped animals. | Do not route to ssGBLUP unless pedigree, phenotype, and genotype sample IDs are reconciled and matrix construction assumptions are recorded. | "Single-step GBLUP combines pedigree and genomic information; failures usually indicate ID, pedigree depth, or matrix compatibility problems rather than a purely computational issue." |
+| mixed model GWAS and QTL | Lander-Botstein, Churchill-Doerge, EMMAX/GEMMA, and multiple-testing classics | Use to explain GWAS, QTL, kinship correction, permutation/false-discovery language, and candidate-region caution. | Do not report association peaks as causal variants without LD, annotation, trait model, and replication evidence. | "GWAS/QTL hits are statistical regions whose interpretation must include model covariates, population correction, multiple testing, LD, and biological annotation." |
+| linkage disequilibrium and population structure | Wright, Pritchard, Patterson/Price, ADMIXTURE, and Hill-Weir LD theory | Use to explain PCA/admixture, stratification, LD pruning, and marker-density caveats before association or selection analysis. | Do not label PCA clusters as breeds/populations without metadata review, relatedness filtering, and sampling context. | "Population structure and linkage disequilibrium summarize sampling history and relatedness; they are controls and diagnostics, not automatic biological labels." |
+| runs of homozygosity and inbreeding | McQuillan ROH and population-genetic inbreeding foundations | Use to explain ROH-based inbreeding, recent versus ancient inbreeding, and QC/report caveats for small or structured populations. | Do not copy human ROH length bins or thresholds directly into livestock without species, breed, marker density, and assembly checks. | "Runs of homozygosity indicate autozygosity patterns whose thresholds depend on marker density, population history, and genotype quality." |
+| selection signature scans | Fst theory, Sabeti EHH, Voight iHS/XP-EHH, and multi-statistic selection papers | Use to explain Fst, haplotype-based, and composite selection signature methods, plus why candidate regions need cross-statistic and annotation review. | Do not claim adaptive causality from a single statistic, poorly phased data, or unbalanced population definitions. | "Selection signature results nominate candidate regions; robust interpretation requires population definitions, statistic assumptions, window choices, and independent biological evidence." |
+| imputation and genotype processing | PLINK/VCFtools, Beagle, IMPUTE, phasing, BWA/GATK, and genotype processing landmarks | Use to explain genotype QC, format conversion, phasing, imputation provenance, reference-panel matching, and upstream variant-calling caveats. | Do not treat imputed genotypes as observed data; dosage uncertainty and reference-panel mismatch must be recorded before PCA, GWAS, or prediction. | "Imputation and genotype processing are provenance-sensitive steps; downstream reports must state source format, QC filters, reference panel, and uncertainty boundaries." |
+
+Minimum source anchors: Fisher 1918, Wright 1931, Henderson 1975/1984, Lander and Botstein 1989, Churchill and Doerge 1994, Pritchard 2000, Patterson/Price 2006, Sabeti 2002, Voight 2006, McQuillan 2008, Purcell/Chang PLINK, Danecek VCFtools, Browning Beagle, Howie IMPUTE, Meuwissen-Hayes-Goddard 2001, VanRaden 2008, Legarra 2009, Aguilar 2010, and Misztal/BLUPF90 ssGBLUP implementation literature. DOI/PMID or official source links remain attached to the individual landmark cards below.
+
 ## CLASSIC-01 Fisher 1918 infinitesimal model
 ```yaml
 knowledge_item.v2:

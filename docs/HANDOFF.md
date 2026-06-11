@@ -3144,3 +3144,40 @@ Paste this into a new session:
   - Start B02 classic literature and method-family crosswalk, or B03 SOP bridge if prioritizing removal of the current B00 content-completeness failures.
   - Keep the active goal open until B00-B08 are implemented and verified.
 - resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-11 12:05 +08:00 (B02 classic method crosswalk)
+- intent_domain: `knowledge`
+- stage_id: `Local-first RAG`, `Blueprint Selection`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\references\papers`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`; this was local literature-crosswalk and test work only. No SSH, remote shell, scheduler submit, bio tool execution, external source fetching, raw PDF handling, TEI extraction, chunk/index artifact generation, or raw entity-data movement was performed.
+- contracts_impacted:
+  - No runtime or Pydantic contracts changed.
+  - Added a non-`paper_` `knowledge_item.v2` crosswalk entry to the classic literature pack while preserving the expected 42 classic `paper_` cards.
+- files_changed:
+  - `D:\geneagent\references\papers\animal_genomics_classic_landmarks.md`
+  - `D:\geneagent\tests\unit\knowledge\test_literature_knowledge_pack.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added `literature_classic_method_family_crosswalk` as an indexed method-family bridge from landmark papers to GeneAgent workflow language.
+  - [x] Covered animal model/BLUP, GBLUP, single-step GBLUP, mixed model GWAS/QTL, linkage disequilibrium, population structure, runs of homozygosity, selection signature scans, and imputation/genotype processing.
+  - [x] Included GeneAgent method-use notes, not-applicable boundaries, and report-explanation sentences for each method family.
+  - [x] Added `test_classic_literature_covers_required_method_families`.
+  - [x] Confirmed the classic pack still preserves the expected 42 `paper_` classic card count.
+  - [x] Confirmed the classic pack indexes without metadata errors and includes the new crosswalk doc ID.
+- not_yet_done_checklist:
+  - [ ] B03 SOP bridge work is still required to satisfy the B00 content-completeness source and operation-guide tests.
+  - [ ] Some individual classic cards still use Google Scholar as a source link; B02 adds the method-family bridge but does not perform a full DOI refresh for every historical card.
+  - [ ] Full `pytest -q` remains intentionally blocked by B00 future-content gates until later batches are completed.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_literature_knowledge_pack.py` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; ReferenceKnowledgeIndexer(Path('references')).build(paths=[animal_genomics_classic_landmarks.md])` -> pass with `items=44`, `chunks=44`, `errors=[]`, and `literature_classic_method_family_crosswalk` present.
+  - `git diff --check -- references\papers\animal_genomics_classic_landmarks.md tests\unit\knowledge\test_literature_knowledge_pack.py` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `partial` (B02 classic method crosswalk is complete and passing; full knowledge-content gates remain intentionally open for SOP/script/retrieval batches)
+- known_risks:
+  - The crosswalk is an expert/SOP-style synthesis over landmark papers; it should guide interpretation and retrieval, not replace modern species-specific validation.
+  - Some source links in historical cards are still discovery links rather than official DOI landing pages.
+- next_actions:
+  - Commit the B02 classic method crosswalk batch.
+  - Start B03 domain execution SOPs and operation-guide bridges to remove the most visible B00 content-completeness failures.
+  - Keep the active goal open until B00-B08 are implemented and verified.
+- resume_first_command: `git status --short --branch`

@@ -44,6 +44,27 @@ def test_classic_and_recent_pack_sizes_match_curation_targets() -> None:
     assert "literature_recent_high_impact_evidence_matrix" in recent_doc_ids
 
 
+def test_classic_literature_covers_required_method_families() -> None:
+    text = CLASSIC_PACK.read_text(encoding="utf-8").lower()
+    required_terms = [
+        "animal model",
+        "blup",
+        "gblup",
+        "single-step",
+        "genomic selection",
+        "mixed model",
+        "gwas",
+        "qtl",
+        "linkage disequilibrium",
+        "runs of homozygosity",
+        "selection signature",
+        "imputation",
+    ]
+
+    for term in required_terms:
+        assert term in text, term
+
+
 def test_literature_doc_ids_are_unique_across_references() -> None:
     result = ReferenceKnowledgeIndexer(Path("references")).build()
     doc_ids = [item.doc_id for item in result.items]
