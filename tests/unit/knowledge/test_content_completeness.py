@@ -19,6 +19,7 @@ WORKFLOW_NAMES = {
     "reporting_audit",
 }
 EXPECTED_CONTENT_SOURCES = {
+    "references/ontology/knowledge_delivery_gate.md",
     "references/papers/literature_refresh_log_2026.md",
     "references/sop/association_mapping_execution_sop.md",
     "references/sop/genotype_processing_execution_sop.md",
@@ -52,8 +53,17 @@ def test_recent_literature_cards_have_required_card_fields() -> None:
         )
         doi_value = doi_line.removeprefix("- DOI/PMID:").strip()
         source_value = source_line.removeprefix("- Source links:").strip()
-        assert DOI_OR_PMID_PATTERN.search(doi_value), (heading, doi_value)
+        is_non_export_candidate = "Non-export candidate" in doi_value
+        assert "DOI to verify before citation export" not in doi_value, (heading, doi_value)
+        assert DOI_OR_PMID_PATTERN.search(doi_value) or is_non_export_candidate, (heading, doi_value)
         assert URL_PATTERN.search(source_value), (heading, source_value)
+        if is_non_export_candidate:
+            assert 'evidence_level: "expert_opinion"' in section, heading
+            assert 'source: "internal_note"' in section, heading
+            assert "[B08 refresh log]" in source_line, heading
+        else:
+            assert 'evidence_level: "peer_reviewed"' in section, heading
+            assert 'source: "paper"' in section, heading
         assert "- GeneAgent use:" in section, heading
         assert "- Boundary/risk:" in section, heading
 
@@ -86,8 +96,18 @@ def test_reference_index_has_content_depth_floor() -> None:
 
     assert result.errors == []
     assert missing_sources == []
-    assert result.manifest.doc_count >= 380
-    assert result.manifest.chunk_count >= 380
+    assert result.manifest.doc_count >= 430
+    assert result.manifest.chunk_count >= 430
+
+
+def test_no_recent_cards_remain_google_scholar_only_when_claiming_final() -> None:
+    cards = _recent_cards()
+
+    assert len(cards) >= 72
+    for section in cards:
+        heading = section.splitlines()[0]
+        source_line = next(line for line in section.splitlines() if line.startswith("- Source links:"))
+        assert "[Google Scholar]" not in source_line or source_line.count("](") > 1, heading
 
 
 def test_domain_execution_sops_are_indexed() -> None:

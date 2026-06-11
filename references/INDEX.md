@@ -19,7 +19,7 @@ Runtime-only assets such as raw PDFs, GROBID TEI, extracted full text, chunks, B
 | `sop/` | `popgen_quantgen`, `llm_orchestrator`, `hpc_scheduler` | blueprint SOPs, GROBID ingestion SOP, knowledge update SOP, report review SOP, HPC execution SOP |
 | `parameter_playbooks/` | `popgen_quantgen`, `hpc_scheduler` | QC, PCA, GRM, genomic prediction CV, scheduler resource presets |
 | `failure_cases/` | `popgen_quantgen`, `hpc_scheduler`, `safety_fuse` | operational failure cases and safe retry boundaries |
-| `ontology/` | `llm_orchestrator`, `architect` | `knowledge_item.v2`, curation policy, knowledge completion modules, glossary, species naming, scope/evidence/doc ID/retrieval trace controls |
+| `ontology/` | `llm_orchestrator`, `architect` | `knowledge_item.v2`, curation policy, knowledge completion modules, delivery gates, glossary, species naming, scope/evidence/doc ID/retrieval trace controls |
 
 ## Diagnostics Entry Point
 
@@ -32,6 +32,7 @@ Runtime-only assets such as raw PDFs, GROBID TEI, extracted full text, chunks, B
 - `ontology/knowledge_item.v2.md`: required field contract for formal knowledge assets (`doc_id/version/species/blueprint_scope/evidence_level/source/updated_at/owner`).
 - `ontology/domain_scope_vocab.md`: controlled scientific-domain vocabulary that maps professional analysis domains to current execution blueprints.
 - `ontology/knowledge_completion_modules.md`: module-by-module completion map, literature batch plan, ingestion boundaries, and acceptance gates.
+- `ontology/knowledge_delivery_gate.md`: delivery-time gate catalog for input readiness, domain execution, resource caps, safety breakers, report/audit traceability, literature evidence boundaries, and expansion limits.
 - All formal Markdown knowledge files, except README/index/schema explainers, must include at least one `knowledge_item.v2` block under a `##` heading.
 - `doc_id` values must be globally unique.
 

@@ -3381,3 +3381,62 @@ Paste this into a new session:
   - Complete remaining recent-literature candidate cleanup, then run B08 final gate and push/publication.
   - Keep the active goal open until B00-B08 are implemented and verified.
 - resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-11 15:37 +08:00 (B08 final knowledge acceptance gate)
+- intent_domain: `knowledge`, `system`
+- stage_id: `Local-first RAG`, `Blueprint Selection`, `Resource + Safety Gate`, `Execution`, `Artifact + Report`, `Audit + Memory`, `V2 Control Plane`
+- module_owner_path: `D:\geneagent\references`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\tests\integration`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`; this was local knowledge-base completion, test-gate, and publication work only. No SSH, remote shell, scheduler submit, bio tool execution, raw PDF handling, TEI extraction, chunk/index artifact generation, or raw entity-data movement was performed.
+- contracts_impacted:
+  - No runtime, API, CLI, Pydantic, scheduler, or safety contracts changed.
+  - `knowledge_item.v2` usage remains unchanged; B08 adds SOP/ontology knowledge blocks and tightens tests around the final content-completeness policy.
+  - Recent-literature cards are now either verified citation-export candidates or explicitly marked as non-export candidates with B08 refresh-log traceability.
+- files_changed:
+  - `D:\geneagent\references\INDEX.md`
+  - `D:\geneagent\references\ontology\README.md`
+  - `D:\geneagent\references\ontology\knowledge_delivery_gate.md`
+  - `D:\geneagent\references\papers\animal_genomics_recent_high_impact_2022_2026.md`
+  - `D:\geneagent\references\papers\literature_refresh_log_2026.md`
+  - `D:\geneagent\tests\unit\knowledge\test_content_completeness.py`
+  - `D:\geneagent\tests\unit\knowledge\test_literature_knowledge_pack.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] B00 knowledge content audit gate was implemented and used to drive the staged fill plan.
+  - [x] B01 recent literature refresh verified the first half of the recent pack and separated candidate cards as `expert_opinion/internal_note`.
+  - [x] B02 classic method crosswalk connected landmark literature to GeneAgent method families and execution language.
+  - [x] B03 domain SOPs and operation-guide bridges were added for the five canonical workflow folders.
+  - [x] B04 parameter/resource playbooks were expanded with tool, thread, memory, walltime, output, and breaker guidance.
+  - [x] B05 script knowledge alignment ensured script templates expose resource controls and operation-guide knowledge bridges.
+  - [x] B06 diagnostic failure knowledge was expanded for tool, remote shell, retry, breaker, and operator-review cases.
+  - [x] B07 species overlays were expanded for cattle, pig, poultry, sheep/goat, and aquaculture retrieval and reporting context.
+  - [x] B08 converted all remaining recent-literature DOI/PMID placeholders into explicit non-export candidate status with B08 refresh-log links.
+  - [x] B08 added `references/ontology/knowledge_delivery_gate.md` with 47 indexed delivery-gate knowledge blocks.
+  - [x] B08 raised and passed the final reference index floor: `434` docs and `434` chunks with `errors=[]`.
+  - [x] B08 added final assertions for non-Google-Scholar-only recent cards and the `>=430` content floor.
+  - [x] Full knowledge, compile, full test, whitespace, safety, and raw-file gates passed.
+- not_yet_done_checklist:
+  - [ ] Optional expansion: promote non-export recent-literature candidates only after exact DOI/PMID/publisher/PubMed metadata is verified and recorded in the refresh log.
+  - [ ] Optional expansion: add more species-specific validated defaults after real project runs produce audited evidence.
+  - [ ] Optional expansion: build local runtime retrieval indexes under ignored `.geneagent/knowledge/*` after the operator chooses local index settings.
+  - [ ] Optional expansion: run real ordinary-server smoke tests from a local `.env`; this remains outside CI and outside this knowledge-only B08 gate.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -c "from pathlib import Path; from knowledge.indexing import ReferenceKnowledgeIndexer; result=ReferenceKnowledgeIndexer(Path('references')).build(); print('errors=', result.errors); print('doc_count=', result.manifest.doc_count); print('chunk_count=', result.manifest.chunk_count); print('has_delivery=', any(item.doc_id == 'delivery_gate_acceptance_summary' for item in result.items))"` -> pass with `errors=[]`, `doc_count=434`, `chunk_count=434`, `has_delivery=True`.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_content_completeness.py` -> pass, `7 passed`.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_literature_knowledge_pack.py` -> pass, `9 passed`.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge tests\integration\test_script_knowledge_alignment.py tests\integration\test_analysis_script_templates.py` -> pass with expected script-template skips.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass with expected skips.
+  - `git diff --check -- references scripts tests docs\HANDOFF.md` -> pass.
+  - `git diff --cached | rg -n <B08 credential/raw-data safety pattern>` -> no matches after excluding the literal pattern from HANDOFF text.
+  - `rg --files references | rg "\.(bam|bcf|cram|fasta|fastq|fq|pdf|tei|vcf|xml)$"` -> no matches.
+- gate_result: `pass` (B00-B08 GeneAgent knowledge-content completion is implemented and verified locally; commit and push are the remaining publication actions in this same session)
+- known_risks:
+  - Non-export recent-literature cards remain useful retrieval leads only; they must not be cited as verified papers until promoted through the refresh protocol.
+  - Real remote execution smoke tests require operator-local server credentials/configuration and remain outside CI.
+  - Git may emit Windows line-ending warnings on some machines unless local `core.autocrlf` is set to `input`.
+- next_actions:
+  - Stage only the B08-related references, tests, and HANDOFF changes.
+  - Re-run staged diff checks and safety scans so the untracked delivery-gate file is included.
+  - Commit as `docs: complete GeneAgent knowledge content`.
+  - Push `codex/knowledge-m02-m15` to the remote.
+- resume_first_command: `git status --short --branch`

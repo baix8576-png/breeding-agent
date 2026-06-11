@@ -96,14 +96,16 @@ def test_recent_pack_distinguishes_verified_and_candidate_cards() -> None:
         paper_line = next(line for line in section.splitlines() if line.startswith("- Paper:"))
         doi_line = next(line for line in section.splitlines() if line.startswith("- DOI/PMID:"))
         source_line = next(line for line in section.splitlines() if line.startswith("- Source links:"))
-        needs_refresh = "verify before citation export" in doi_line
+        is_non_export_candidate = "Non-export candidate" in doi_line
 
-        if needs_refresh:
+        assert "DOI to verify before citation export" not in doi_line, heading
+        if is_non_export_candidate:
             candidate_count += 1
             assert 'evidence_level: "expert_opinion"' in section, heading
             assert 'source: "internal_note"' in section, heading
-            assert "DOI to verify before citation export" in doi_line or re.search(r"`10\.[^`]+`", doi_line), heading
+            assert "DOI/PMID unresolved after B08 refresh audit" in doi_line, heading
             assert "[Google Scholar]" in source_line, heading
+            assert "[B08 refresh log]" in source_line, heading
         else:
             verified_count += 1
             assert 'evidence_level: "peer_reviewed"' in section, heading
@@ -123,13 +125,13 @@ def test_recent_pack_has_at_least_half_verified_cards_after_refresh_batch() -> N
     verified = [
         section
         for section in cards
-        if "verify before citation export"
+        if "Non-export candidate"
         not in next(line for line in section.splitlines() if line.startswith("- DOI/PMID:"))
     ]
     candidates = [
         section.splitlines()[0]
         for section in cards
-        if "verify before citation export"
+        if "Non-export candidate"
         in next(line for line in section.splitlines() if line.startswith("- DOI/PMID:"))
     ]
 

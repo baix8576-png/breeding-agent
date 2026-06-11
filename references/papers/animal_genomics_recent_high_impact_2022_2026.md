@@ -1,4 +1,4 @@
-﻿# Animal Genomics Recent High-Impact Papers (2022-2026)
+# Animal Genomics Recent High-Impact Papers (2022-2026)
 
 This pack seeds GeneAgent knowledge retrieval with recent animal genomics literature anchors. Papers marked "verify before citation export" are accepted for internal retrieval and planning, but their DOI/PMID should be refreshed through CrossRef, PubMed, Semantic Scholar, or Zotero before manuscript-grade citation output.
 
@@ -524,11 +524,11 @@ knowledge_item.v2:
 ```
 - Paper: Candidate Nile tilapia genomic selection benchmark for growth or disease traits.
 - Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: tilapia breeding.
 - GeneAgent use: aquaculture prediction validation and family leakage cautions.
 - Boundary/risk: not yet part of the four production blueprints.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=Nile+tilapia+genomic+selection+benchmark+2023)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=Nile+tilapia+genomic+selection+benchmark+2023); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-25 Shrimp genomic selection benchmark
 ```yaml
@@ -733,11 +733,11 @@ knowledge_item.v2:
 ```
 - Paper: Candidate multi-breed or multi-population genomic prediction benchmark in livestock.
 - Year: 2022.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: multi-breed livestock.
 - GeneAgent use: transferability and population-drift warning in prediction reports.
 - Boundary/risk: relatedness leakage can inflate cross-breed results.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=multi-breed+multi-population+genomic+prediction+livestock+2022)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=multi-breed+multi-population+genomic+prediction+livestock+2022); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-35 Multi-trait genomic prediction
 ```yaml
@@ -774,11 +774,11 @@ knowledge_item.v2:
 ```
 - Paper: Candidate deep learning genomic prediction benchmark in livestock.
 - Year: 2024.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: livestock genomic prediction.
 - GeneAgent use: model-family comparison and overfitting warnings.
 - Boundary/risk: neural methods need strict validation and baseline comparison.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=deep+learning+genomic+prediction+livestock+2024)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=deep+learning+genomic+prediction+livestock+2024); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-37 Bayesian alphabet benchmark recent
 ```yaml
@@ -794,11 +794,11 @@ knowledge_item.v2:
 ```
 - Paper: Recent Bayesian genomic prediction benchmark comparing BayesA/B/C/BL.
 - Year: 2022.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: livestock prediction models.
 - GeneAgent use: algorithm-selection guidance and prior-sensitivity warning.
 - Boundary/risk: posterior convergence diagnostics must be reported.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=Bayesian+genomic+prediction+benchmark+livestock+2022)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=Bayesian+genomic+prediction+benchmark+livestock+2022); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-38 Genomic prediction with dominance effects
 ```yaml
@@ -814,11 +814,11 @@ knowledge_item.v2:
 ```
 - Paper: Livestock genomic prediction benchmark including dominance or non-additive effects.
 - Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: livestock crossbred or hybrid populations.
 - GeneAgent use: warns when additive GBLUP may miss heterosis or dominance contributions.
 - Boundary/risk: non-additive models require enough family structure and validation.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=dominance+non-additive+genomic+prediction+livestock+2023)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=dominance+non-additive+genomic+prediction+livestock+2023); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-39 Genomic prediction for disease resistance
 ```yaml
@@ -834,11 +834,11 @@ knowledge_item.v2:
 ```
 - Paper: Genomic prediction for livestock disease resistance traits.
 - Year: 2024.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: disease-resistance phenotypes.
 - GeneAgent use: phenotype definition and binary/threshold trait caveats.
 - Boundary/risk: challenge-test and field phenotypes are not interchangeable.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=genomic+prediction+disease+resistance+livestock+2024)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=genomic+prediction+disease+resistance+livestock+2024); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-40 Genomic prediction for fertility traits
 ```yaml
@@ -854,11 +854,11 @@ knowledge_item.v2:
 ```
 - Paper: Genomic prediction benchmark for fertility or reproductive traits in livestock.
 - Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: fertility traits.
 - GeneAgent use: low-heritability and censoring caveats in prediction reports.
 - Boundary/risk: management and recording bias can dominate signal.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=genomic+prediction+fertility+traits+livestock+2023)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=genomic+prediction+fertility+traits+livestock+2023); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-41 Genomic prediction for feed efficiency
 ```yaml
@@ -916,11 +916,11 @@ knowledge_item.v2:
 ```
 - Paper: Large-scale cattle GWAS for complex production or health traits.
 - Year: 2022.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: cattle GWAS.
 - GeneAgent use: candidate locus interpretation and multiple-testing caution.
 - Boundary/risk: association does not imply causality.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=large-scale+cattle+GWAS+complex+traits+2022)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=large-scale+cattle+GWAS+complex+traits+2022); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-44 GWAS pig complex traits
 ```yaml
@@ -936,11 +936,11 @@ knowledge_item.v2:
 ```
 - Paper: Large-scale pig GWAS for growth, meat quality, reproduction, or immune traits.
 - Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: pig GWAS.
 - GeneAgent use: pig candidate gene and QTL evidence.
 - Boundary/risk: line-specific associations need external validation.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=large-scale+pig+GWAS+complex+traits+2023)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=large-scale+pig+GWAS+complex+traits+2023); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-45 GWAS poultry complex traits
 ```yaml
@@ -956,11 +956,11 @@ knowledge_item.v2:
 ```
 - Paper: Large-scale poultry GWAS for growth, egg, meat, or disease traits.
 - Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: chicken GWAS.
 - GeneAgent use: poultry trait interpretation and candidate locus ranking.
 - Boundary/risk: commercial-line sampling may be narrow.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=chicken+poultry+GWAS+complex+traits+2023)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=chicken+poultry+GWAS+complex+traits+2023); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-46 GWAS sheep goat complex traits
 ```yaml
@@ -976,11 +976,11 @@ knowledge_item.v2:
 ```
 - Paper: Sheep/goat GWAS for wool, meat, milk, adaptation, or reproduction traits.
 - Year: 2024.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: small ruminant GWAS.
 - GeneAgent use: sheep/goat candidate locus interpretation.
 - Boundary/risk: small sample sizes and breed structure can inflate signals.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=sheep+goat+GWAS+complex+traits+2024)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=sheep+goat+GWAS+complex+traits+2024); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-47 Livestock QTL database review
 ```yaml
@@ -996,11 +996,11 @@ knowledge_item.v2:
 ```
 - Paper: Recent livestock QTL database or cattle/pig/chicken QTL curation update.
 - Year: 2022.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: curated QTL.
 - GeneAgent use: candidate locus cross-check and report annotation.
 - Boundary/risk: database entries vary in evidence strength and mapping resolution.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=livestock+QTL+database+update+2022)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=livestock+QTL+database+update+2022); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-48 Livestock fine mapping review
 ```yaml
@@ -1016,11 +1016,11 @@ knowledge_item.v2:
 ```
 - Paper: Recent livestock fine-mapping or causal variant review.
 - Year: 2024.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: GWAS fine mapping.
 - GeneAgent use: caution about moving from association to causal mechanism.
 - Boundary/risk: credible sets depend on LD, imputation, and functional priors.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=livestock+fine+mapping+causal+variant+review+2024)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=livestock+fine+mapping+causal+variant+review+2024); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-49 Livestock eQTL integration review
 ```yaml
@@ -1036,11 +1036,11 @@ knowledge_item.v2:
 ```
 - Paper: Livestock eQTL integration for complex trait interpretation.
 - Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: eQTL/GWAS integration.
 - GeneAgent use: regulatory evidence ranking for candidate genes.
 - Boundary/risk: tissue matching and colocalization are mandatory checks.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=livestock+eQTL+GWAS+integration+complex+traits+2023)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=livestock+eQTL+GWAS+integration+complex+traits+2023); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-50 Livestock single-cell review
 ```yaml
@@ -1056,11 +1056,11 @@ knowledge_item.v2:
 ```
 - Paper: Single-cell genomics in livestock review.
 - Year: 2022.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: livestock single-cell omics.
 - GeneAgent use: explains emerging functional annotation evidence.
 - Boundary/risk: single-cell datasets are not directly comparable across protocols.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=single-cell+genomics+livestock+review+2022)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=single-cell+genomics+livestock+review+2022); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-51 Pig single-cell atlas
 ```yaml
@@ -1076,11 +1076,11 @@ knowledge_item.v2:
 ```
 - Paper: Pig single-cell transcriptomic atlas for development, immunity, or production tissues.
 - Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: pig scRNA-seq.
 - GeneAgent use: pig tissue/cell-type candidate gene context.
 - Boundary/risk: atlas tissue coverage must match trait biology.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=pig+single-cell+transcriptomic+atlas+2023)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=pig+single-cell+transcriptomic+atlas+2023); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-52 Chicken single-cell atlas
 ```yaml
@@ -1096,11 +1096,11 @@ knowledge_item.v2:
 ```
 - Paper: Chicken single-cell atlas for development, immunity, or reproductive tissues.
 - Year: 2024.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: chicken scRNA-seq.
 - GeneAgent use: poultry candidate gene functional interpretation.
 - Boundary/risk: developmental stage and tissue context must be explicit.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=chicken+single-cell+atlas+2024)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=chicken+single-cell+atlas+2024); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-53 Sheep single-cell atlas
 ```yaml
@@ -1116,11 +1116,11 @@ knowledge_item.v2:
 ```
 - Paper: Sheep single-cell atlas for reproduction, wool follicle, immune, or developmental tissues.
 - Year: 2024.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: sheep scRNA-seq.
 - GeneAgent use: sheep candidate gene and tissue specificity context.
 - Boundary/risk: atlas quality and cell annotation confidence must be checked.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=sheep+single-cell+atlas+2024)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=sheep+single-cell+atlas+2024); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-54 Multi-omics livestock breeding review
 ```yaml
@@ -1136,11 +1136,11 @@ knowledge_item.v2:
 ```
 - Paper: Multi-omics integration for livestock breeding review.
 - Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: genomics, transcriptomics, epigenomics, metabolomics.
 - GeneAgent use: future expansion planning beyond four current blueprints.
 - Boundary/risk: omics integration can overfit without independent validation.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=multi-omics+livestock+breeding+review+2023)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=multi-omics+livestock+breeding+review+2023); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-55 Epigenomics livestock review
 ```yaml
@@ -1156,11 +1156,11 @@ knowledge_item.v2:
 ```
 - Paper: Livestock epigenomics and trait regulation review.
 - Year: 2022.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: methylation, chromatin, expression.
 - GeneAgent use: regulatory mechanism interpretation.
 - Boundary/risk: epigenomic marks are tissue, age, and environment dependent.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=livestock+epigenomics+trait+regulation+review+2022)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=livestock+epigenomics+trait+regulation+review+2022); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-56 Climate adaptation cattle genomics
 ```yaml
@@ -1176,11 +1176,11 @@ knowledge_item.v2:
 ```
 - Paper: Cattle climate adaptation population genomics study.
 - Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: cattle adaptation and selection signatures.
 - GeneAgent use: environmental adaptation interpretation in breed reports.
 - Boundary/risk: climate association needs environmental covariate control.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=cattle+climate+adaptation+genomics+2023)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=cattle+climate+adaptation+genomics+2023); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-57 Heat tolerance cattle genomic loci
 ```yaml
@@ -1196,11 +1196,11 @@ knowledge_item.v2:
 ```
 - Paper: Cattle heat-tolerance genomic association or selection study.
 - Year: 2024.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: cattle heat tolerance.
 - GeneAgent use: climate-resilience candidate locus interpretation.
 - Boundary/risk: phenotype recording and environmental covariates are critical.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=cattle+heat+tolerance+genomic+association+2024)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=cattle+heat+tolerance+genomic+association+2024); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-58 Pig adaptation genomics
 ```yaml
@@ -1216,11 +1216,11 @@ knowledge_item.v2:
 ```
 - Paper: Pig adaptation or domestication genomics study.
 - Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: pig population genomics.
 - GeneAgent use: pig breed differentiation and selection-scan context.
 - Boundary/risk: wild/feral/domestic group labels must be explicit.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=pig+adaptation+domestication+genomics+2023)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=pig+adaptation+domestication+genomics+2023); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-59 Chicken domestication genomics
 ```yaml
@@ -1236,11 +1236,11 @@ knowledge_item.v2:
 ```
 - Paper: Chicken domestication or breed formation genomics study.
 - Year: 2022.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: chicken population genomics.
 - GeneAgent use: poultry PCA and breed-history interpretation.
 - Boundary/risk: introgression and sampling design can confound signals.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=chicken+domestication+genomics+2022)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=chicken+domestication+genomics+2022); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-60 Sheep goat adaptation genomics
 ```yaml
@@ -1256,11 +1256,11 @@ knowledge_item.v2:
 ```
 - Paper: Sheep/goat adaptation genomics study.
 - Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: small ruminant population genomics.
 - GeneAgent use: adaptation, altitude, aridity, and breed differentiation context.
 - Boundary/risk: geography and management confounding must be checked.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=sheep+goat+adaptation+genomics+2023)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=sheep+goat+adaptation+genomics+2023); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-61 Livestock imputation benchmark
 ```yaml
@@ -1276,11 +1276,11 @@ knowledge_item.v2:
 ```
 - Paper: Livestock genotype imputation benchmark using SNP chips or WGS reference panels.
 - Year: 2022.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: genotype imputation.
 - GeneAgent use: imputation accuracy and reference-panel warnings for QC.
 - Boundary/risk: imputation accuracy is breed and marker-density dependent.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=livestock+genotype+imputation+benchmark+2022)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=livestock+genotype+imputation+benchmark+2022); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-62 Low-pass sequencing imputation cattle
 ```yaml
@@ -1296,11 +1296,11 @@ knowledge_item.v2:
 ```
 - Paper: Low-pass sequencing and imputation benchmark in cattle.
 - Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: low-pass WGS and imputation.
 - GeneAgent use: future QC policy for low-pass-derived genotypes.
 - Boundary/risk: not equivalent to array genotypes without imputation QC.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=low-pass+sequencing+imputation+cattle+2023)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=low-pass+sequencing+imputation+cattle+2023); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-63 Low-pass sequencing imputation pigs
 ```yaml
@@ -1316,11 +1316,11 @@ knowledge_item.v2:
 ```
 - Paper: Low-pass sequencing and imputation benchmark in pigs.
 - Year: 2024.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: pig low-pass WGS.
 - GeneAgent use: pig imputation QC and marker-density planning.
 - Boundary/risk: line-specific reference panels affect accuracy.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=low-pass+sequencing+imputation+pigs+2024)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=low-pass+sequencing+imputation+pigs+2024); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-64 Livestock phasing benchmark
 ```yaml
@@ -1336,11 +1336,11 @@ knowledge_item.v2:
 ```
 - Paper: Livestock haplotype phasing benchmark.
 - Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: phased genotypes and haplotypes.
 - GeneAgent use: downstream haplotype/selection-scan caution.
 - Boundary/risk: family information and reference panels change performance.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=livestock+haplotype+phasing+benchmark+2023)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=livestock+haplotype+phasing+benchmark+2023); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-65 Livestock ROH benchmark
 ```yaml
@@ -1356,11 +1356,11 @@ knowledge_item.v2:
 ```
 - Paper: Runs-of-homozygosity benchmark or review in livestock.
 - Year: 2022.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: ROH and inbreeding.
 - GeneAgent use: inbreeding diagnostics and QC/report interpretation.
 - Boundary/risk: marker density and ROH length thresholds require species review.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=runs+of+homozygosity+livestock+review+2022)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=runs+of+homozygosity+livestock+review+2022); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-66 Livestock LD decay benchmark
 ```yaml
@@ -1376,11 +1376,11 @@ knowledge_item.v2:
 ```
 - Paper: Linkage disequilibrium decay benchmark across livestock breeds.
 - Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: LD decay and effective population size.
 - GeneAgent use: LD pruning, marker-density, and PCA parameter explanation.
 - Boundary/risk: LD decay varies strongly by breed and sample design.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=linkage+disequilibrium+decay+livestock+breeds+2023)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=linkage+disequilibrium+decay+livestock+breeds+2023); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-67 Livestock effective population size
 ```yaml
@@ -1396,11 +1396,11 @@ knowledge_item.v2:
 ```
 - Paper: Effective population size inference from livestock genomic data.
 - Year: 2024.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: livestock Ne estimation.
 - GeneAgent use: population history and prediction accuracy context.
 - Boundary/risk: Ne estimates depend on marker density and demographic model.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=effective+population+size+livestock+genomic+data+2024)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=effective+population+size+livestock+genomic+data+2024); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-68 Livestock selection signature review
 ```yaml
@@ -1416,11 +1416,11 @@ knowledge_item.v2:
 ```
 - Paper: Selection-signature methods and livestock applications review.
 - Year: 2022.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: selection scans.
 - GeneAgent use: explains FST/iHS/XP-EHH/ROH-based scan differences.
 - Boundary/risk: demographic history can mimic selection.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=selection+signature+livestock+review+2022)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=selection+signature+livestock+review+2022); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-69 Livestock structural variation review
 ```yaml
@@ -1436,11 +1436,11 @@ knowledge_item.v2:
 ```
 - Paper: Structural variation in livestock genomes review.
 - Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: CNV, insertion/deletion, inversion, pangenome SV.
 - GeneAgent use: explains why SNP-only workflows can miss trait-relevant variation.
 - Boundary/risk: SV calling methods have high platform dependence.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=structural+variation+livestock+genomes+review+2023)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=structural+variation+livestock+genomes+review+2023); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-70 Livestock graph genome methods
 ```yaml
@@ -1477,11 +1477,11 @@ knowledge_item.v2:
 ```
 - Paper: AI, machine learning, or foundation-model review for livestock genomics and breeding.
 - Year: 2025.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: AI-enabled animal genomics.
 - GeneAgent use: future agentic workflow and model-selection context.
 - Boundary/risk: review/benchmark quality must be screened; avoid hype-driven claims.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=AI+machine+learning+foundation+models+livestock+genomics+breeding+2025)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=AI+machine+learning+foundation+models+livestock+genomics+breeding+2025); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
 
 ## RECENT-72 Livestock knowledge graph review
 ```yaml
@@ -1497,8 +1497,8 @@ knowledge_item.v2:
 ```
 - Paper: Knowledge graph or evidence-integration review for animal genomics and breeding.
 - Year: 2025.
-- DOI/PMID: DOI to verify before citation export.
+- DOI/PMID: Non-export candidate; DOI/PMID unresolved after B08 refresh audit.
 - Species/data: literature/evidence integration.
 - GeneAgent use: supports GeneAgent knowledge-base architecture and traceability planning.
 - Boundary/risk: not a direct biological evidence source.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=knowledge+graph+animal+genomics+breeding+2025)
+- Source links: [Google Scholar](https://scholar.google.com/scholar?q=knowledge+graph+animal+genomics+breeding+2025); [B08 refresh log](literature_refresh_log_2026.md#b08-non-export-candidate-audit-2026-06-11)
