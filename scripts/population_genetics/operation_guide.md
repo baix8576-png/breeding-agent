@@ -16,6 +16,12 @@ Compatibility routing:
 
 This directory is not a complete population-genetics framework. It is an execution bridge for current safe artifacts.
 
+## Knowledge bridge
+
+- SOP: `references/sop/population_genetics_execution_sop.md`
+- Parameter playbooks: `references/parameter_playbooks/pca_component_policy.md`, `references/parameter_playbooks/core_parameter_playbooks.md`, `references/parameter_playbooks/scheduler_resource_presets.md`
+- Failure diagnostics: `references/evaluation/diagnostics/bio_tool_error_patterns.md`, `references/failure_cases/operational_failure_cases.md`
+
 ## Expected input package
 
 At least one genotype-bearing input is required:

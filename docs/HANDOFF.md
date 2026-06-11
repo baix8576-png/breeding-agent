@@ -3181,3 +3181,54 @@ Paste this into a new session:
   - Start B03 domain execution SOPs and operation-guide bridges to remove the most visible B00 content-completeness failures.
   - Keep the active goal open until B00-B08 are implemented and verified.
 - resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-11 12:32 +08:00 (B03 domain execution SOPs)
+- intent_domain: `knowledge`
+- stage_id: `Local-first RAG`, `Blueprint Selection`, `Execution`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\references\sop`, `D:\geneagent\scripts`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`; this was local SOP and script-guide documentation work only. No SSH, remote shell, scheduler submit, bio tool execution, raw PDF handling, TEI extraction, chunk/index artifact generation, or raw entity-data movement was performed.
+- contracts_impacted:
+  - No runtime or Pydantic contracts changed.
+  - Added five SOP `knowledge_item.v2` entries using existing `blueprint_scope` values: `genotype_processing`, `population_genetics`, `quantitative_genetics`, `association_mapping`, and `reporting_audit`.
+  - Operation guides now bridge script folders to SOPs, parameter playbooks, diagnostics, and output contracts.
+- files_changed:
+  - `D:\geneagent\references\sop\genotype_processing_execution_sop.md`
+  - `D:\geneagent\references\sop\population_genetics_execution_sop.md`
+  - `D:\geneagent\references\sop\quantitative_genetics_execution_sop.md`
+  - `D:\geneagent\references\sop\association_mapping_execution_sop.md`
+  - `D:\geneagent\references\sop\reporting_audit_execution_sop.md`
+  - `D:\geneagent\references\sop\README.md`
+  - `D:\geneagent\scripts\genotype_processing\operation_guide.md`
+  - `D:\geneagent\scripts\population_genetics\operation_guide.md`
+  - `D:\geneagent\scripts\quantitative_genetics\operation_guide.md`
+  - `D:\geneagent\scripts\association_mapping\operation_guide.md`
+  - `D:\geneagent\scripts\reporting_audit\operation_guide.md`
+  - `D:\geneagent\tests\unit\knowledge\test_content_completeness.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Created five domain execution SOPs with the required section contract: `Scope and Inputs`, `Preflight Checks`, `Execution Steps`, `Expected Outputs`, `Failure and Breaker Rules`, and `Report and Audit Handoff`.
+  - [x] Added one `knowledge_item.v2` metadata block to each new SOP.
+  - [x] Updated `references/sop/README.md` to list the new domain SOPs.
+  - [x] Added knowledge-bridge sections to all five canonical operation guides.
+  - [x] Added `test_domain_execution_sops_are_indexed`.
+  - [x] Confirmed the five new SOPs index without metadata errors.
+  - [x] Confirmed `tests/unit/knowledge/test_references_coverage.py` now passes, including the B00 content-completeness retrieval queries.
+- not_yet_done_checklist:
+  - [ ] `tests/unit/knowledge/test_content_completeness.py` still intentionally fails on remaining unverified recent-literature candidate cards.
+  - [ ] `tests/unit/knowledge/test_content_completeness.py` also still intentionally fails on the index depth floor (`378` docs/chunks versus `>= 380`), which B04 parameter/resource playbooks should satisfy without metadata padding.
+  - [ ] B04 must fill parameter/resource matrices for PLINK/PLINK2, bcftools, GCTA, GWAS tools, prediction CV, and reporting.
+  - [ ] Full `pytest -q` remains intentionally blocked until the remaining B00 content-completeness gates are satisfied.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_content_completeness.py` -> expected fail on remaining recent-literature candidate card traceability and index depth floor only.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; ReferenceKnowledgeIndexer(Path('references')).build()` -> pass with `items=378`, `chunks=378`, `errors=0`.
+  - `expected B03 SOP section contract check` -> each of the five new SOPs has exactly one `knowledge_item.v2` block and all six required sections.
+- gate_result: `partial` (B03 SOP bridge is complete and references coverage passes; final content-completeness remains open for B04 and later candidate refresh)
+- known_risks:
+  - SOPs are expert operational guidance and must not be presented as peer-reviewed method evidence.
+  - Operation-guide links are documentation bridges only; they do not change script behavior or runtime submission safety.
+- next_actions:
+  - Commit the B03 SOP bridge batch.
+  - Start B04 parameter/resource playbooks to clear the index-depth floor and add command-level CPU/memory/walltime guidance.
+  - Keep the active goal open until B00-B08 are implemented and verified.
+- resume_first_command: `git status --short --branch`

@@ -6,6 +6,11 @@ Purpose:
 - Store local standard operating procedures used by planning, execution review, safety gates, report review, and knowledge updates.
 
 Current SOP library:
+- `genotype_processing_execution_sop.md`
+- `population_genetics_execution_sop.md`
+- `quantitative_genetics_execution_sop.md`
+- `association_mapping_execution_sop.md`
+- `reporting_audit_execution_sop.md`
 - `qc_pipeline_stage_sop_v1.md`
 - `pca_pipeline_stage_sop_v1.md`
 - `grm_builder_stage_sop_v1.md`

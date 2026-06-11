@@ -16,6 +16,12 @@ Compatibility routing:
 
 This directory supports first-pass marker-trait association execution. It does not perform QTL mapping, fine mapping, or functional validation.
 
+## Knowledge bridge
+
+- SOP: `references/sop/association_mapping_execution_sop.md`
+- Parameter playbooks: `references/parameter_playbooks/core_parameter_playbooks.md`, `references/parameter_playbooks/scheduler_resource_presets.md`
+- Failure diagnostics: `references/evaluation/diagnostics/bio_tool_error_patterns.md`, `references/failure_cases/operational_failure_cases.md`
+
 ## Expected input package
 
 Required:

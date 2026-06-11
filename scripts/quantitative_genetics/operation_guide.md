@@ -18,6 +18,12 @@ Compatibility routing:
 
 Association mapping is intentionally separated into `scripts/association_mapping/`.
 
+## Knowledge bridge
+
+- SOP: `references/sop/quantitative_genetics_execution_sop.md`
+- Parameter playbooks: `references/parameter_playbooks/grm_resource_baseline.md`, `references/parameter_playbooks/genomic_prediction_cv_policy.md`, `references/parameter_playbooks/core_parameter_playbooks.md`, `references/parameter_playbooks/scheduler_resource_presets.md`
+- Failure diagnostics: `references/evaluation/diagnostics/bio_tool_error_patterns.md`, `references/failure_cases/operational_failure_cases.md`
+
 ## Relationship matrix invocation
 
 Dry run:

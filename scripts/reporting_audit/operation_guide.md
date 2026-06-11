@@ -21,6 +21,12 @@ Knowledge domain:
 
 The scripts do not run QC, PCA, GRM, GWAS, or prediction analyses. They package artifacts created by those wrappers and by the scheduler/runtime layers.
 
+## Knowledge bridge
+
+- SOP: `references/sop/reporting_audit_execution_sop.md`
+- Parameter playbooks: `references/parameter_playbooks/core_parameter_playbooks.md`, `references/parameter_playbooks/scheduler_resource_presets.md`
+- Report templates: `references/report_templates/report_index_v2_template.md`, `references/report_templates/audit_bundle_template.md`, `references/report_templates/diagnostic_report_template.md`
+
 ## Common invocation
 
 Dry run:

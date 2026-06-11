@@ -88,3 +88,17 @@ def test_reference_index_has_content_depth_floor() -> None:
     assert missing_sources == []
     assert result.manifest.doc_count >= 380
     assert result.manifest.chunk_count >= 380
+
+
+def test_domain_execution_sops_are_indexed() -> None:
+    result = ReferenceKnowledgeIndexer(REFERENCES).build()
+    doc_ids = {item.doc_id for item in result.items}
+
+    assert result.errors == []
+    assert {
+        "sop_genotype_processing_execution",
+        "sop_population_genetics_execution",
+        "sop_quantitative_genetics_execution",
+        "sop_association_mapping_execution",
+        "sop_reporting_audit_execution",
+    } <= doc_ids

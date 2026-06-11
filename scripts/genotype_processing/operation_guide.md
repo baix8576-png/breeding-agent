@@ -16,6 +16,12 @@ Compatibility routing:
 
 The script does not submit jobs. Remote execution, queue submission, SSH shell execution, polling, retry, and resume are owned by `src/scheduler/` and `src/runtime/`.
 
+## Knowledge bridge
+
+- SOP: `references/sop/genotype_processing_execution_sop.md`
+- Parameter playbooks: `references/parameter_playbooks/qc_defaults.md`, `references/parameter_playbooks/core_parameter_playbooks.md`, `references/parameter_playbooks/scheduler_resource_presets.md`
+- Failure diagnostics: `references/evaluation/diagnostics/bio_tool_error_patterns.md`, `references/failure_cases/operational_failure_cases.md`
+
 ## Advanced processing boundary
 
 The current executable wrapper is QC-oriented. It can inventory VCF/PLINK inputs and run first-pass PLINK2/bcftools checks, but it should not be presented as a complete phasing, imputation, liftover, or allele-harmonization engine.
