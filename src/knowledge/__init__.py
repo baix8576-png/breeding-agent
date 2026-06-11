@@ -14,6 +14,13 @@ from knowledge.retrieval import (
     RetrievalBundle,
     RetrievalDocument,
 )
+from knowledge.runtime_store import (
+    KnowledgeRuntimeStore,
+    RuntimeKnowledgeBuildResult,
+    RuntimeKnowledgeDocInspection,
+    RuntimeKnowledgeManifest,
+    RuntimeKnowledgeSearchResult,
+)
 from knowledge.source_fetcher import (
     KnowledgeSourceFetcher,
     SourceFetchEntry,
@@ -28,12 +35,17 @@ __all__ = [
     "HybridKnowledgeIndex",
     "KnowledgeLoadResult",
     "KnowledgeResolver",
+    "KnowledgeRuntimeStore",
     "KnowledgeSearchHit",
     "KnowledgeSourceFetcher",
     "LocalKnowledgeRetriever",
     "ReferenceKnowledgeIndexer",
     "RetrievalBundle",
     "RetrievalDocument",
+    "RuntimeKnowledgeBuildResult",
+    "RuntimeKnowledgeDocInspection",
+    "RuntimeKnowledgeManifest",
+    "RuntimeKnowledgeSearchResult",
     "SourceFetchEntry",
     "SourceFetchReport",
 ]

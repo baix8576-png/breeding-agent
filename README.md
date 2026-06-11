@@ -188,6 +188,11 @@ flowchart TD
 - 本地优先检索，仅在本地命中覆盖不足且通过安全门禁时才允许外部回退
 - 外部回退为显式分支，不覆盖本地基准知识，只作为补充证据
 - 错误诊断优先使用 `references/*` 与本地知识条目，输出可执行修复建议
+- 运行期 chunk store 由 `references/*` 构建到 `.geneagent/knowledge/*`，该目录只保存本地生成物，不提交 Git
+- 可执行入口：
+  - `geneagent knowledge build-index --runtime-root .geneagent/knowledge --references-root references`
+  - `geneagent knowledge search "GBLUP VanRaden GRM" --runtime-root .geneagent/knowledge --blueprint-scope quantitative_genetics`
+  - `geneagent knowledge inspect-doc paper_grm_vanraden_2008 --runtime-root .geneagent/knowledge`
 
 ## 知识库分层总结表
 | 层级 | 路径 | 内容 | 版本控制 | 用途 |

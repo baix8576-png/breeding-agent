@@ -16,10 +16,93 @@ from scheduler.remote import SshControlMasterManager
 from contracts.api import RequestIdentity
 from contracts.common import ExecutionMode, SshAuthMode
 from contracts.validation import InputBundle, InputBundleEntry
+from knowledge.runtime_store import KnowledgeRuntimeStore
 from runtime.bootstrap import create_application_context
 
 app = typer.Typer(help="GeneAgent CLI for local genetics workflow orchestration.")
+knowledge_app = typer.Typer(help="Build and query the local runtime knowledge store.")
 console = Console()
+app.add_typer(knowledge_app, name="knowledge")
+
+
+@knowledge_app.command("build-index")
+def knowledge_build_index(
+    runtime_root: str = typer.Option(
+        ".geneagent/knowledge",
+        "--runtime-root",
+        help="Local ignored runtime knowledge root.",
+    ),
+    references_root: str = typer.Option(
+        "references",
+        "--references-root",
+        help="Git-versioned references root to index.",
+    ),
+    source_file: list[str] | None = typer.Option(
+        None,
+        "--source-file",
+        help="Specific Markdown source file to index; repeat for multiple files.",
+    ),
+) -> None:
+    """Materialize reference knowledge chunks under the local runtime store."""
+
+    store = KnowledgeRuntimeStore(runtime_root=Path(runtime_root))
+    paths = [Path(path) for path in source_file] if source_file else None
+    try:
+        payload = store.build_from_references(Path(references_root), paths=paths)
+    except ValueError as error:
+        console.print_json(json.dumps({"error": str(error), "action": "knowledge_build_index"}))
+        raise typer.Exit(code=1) from error
+    console.print_json(json.dumps(payload.model_dump(mode="json")))
+
+
+@knowledge_app.command("search")
+def knowledge_search(
+    query: str,
+    runtime_root: str = typer.Option(
+        ".geneagent/knowledge",
+        "--runtime-root",
+        help="Local ignored runtime knowledge root.",
+    ),
+    blueprint_scope: str | None = typer.Option(None, "--blueprint-scope"),
+    species: str | None = typer.Option(None, "--species"),
+    limit: int = typer.Option(5, "--limit", min=1),
+    include_embedding: bool = typer.Option(True, "--include-embedding/--no-include-embedding"),
+) -> None:
+    """Search the persisted local runtime knowledge store."""
+
+    store = KnowledgeRuntimeStore(runtime_root=Path(runtime_root))
+    try:
+        payload = store.search(
+            query=query,
+            blueprint_scope=blueprint_scope,
+            species=species,
+            limit=limit,
+            include_embedding=include_embedding,
+        )
+    except (FileNotFoundError, ValueError) as error:
+        console.print_json(json.dumps({"error": str(error), "action": "knowledge_search"}))
+        raise typer.Exit(code=1) from error
+    console.print_json(json.dumps(payload.model_dump(mode="json")))
+
+
+@knowledge_app.command("inspect-doc")
+def knowledge_inspect_doc(
+    doc_id: str,
+    runtime_root: str = typer.Option(
+        ".geneagent/knowledge",
+        "--runtime-root",
+        help="Local ignored runtime knowledge root.",
+    ),
+) -> None:
+    """Inspect persisted chunks for one knowledge document id."""
+
+    store = KnowledgeRuntimeStore(runtime_root=Path(runtime_root))
+    try:
+        payload = store.inspect_doc(doc_id)
+    except (FileNotFoundError, ValueError) as error:
+        console.print_json(json.dumps({"error": str(error), "action": "knowledge_inspect_doc"}))
+        raise typer.Exit(code=1) from error
+    console.print_json(json.dumps(payload.model_dump(mode="json")))
 
 
 @app.command("plan")

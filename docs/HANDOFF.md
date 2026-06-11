@@ -3440,3 +3440,53 @@ Paste this into a new session:
   - Commit as `docs: complete GeneAgent knowledge content`.
   - Push `codex/knowledge-m02-m15` to the remote.
 - resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-11 16:28 +08:00 (R01 runtime knowledge chunk store)
+- intent_domain: `knowledge`, `system`
+- stage_id: `Local-first RAG`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\src\knowledge`, `D:\geneagent\src\cli`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\tests\e2e\cli`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`; this was local runtime knowledge-store work only. No SSH, remote shell, scheduler submit, bio tool execution, raw PDF handling, TEI extraction, external network call, or raw entity-data movement was performed.
+- contracts_impacted:
+  - No existing public Pydantic contract was changed.
+  - Added runtime-store Pydantic payloads in `src/knowledge/runtime_store.py`: `RuntimeKnowledgeManifest`, `RuntimeKnowledgeBuildResult`, `RuntimeKnowledgeSearchResult`, and `RuntimeKnowledgeDocInspection`.
+  - Existing `ReferenceKnowledgeIndexer.build()` in-memory behavior remains compatible; persisted runtime artifacts are generated under ignored `.geneagent/knowledge/*` or operator-provided local runtime roots.
+- files_changed:
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\src\cli\app.py`
+  - `D:\geneagent\src\knowledge\__init__.py`
+  - `D:\geneagent\src\knowledge\runtime_store.py`
+  - `D:\geneagent\tests\unit\knowledge\test_runtime_store.py`
+  - `D:\geneagent\tests\e2e\cli\test_knowledge_cli.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added `KnowledgeRuntimeStore` to materialize validated `references/*` knowledge chunks into local JSONL under `chunks/references.jsonl`.
+  - [x] Added runtime manifest persistence under `indexes/manifest.json` with doc/chunk counts, source list, schema version, and local artifact paths.
+  - [x] Added load/search/inspect APIs over persisted chunks while preserving trace fields: `doc_id`, `chunk_id`, `source_path`, `page_or_anchor`, `evidence_level`, and `blueprint_scope`.
+  - [x] Added CLI entrypoints: `knowledge build-index`, `knowledge search`, and `knowledge inspect-doc`.
+  - [x] Added unit tests for runtime chunk/manifest persistence, search, doc inspection, and rejecting `references/` as a runtime root.
+  - [x] Added CLI e2e test for build -> search -> inspect-doc using a temporary local runtime root.
+  - [x] Verified full `references/` materializes to runtime store with `434` docs and `434` chunks and no metadata errors.
+  - [x] Updated README with the current local runtime knowledge-store commands.
+- not_yet_done_checklist:
+  - [ ] R02: persist a real BM25/keyword index artifact under `.geneagent/knowledge/indexes/bm25/` instead of rebuilding from JSONL for every search.
+  - [ ] R03: add source router / query planner so question-answering and analysis-planning paths choose metadata filters before retrieval.
+  - [ ] R04: add explicit evidence-chain trace payload from user query to retrieved chunks to answer/report planning outputs.
+  - [ ] R05: add optional embedding/rerank layer with offline-safe defaults and deterministic fallback.
+  - [ ] R06: connect PDF/GROBID ingestion outputs to the runtime store without committing restricted full text.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_runtime_store.py tests\e2e\cli\test_knowledge_cli.py` -> pass, `4 passed`.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge tests\e2e\cli` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass with expected skips.
+  - `git diff --check -- README.md src\cli\app.py src\knowledge\__init__.py src\knowledge\runtime_store.py tests\unit\knowledge\test_runtime_store.py tests\e2e\cli\test_knowledge_cli.py` -> pass with Windows line-ending warnings only.
+  - Temporary full-store smoke: `KnowledgeRuntimeStore(...).build_from_references(Path('references'))` -> pass with `errors=[]`, `doc_count=434`, `chunk_count=434`, `chunks_path_exists=True`, `manifest_path_exists=True`.
+- gate_result: `pass` (R01 runtime chunk store is implemented, tested, and documented; R02+ retrieval-index/routing phases remain open)
+- known_risks:
+  - R01 persists chunks and a manifest, but it still builds the in-memory hybrid index at query time; this is acceptable for the current 434-chunk library and should be optimized in R02.
+  - Runtime artifacts are intentionally local/ignored and must not be committed.
+  - The CLI returns full chunk payloads for traceability; later answer-generation paths should summarize retrieved evidence rather than dumping large payloads to users.
+- next_actions:
+  - Stage and commit R01 changes.
+  - Start R02 by adding a persistent BM25/keyword index artifact and tests that search can load it from `.geneagent/knowledge/indexes/bm25/`.
+  - Keep the active phased RAG goal open until R02-R06 are implemented and verified.
+- resume_first_command: `git status --short --branch`
