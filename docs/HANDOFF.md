@@ -3348,3 +3348,36 @@ Paste this into a new session:
   - Start B07 species overlays or complete remaining recent-literature candidate cleanup.
   - Keep the active goal open until B00-B08 are implemented and verified.
 - resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-11 13:34 +08:00 (B07 species overlays)
+- intent_domain: `knowledge`
+- stage_id: `Local-first RAG`, `Blueprint Selection`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\references\papers`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`; this was local species-overlay knowledge and retrieval-test work only. No SSH, remote shell, scheduler submit, bio tool execution, raw PDF handling, TEI extraction, chunk/index artifact generation, or raw entity-data movement was performed.
+- contracts_impacted:
+  - No runtime or Pydantic contracts changed.
+  - Species overlays remain `expert_opinion/internal_note` guidance layered on top of paper-card evidence.
+- files_changed:
+  - `D:\geneagent\references\papers\species_literature_index.md`
+  - `D:\geneagent\tests\unit\knowledge\test_references_coverage.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Expanded cattle, pig, poultry, sheep/goat, and aquaculture overlays with common input types, marker-density context, reference genome caveats, common traits, QC cautions, population-structure pitfalls, literature anchors, and report wording boundaries.
+  - [x] Added species-specific retrieval expectations for cattle, pig, poultry, sheep/goat, and aquaculture.
+  - [x] Confirmed `tests/unit/knowledge/test_references_coverage.py` passes with the new species overlay retrieval test.
+  - [x] Confirmed `species_literature_index.md` indexes without metadata errors.
+- not_yet_done_checklist:
+  - [ ] Remaining recent-literature candidate cards still block the final `test_content_completeness.py` gate.
+  - [ ] B08 final safety scan, compileall/full pytest, HANDOFF finalization, push/publication remain incomplete.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; ReferenceKnowledgeIndexer(Path('references')).build(paths=[species_literature_index.md])` -> pass with `items=10`, `chunks=10`, `errors=[]`.
+- gate_result: `partial` (B07 species overlays are complete and retrieval-tested; final gate remains open for candidate literature cleanup and B08 publication)
+- known_risks:
+  - Species overlays are guidance, not species-specific validated pipeline defaults.
+  - Aquaculture remains especially heterogeneous and requires species-specific validation before automated execution settings are treated as production defaults.
+- next_actions:
+  - Commit the B07 species overlay batch.
+  - Complete remaining recent-literature candidate cleanup, then run B08 final gate and push/publication.
+  - Keep the active goal open until B00-B08 are implemented and verified.
+- resume_first_command: `git status --short --branch`

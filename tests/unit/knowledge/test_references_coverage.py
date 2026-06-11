@@ -81,6 +81,23 @@ CONTENT_COMPLETENESS_QUERIES = {
         "template_report_index_v2",
     },
 }
+SPECIES_OVERLAY_QUERIES = {
+    "cattle dairy beef taurine indicine genomic prediction selection pangenome": {
+        "species_overlay_cattle_defaults",
+    },
+    "pig commercial line hybrid regulatory variant meat quality genomic prediction": {
+        "species_overlay_pig_defaults",
+    },
+    "chicken poultry egg meat disease resistance population structure GWAS": {
+        "species_overlay_poultry_defaults",
+    },
+    "sheep goat small ruminant wool milk adaptation ROH selection": {
+        "species_overlay_sheep_goat_defaults",
+    },
+    "aquaculture fish shrimp salmon tilapia genomic selection disease resistance": {
+        "species_overlay_aquaculture_defaults",
+    },
+}
 
 
 def _build_references():
@@ -561,6 +578,17 @@ def test_content_completeness_retrieval_queries_cover_workflow_assets() -> None:
     index = ReferenceKnowledgeIndexer(REFERENCES_ROOT).build_index()
 
     for query, expected_doc_ids in CONTENT_COMPLETENESS_QUERIES.items():
+        hits = index.search(query, limit=20)
+        hit_doc_ids = {hit.chunk.doc_id for hit in hits}
+
+        assert hits, query
+        assert hit_doc_ids & expected_doc_ids, f"{query}: {hit_doc_ids}"
+
+
+def test_species_overlay_retrieval_queries_cover_target_species() -> None:
+    index = ReferenceKnowledgeIndexer(REFERENCES_ROOT).build_index()
+
+    for query, expected_doc_ids in SPECIES_OVERLAY_QUERIES.items():
         hits = index.search(query, limit=20)
         hit_doc_ids = {hit.chunk.doc_id for hit in hits}
 
