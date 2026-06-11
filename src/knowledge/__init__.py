@@ -6,6 +6,7 @@ from knowledge.indexing import (
     KnowledgeLoadResult,
     KnowledgeSearchHit,
     ReferenceKnowledgeIndexer,
+    tokenize_knowledge_text,
 )
 from knowledge.retrieval import (
     ExternalKnowledgeRetriever,
@@ -16,6 +17,7 @@ from knowledge.retrieval import (
 )
 from knowledge.runtime_store import (
     KnowledgeRuntimeStore,
+    RuntimeBm25IndexArtifact,
     RuntimeKnowledgeBuildResult,
     RuntimeKnowledgeDocInspection,
     RuntimeKnowledgeManifest,
@@ -42,10 +44,12 @@ __all__ = [
     "ReferenceKnowledgeIndexer",
     "RetrievalBundle",
     "RetrievalDocument",
+    "RuntimeBm25IndexArtifact",
     "RuntimeKnowledgeBuildResult",
     "RuntimeKnowledgeDocInspection",
     "RuntimeKnowledgeManifest",
     "RuntimeKnowledgeSearchResult",
     "SourceFetchEntry",
     "SourceFetchReport",
+    "tokenize_knowledge_text",
 ]

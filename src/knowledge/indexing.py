@@ -52,15 +52,29 @@ class HybridKnowledgeIndex:
         chunks: list[KnowledgeChunk],
         *,
         embedding_model: str | None = "keyword-overlap-v1",
+        chunk_terms: list[Counter[str]] | None = None,
+        chunk_lengths: list[int] | None = None,
+        avg_doc_length: float | None = None,
+        document_frequency: Counter[str] | None = None,
     ) -> None:
         self._chunks = list(chunks)
         self._embedding_model = embedding_model
-        self._chunk_terms = [Counter(_tokenize(chunk.text)) for chunk in self._chunks]
-        self._chunk_lengths = [sum(counter.values()) for counter in self._chunk_terms]
-        self._avg_doc_length = (
-            sum(self._chunk_lengths) / len(self._chunk_lengths) if self._chunk_lengths else 0.0
+        self._chunk_terms = (
+            list(chunk_terms)
+            if chunk_terms is not None and len(chunk_terms) == len(self._chunks)
+            else [Counter(_tokenize(chunk.text)) for chunk in self._chunks]
         )
-        self._document_frequency = self._build_document_frequency()
+        self._chunk_lengths = (
+            list(chunk_lengths)
+            if chunk_lengths is not None and len(chunk_lengths) == len(self._chunk_terms)
+            else [sum(counter.values()) for counter in self._chunk_terms]
+        )
+        self._avg_doc_length = (
+            avg_doc_length
+            if avg_doc_length is not None
+            else (sum(self._chunk_lengths) / len(self._chunk_lengths) if self._chunk_lengths else 0.0)
+        )
+        self._document_frequency = document_frequency or self._build_document_frequency()
 
     @property
     def chunks(self) -> list[KnowledgeChunk]:
@@ -367,6 +381,12 @@ def _keywords_from_parts(*parts: object) -> list[str]:
 
 def _tokenize(text: str) -> list[str]:
     return [token.lower() for token in _TOKEN_PATTERN.findall(text.lower())]
+
+
+def tokenize_knowledge_text(text: str) -> list[str]:
+    """Tokenize knowledge text for runtime index persistence."""
+
+    return _tokenize(text)
 
 
 def _normalize_scope(scope: BlueprintScope | str | None) -> BlueprintScope | None:

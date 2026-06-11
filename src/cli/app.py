@@ -67,6 +67,7 @@ def knowledge_search(
     species: str | None = typer.Option(None, "--species"),
     limit: int = typer.Option(5, "--limit", min=1),
     include_embedding: bool = typer.Option(True, "--include-embedding/--no-include-embedding"),
+    use_persisted_bm25: bool = typer.Option(True, "--use-persisted-bm25/--rebuild-bm25"),
 ) -> None:
     """Search the persisted local runtime knowledge store."""
 
@@ -78,6 +79,7 @@ def knowledge_search(
             species=species,
             limit=limit,
             include_embedding=include_embedding,
+            use_persisted_bm25=use_persisted_bm25,
         )
     except (FileNotFoundError, ValueError) as error:
         console.print_json(json.dumps({"error": str(error), "action": "knowledge_search"}))

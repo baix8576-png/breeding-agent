@@ -3490,3 +3490,52 @@ Paste this into a new session:
   - Start R02 by adding a persistent BM25/keyword index artifact and tests that search can load it from `.geneagent/knowledge/indexes/bm25/`.
   - Keep the active phased RAG goal open until R02-R06 are implemented and verified.
 - resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-11 16:39 +08:00 (R02 persisted BM25 runtime index)
+- intent_domain: `knowledge`, `system`
+- stage_id: `Local-first RAG`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\src\knowledge`, `D:\geneagent\src\cli`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\tests\e2e\cli`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`; this was local runtime knowledge-index work only. No SSH, remote shell, scheduler submit, bio tool execution, raw PDF handling, TEI extraction, external network call, or raw entity-data movement was performed.
+- contracts_impacted:
+  - No existing public API/runtime scheduler contracts changed.
+  - `HybridKnowledgeIndex` now accepts optional precomputed BM25 statistics while preserving the rebuild-from-chunks default.
+  - Added `RuntimeBm25IndexArtifact` under `src/knowledge/runtime_store.py` and exported it from `knowledge`.
+  - Runtime manifest now records `bm25_index_path` when `knowledge build-index` materializes `.geneagent/knowledge/indexes/bm25/references_bm25.json`.
+- files_changed:
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\src\cli\app.py`
+  - `D:\geneagent\src\knowledge\__init__.py`
+  - `D:\geneagent\src\knowledge\indexing.py`
+  - `D:\geneagent\src\knowledge\runtime_store.py`
+  - `D:\geneagent\tests\unit\knowledge\test_runtime_store.py`
+  - `D:\geneagent\tests\e2e\cli\test_knowledge_cli.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added persisted BM25/keyword artifact `knowledge_bm25_index.v1` with chunk order, term frequency, document frequency, chunk lengths, and average document length.
+  - [x] `KnowledgeRuntimeStore.build_from_references()` now writes `indexes/bm25/references_bm25.json` alongside chunk JSONL and manifest.
+  - [x] `KnowledgeRuntimeStore.search()` now uses persisted BM25 statistics by default and falls back to rebuilding if the artifact is absent or mismatched.
+  - [x] CLI `knowledge search` now supports `--use-persisted-bm25/--rebuild-bm25`.
+  - [x] Added tests confirming BM25 artifact existence, manifest path, token statistics, and parity between persisted-index search and rebuilt search.
+  - [x] Verified full `references/` BM25 artifact build with `434` chunks and a successful VanRaden/GBLUP retrieval.
+- not_yet_done_checklist:
+  - [ ] R03: add source router / query planner so analysis planning and knowledge Q&A select retrieval filters before search.
+  - [ ] R04: add explicit evidence-chain trace payload from `user_query` through filters, chunks, and final answer/plan usage.
+  - [ ] R05: add optional embedding/rerank layer with offline-safe defaults and deterministic fallback.
+  - [ ] R06: connect PDF/GROBID ingestion outputs to runtime chunks without committing restricted full text.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_runtime_store.py tests\e2e\cli\test_knowledge_cli.py tests\unit\knowledge\test_indexing.py` -> pass, `7 passed`.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge tests\e2e\cli` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass with expected skips.
+  - Temporary full-store smoke: `KnowledgeRuntimeStore(...).build_from_references(Path('references')); store.load_bm25_artifact(); store.search('VanRaden genomic relationship matrix GBLUP', blueprint_scope='quantitative_genetics', limit=1)` -> pass with `doc_count=434`, `chunk_count=434`, `bm25_chunk_count=434`, `bm25_has_gblup=True`, `search_top=paper_grm_vanraden_2008`.
+  - `git diff --check -- README.md src\cli\app.py src\knowledge\__init__.py src\knowledge\indexing.py src\knowledge\runtime_store.py tests\unit\knowledge\test_runtime_store.py tests\e2e\cli\test_knowledge_cli.py` -> pass with Windows line-ending warnings only.
+- gate_result: `pass` (R02 persisted BM25 runtime index is implemented, tested, and documented; R03+ routing/trace/rerank/ingestion phases remain open)
+- known_risks:
+  - BM25 artifact is JSON for transparency and small-library portability; if the runtime library grows substantially, R02 should be replaced or supplemented with a more compact index format.
+  - Search still returns raw chunk payloads through CLI for traceability; answer-generation layers should summarize evidence and preserve source trace.
+  - Runtime index artifacts remain local/ignored and must not be committed.
+- next_actions:
+  - Stage and commit R02 changes.
+  - Start R03 by adding a source router / query planner that derives `blueprint_scope`, `species`, and evidence/source preferences before retrieval.
+  - Keep the active phased RAG goal open until R03-R06 are implemented and verified.
+- resume_first_command: `git status --short --branch`

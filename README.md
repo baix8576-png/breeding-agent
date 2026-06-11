@@ -189,6 +189,7 @@ flowchart TD
 - 外部回退为显式分支，不覆盖本地基准知识，只作为补充证据
 - 错误诊断优先使用 `references/*` 与本地知识条目，输出可执行修复建议
 - 运行期 chunk store 由 `references/*` 构建到 `.geneagent/knowledge/*`，该目录只保存本地生成物，不提交 Git
+- `knowledge build-index` 会同步生成 `chunks/references.jsonl`、`indexes/manifest.json` 和 `indexes/bm25/references_bm25.json`
 - 可执行入口：
   - `geneagent knowledge build-index --runtime-root .geneagent/knowledge --references-root references`
   - `geneagent knowledge search "GBLUP VanRaden GRM" --runtime-root .geneagent/knowledge --blueprint-scope quantitative_genetics`

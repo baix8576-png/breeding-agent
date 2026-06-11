@@ -32,8 +32,10 @@ def test_cli_knowledge_build_search_and_inspect_doc(tmp_path: Path) -> None:
     build_payload = json.loads(build_result.stdout)
     assert build_payload["manifest"]["doc_count"] == 10
     assert build_payload["manifest"]["chunk_count"] == 10
+    assert build_payload["manifest"]["bm25_index_path"].endswith("indexes/bm25/references_bm25.json")
     assert (runtime_root / "chunks" / "references.jsonl").is_file()
     assert (runtime_root / "indexes" / "manifest.json").is_file()
+    assert (runtime_root / "indexes" / "bm25" / "references_bm25.json").is_file()
 
     search_result = runner.invoke(
         app,

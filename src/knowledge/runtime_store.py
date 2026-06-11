@@ -4,13 +4,20 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterable
+from collections import Counter
 from datetime import datetime
+from datetime import timezone
 from pathlib import Path
 
 from pydantic import BaseModel, Field
 
 from contracts.knowledge import BlueprintScope, KnowledgeChunk
-from knowledge.indexing import HybridKnowledgeIndex, KnowledgeSearchHit, ReferenceKnowledgeIndexer
+from knowledge.indexing import (
+    HybridKnowledgeIndex,
+    KnowledgeSearchHit,
+    ReferenceKnowledgeIndexer,
+    tokenize_knowledge_text,
+)
 
 
 class RuntimeKnowledgeManifest(BaseModel):
@@ -40,6 +47,21 @@ class RuntimeKnowledgeBuildResult(BaseModel):
     chunks_path: str = Field(min_length=1)
     manifest_path: str = Field(min_length=1)
     errors: list[str] = Field(default_factory=list)
+
+
+class RuntimeBm25IndexArtifact(BaseModel):
+    """Persisted BM25/keyword statistics for runtime chunk search."""
+
+    schema_version: str = "knowledge_bm25_index.v1"
+    index_id: str = Field(min_length=3)
+    created_at: datetime
+    chunks_path: str = Field(min_length=1)
+    chunk_count: int = Field(ge=0)
+    avg_doc_length: float = Field(ge=0)
+    chunk_ids: list[str] = Field(default_factory=list)
+    chunk_lengths: dict[str, int] = Field(default_factory=dict)
+    document_frequency: dict[str, int] = Field(default_factory=dict)
+    term_frequency: dict[str, dict[str, int]] = Field(default_factory=dict)
 
 
 class RuntimeKnowledgeDocInspection(BaseModel):
@@ -85,8 +107,16 @@ class KnowledgeRuntimeStore:
         return self.runtime_root / "indexes"
 
     @property
+    def bm25_dir(self) -> Path:
+        return self.indexes_dir / "bm25"
+
+    @property
     def references_chunks_path(self) -> Path:
         return self.chunks_dir / "references.jsonl"
+
+    @property
+    def bm25_artifact_path(self) -> Path:
+        return self.bm25_dir / "references_bm25.json"
 
     @property
     def manifest_path(self) -> Path:
@@ -115,10 +145,17 @@ class KnowledgeRuntimeStore:
 
         self.chunks_dir.mkdir(parents=True, exist_ok=True)
         self.indexes_dir.mkdir(parents=True, exist_ok=True)
+        self.bm25_dir.mkdir(parents=True, exist_ok=True)
         _write_text_atomic(
             self.references_chunks_path,
             "".join(f"{chunk.model_dump_json()}\n" for chunk in chunks),
         )
+        bm25_artifact = _build_bm25_artifact(
+            chunks=chunks,
+            index_id=result.manifest.index_id,
+            chunks_path=_display_path(self.references_chunks_path, self.project_root),
+        )
+        _write_text_atomic(self.bm25_artifact_path, bm25_artifact.model_dump_json(indent=2) + "\n")
 
         manifest = RuntimeKnowledgeManifest(
             index_id=result.manifest.index_id,
@@ -129,7 +166,7 @@ class KnowledgeRuntimeStore:
             manifest_path=_display_path(self.manifest_path, self.project_root),
             doc_count=result.manifest.doc_count,
             chunk_count=len(chunks),
-            bm25_index_path=None,
+            bm25_index_path=_display_path(self.bm25_artifact_path, self.project_root),
             embedding_index_path=None,
             embedding_model=embedding_model,
             sources=result.manifest.sources,
@@ -166,10 +203,42 @@ class KnowledgeRuntimeStore:
                 raise ValueError(f"invalid knowledge chunk JSONL at {path}:{line_number}: {error}") from error
         return chunks
 
-    def build_index(self, *, embedding_model: str | None = "keyword-overlap-v1") -> HybridKnowledgeIndex:
+    def load_bm25_artifact(self) -> RuntimeBm25IndexArtifact:
+        """Load persisted BM25/keyword statistics."""
+
+        if not self.bm25_artifact_path.is_file():
+            raise FileNotFoundError(f"runtime BM25 artifact not found: {self.bm25_artifact_path}")
+        return RuntimeBm25IndexArtifact.model_validate_json(
+            self.bm25_artifact_path.read_text(encoding="utf-8")
+        )
+
+    def build_index(
+        self,
+        *,
+        embedding_model: str | None = "keyword-overlap-v1",
+        use_persisted_bm25: bool = True,
+    ) -> HybridKnowledgeIndex:
         """Build an in-memory hybrid index from persisted runtime chunks."""
 
-        return HybridKnowledgeIndex(self.load_chunks(), embedding_model=embedding_model)
+        chunks = self.load_chunks()
+        if not use_persisted_bm25:
+            return HybridKnowledgeIndex(chunks, embedding_model=embedding_model)
+        try:
+            artifact = self.load_bm25_artifact()
+        except FileNotFoundError:
+            return HybridKnowledgeIndex(chunks, embedding_model=embedding_model)
+        precomputed = _precomputed_bm25_for_chunks(chunks=chunks, artifact=artifact)
+        if precomputed is None:
+            return HybridKnowledgeIndex(chunks, embedding_model=embedding_model)
+        chunk_terms, chunk_lengths, avg_doc_length, document_frequency = precomputed
+        return HybridKnowledgeIndex(
+            chunks,
+            embedding_model=embedding_model,
+            chunk_terms=chunk_terms,
+            chunk_lengths=chunk_lengths,
+            avg_doc_length=avg_doc_length,
+            document_frequency=document_frequency,
+        )
 
     def search(
         self,
@@ -180,11 +249,15 @@ class KnowledgeRuntimeStore:
         limit: int = 5,
         include_embedding: bool = True,
         embedding_model: str | None = "keyword-overlap-v1",
+        use_persisted_bm25: bool = True,
     ) -> RuntimeKnowledgeSearchResult:
         """Search persisted runtime chunks with traceable hybrid retrieval."""
 
         chunks = self.load_chunks()
-        index = HybridKnowledgeIndex(chunks, embedding_model=embedding_model)
+        index = self.build_index(
+            embedding_model=embedding_model,
+            use_persisted_bm25=use_persisted_bm25,
+        )
         hits = index.search(
             query,
             blueprint_scope=blueprint_scope,
@@ -243,3 +316,53 @@ def _duplicates(values: Iterable[object]) -> list[str]:
             duplicated.append(normalized)
         seen.add(normalized)
     return duplicated
+
+
+def _build_bm25_artifact(
+    *,
+    chunks: list[KnowledgeChunk],
+    index_id: str,
+    chunks_path: str,
+) -> RuntimeBm25IndexArtifact:
+    term_counters = {chunk.chunk_id: Counter(tokenize_knowledge_text(chunk.text)) for chunk in chunks}
+    document_frequency: Counter[str] = Counter()
+    for counter in term_counters.values():
+        for token in counter:
+            document_frequency[token] += 1
+    chunk_lengths = {chunk_id: sum(counter.values()) for chunk_id, counter in term_counters.items()}
+    avg_doc_length = sum(chunk_lengths.values()) / len(chunk_lengths) if chunk_lengths else 0.0
+    return RuntimeBm25IndexArtifact(
+        index_id=index_id,
+        created_at=datetime.now(timezone.utc),
+        chunks_path=chunks_path,
+        chunk_count=len(chunks),
+        avg_doc_length=avg_doc_length,
+        chunk_ids=[chunk.chunk_id for chunk in chunks],
+        chunk_lengths=chunk_lengths,
+        document_frequency=dict(document_frequency),
+        term_frequency={chunk_id: dict(counter) for chunk_id, counter in term_counters.items()},
+    )
+
+
+def _precomputed_bm25_for_chunks(
+    *,
+    chunks: list[KnowledgeChunk],
+    artifact: RuntimeBm25IndexArtifact,
+) -> tuple[list[Counter[str]], list[int], float, Counter[str]] | None:
+    chunk_ids = [chunk.chunk_id for chunk in chunks]
+    if chunk_ids != artifact.chunk_ids:
+        return None
+    chunk_terms: list[Counter[str]] = []
+    chunk_lengths: list[int] = []
+    for chunk_id in chunk_ids:
+        term_frequency = artifact.term_frequency.get(chunk_id)
+        if term_frequency is None:
+            return None
+        chunk_terms.append(Counter(term_frequency))
+        chunk_lengths.append(artifact.chunk_lengths.get(chunk_id, sum(term_frequency.values())))
+    return (
+        chunk_terms,
+        chunk_lengths,
+        artifact.avg_doc_length,
+        Counter(artifact.document_frequency),
+    )
