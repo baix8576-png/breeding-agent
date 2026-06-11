@@ -3014,3 +3014,46 @@ Paste this into a new session:
   - Stage the tracked changes explicitly, commit on `codex/knowledge-m02-m15`, and push to `origin` (`ssh://git@ssh.github.com:443/baix8576-png/breeding-agent.git`).
   - After push, verify `git status --short --branch` is clean except ignored local-only assets if queried with `--ignored`.
 - resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-11 10:27 +08:00 (knowledge content fill plan)
+- intent_domain: `knowledge`
+- stage_id: `Local-first RAG`, `Blueprint Selection`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\docs\superpowers\plans`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`; this was a local planning and documentation step only. No SSH, shell, scheduler submit, bio tool execution, source fetching, raw PDF handling, or raw entity-data movement was performed.
+- contracts_impacted:
+  - No runtime or Pydantic contracts changed.
+  - The new plan defines future test and content-completion gates for literature, SOPs, parameter playbooks, diagnostics, script knowledge alignment, species overlays, retrieval QA, and final acceptance.
+- files_changed:
+  - `D:\geneagent\docs\superpowers\plans\2026-06-11-knowledge-content-fill-plan.md`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Re-read `AGENTS.md` and `docs/HANDOFF.md` before answering after context/model transition.
+  - [x] Verified current branch state with `git status --short --branch`.
+  - [x] Located and used the current `superpowers:writing-plans` skill instructions.
+  - [x] Audited current `references/*`, `scripts/*`, and knowledge-test file layout before planning.
+  - [x] Created a detailed batch plan for content-complete knowledge filling at `docs/superpowers/plans/2026-06-11-knowledge-content-fill-plan.md`.
+  - [x] Included explicit batches B00-B08 covering baseline audit, literature refresh, classic methods, SOPs, parameters, script alignment, diagnostics, species overlays, retrieval QA, safety scans, HANDOFF, and publication.
+- not_yet_done_checklist:
+  - [ ] The plan has not yet been executed; B00 must add failing content-completeness tests before new content batches are claimed complete.
+  - [ ] Recent-literature candidate cards marked `verify before citation export` still require DOI/PMID/publisher refresh during B01.
+  - [ ] SOPs, parameter playbooks, diagnostics, script operation guides, and species overlays still need the planned content-fill batches.
+  - [ ] The active project goal remains open because the knowledge base is not yet content-complete.
+- verification_commands:
+  - `Get-Content -Raw AGENTS.md` -> read before planning.
+  - `Get-Content -Raw docs\HANDOFF.md` -> read before planning.
+  - `git status --short --branch` -> clean before creating the plan.
+  - `rg --files references` -> inspected current knowledge asset layout.
+  - `rg --files scripts` -> inspected current script workflow layout.
+  - `rg --files tests\unit\knowledge tests\integration` -> inspected current knowledge and integration test layout.
+  - `rg -n "TBD|TODO|implement later|fill in details|Similar to Task|appropriate error handling|add validation|handle edge cases|Write tests for the above" docs\superpowers\plans\2026-06-11-knowledge-content-fill-plan.md` -> initial self-review caught literal placeholder terms in the self-review sentence; the plan text was corrected.
+  - `git diff --check -- docs\superpowers\plans\2026-06-11-knowledge-content-fill-plan.md` -> pass.
+- gate_result: `partial` (planning artifact created and format-checked; implementation/test batches are intentionally not complete yet)
+- known_risks:
+  - The plan is intentionally stricter than the current repository state; executing B00 should create failing tests before content batches are filled.
+  - Literature metadata refresh requires online metadata sources and may need batching around rate limits.
+  - This handoff entry itself still needs final diff/placeholder checks after insertion.
+- next_actions:
+  - Run final placeholder and diff checks for this plan/HANDOFF update.
+  - Start B00 by adding `tests/unit/knowledge/test_content_completeness.py` and confirming it fails on current gaps.
+  - Keep the goal active until B00-B08 are implemented and verified.
+- resume_first_command: `git status --short --branch`
