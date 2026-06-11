@@ -3539,3 +3539,54 @@ Paste this into a new session:
   - Start R03 by adding a source router / query planner that derives `blueprint_scope`, `species`, and evidence/source preferences before retrieval.
   - Keep the active phased RAG goal open until R03-R06 are implemented and verified.
 - resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-11 16:53 +08:00 (R03 metadata query router)
+- intent_domain: `knowledge`, `system`
+- stage_id: `Local-first RAG`, `Blueprint Selection`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\src\knowledge`, `D:\geneagent\src\cli`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\tests\e2e\cli`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`; this was local knowledge-routing work only. No SSH, remote shell, scheduler submit, bio tool execution, raw PDF handling, TEI extraction, external network call, or raw entity-data movement was performed.
+- contracts_impacted:
+  - No external API/runtime scheduler contracts changed.
+  - Added `KnowledgeRetrievalPlan` and `KnowledgeQueryRouter` in `src/knowledge/query_router.py`.
+  - `HybridKnowledgeIndex.search()` now accepts optional `evidence_levels` and `sources` metadata filters in addition to existing `blueprint_scope/species`.
+  - `RuntimeKnowledgeSearchResult` now includes optional `plan` and `metadata_fallbacks`.
+- files_changed:
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\src\cli\app.py`
+  - `D:\geneagent\src\knowledge\__init__.py`
+  - `D:\geneagent\src\knowledge\indexing.py`
+  - `D:\geneagent\src\knowledge\query_router.py`
+  - `D:\geneagent\src\knowledge\runtime_store.py`
+  - `D:\geneagent\tests\unit\knowledge\test_query_router.py`
+  - `D:\geneagent\tests\unit\knowledge\test_runtime_store.py`
+  - `D:\geneagent\tests\e2e\cli\test_knowledge_cli.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added deterministic query routing for species, `blueprint_scope`, evidence-level preferences, source preferences, domain hints, and query type.
+  - [x] Added CLI `knowledge plan-query` for inspecting planned retrieval filters before search.
+  - [x] `knowledge search` now defaults to planned search and can be forced raw with `--raw`.
+  - [x] Runtime planned search applies routed metadata filters before retrieval.
+  - [x] Added fallback behavior when planned evidence/source/species/scope filters over-constrain retrieval; fallback reasons are preserved in `metadata_fallbacks`.
+  - [x] Added tests for FarmGTEx/literature routing, GBLUP/resource routing, operational diagnostic routing, planned runtime search, and CLI plan-query.
+  - [x] Verified full `references/` planned search for PigGTEx/FarmGTEx returns hits after controlled metadata fallback.
+- not_yet_done_checklist:
+  - [ ] R04: add explicit evidence-chain trace payload from `user_query` through filters, chunks, and final answer/plan usage.
+  - [ ] R05: add optional embedding/rerank layer with offline-safe defaults and deterministic fallback.
+  - [ ] R06: connect PDF/GROBID ingestion outputs to runtime chunks without committing restricted full text.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_query_router.py tests\unit\knowledge\test_runtime_store.py tests\e2e\cli\test_knowledge_cli.py tests\unit\knowledge\test_indexing.py` -> pass, `11 passed`.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge tests\e2e\cli` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass with expected skips.
+  - Temporary full-store planned search smoke: `store.search('猪 PigGTEx FarmGTEx eQTL regulatory variants literature DOI', limit=3, use_query_router=True)` -> pass with `plan_species=pig`, `plan_scope=association_mapping`, `fallbacks=['dropped_evidence_source_filters']`, `hit_count=3`.
+  - `git diff --check -- README.md src\cli\app.py src\knowledge\__init__.py src\knowledge\indexing.py src\knowledge\query_router.py src\knowledge\runtime_store.py tests\unit\knowledge\test_query_router.py tests\unit\knowledge\test_runtime_store.py tests\e2e\cli\test_knowledge_cli.py` -> pass with Windows line-ending warnings only.
+- gate_result: `pass` (R03 metadata query router and planned search are implemented, tested, and documented; R04+ trace/rerank/ingestion phases remain open)
+- known_risks:
+  - R03 router is deterministic heuristic logic, not an LLM classifier; it should stay conservative and be expanded from observed misses.
+  - Metadata fallback prevents empty planned retrieval, but downstream answer generation must disclose fallback reasons when evidence is used.
+  - `domain_scope_hints` remain routing hints, not mandatory `knowledge_item.v2` metadata fields.
+- next_actions:
+  - Stage and commit R03 changes.
+  - Start R04 by adding explicit evidence-chain trace payloads and CLI/API-friendly trace output.
+  - Keep the active phased RAG goal open until R04-R06 are implemented and verified.
+- resume_first_command: `git status --short --branch`

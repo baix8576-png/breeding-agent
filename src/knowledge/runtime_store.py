@@ -11,13 +11,14 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from contracts.knowledge import BlueprintScope, KnowledgeChunk
+from contracts.knowledge import BlueprintScope, EvidenceLevel, KnowledgeChunk, KnowledgeSource
 from knowledge.indexing import (
     HybridKnowledgeIndex,
     KnowledgeSearchHit,
     ReferenceKnowledgeIndexer,
     tokenize_knowledge_text,
 )
+from knowledge.query_router import KnowledgeQueryRouter, KnowledgeRetrievalPlan
 
 
 class RuntimeKnowledgeManifest(BaseModel):
@@ -82,6 +83,8 @@ class RuntimeKnowledgeSearchResult(BaseModel):
     query: str = Field(min_length=1)
     runtime_root: str = Field(min_length=1)
     chunk_count: int = Field(ge=0)
+    plan: KnowledgeRetrievalPlan | None = None
+    metadata_fallbacks: list[str] = Field(default_factory=list)
     hits: list[KnowledgeSearchHit] = Field(default_factory=list)
 
 
@@ -240,35 +243,77 @@ class KnowledgeRuntimeStore:
             document_frequency=document_frequency,
         )
 
+    def plan_query(self, query: str) -> KnowledgeRetrievalPlan:
+        """Create a metadata-aware retrieval plan for a user query."""
+
+        return KnowledgeQueryRouter().plan(query)
+
     def search(
         self,
         query: str,
         *,
         blueprint_scope: BlueprintScope | str | None = None,
         species: str | None = None,
+        evidence_levels: list[EvidenceLevel | str] | None = None,
+        sources: list[KnowledgeSource | str] | None = None,
         limit: int = 5,
         include_embedding: bool = True,
         embedding_model: str | None = "keyword-overlap-v1",
         use_persisted_bm25: bool = True,
+        use_query_router: bool = False,
     ) -> RuntimeKnowledgeSearchResult:
         """Search persisted runtime chunks with traceable hybrid retrieval."""
 
         chunks = self.load_chunks()
+        plan = self.plan_query(query) if use_query_router else None
+        effective_blueprint_scope = blueprint_scope or (plan.blueprint_scope if plan else None)
+        effective_species = species or (plan.species if plan else None)
+        effective_evidence_levels = evidence_levels or (plan.evidence_levels if plan else None)
+        effective_sources = sources or (plan.sources if plan else None)
         index = self.build_index(
             embedding_model=embedding_model,
             use_persisted_bm25=use_persisted_bm25,
         )
+        metadata_fallbacks: list[str] = []
         hits = index.search(
             query,
-            blueprint_scope=blueprint_scope,
-            species=species,
+            blueprint_scope=effective_blueprint_scope,
+            species=effective_species,
+            evidence_levels=effective_evidence_levels,
+            sources=effective_sources,
             limit=limit,
             include_embedding=include_embedding,
         )
+        if not hits and plan and (effective_evidence_levels or effective_sources):
+            metadata_fallbacks.append("dropped_evidence_source_filters")
+            hits = index.search(
+                query,
+                blueprint_scope=effective_blueprint_scope,
+                species=effective_species,
+                limit=limit,
+                include_embedding=include_embedding,
+            )
+        if not hits and plan and effective_species:
+            metadata_fallbacks.append("dropped_species_filter")
+            hits = index.search(
+                query,
+                blueprint_scope=effective_blueprint_scope,
+                limit=limit,
+                include_embedding=include_embedding,
+            )
+        if not hits and plan and effective_blueprint_scope:
+            metadata_fallbacks.append("dropped_blueprint_scope_filter")
+            hits = index.search(
+                query,
+                limit=limit,
+                include_embedding=include_embedding,
+            )
         return RuntimeKnowledgeSearchResult(
             query=query,
             runtime_root=_display_path(self.runtime_root, self.project_root),
             chunk_count=len(chunks),
+            plan=plan,
+            metadata_fallbacks=metadata_fallbacks,
             hits=hits,
         )
 

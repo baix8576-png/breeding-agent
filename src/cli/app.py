@@ -16,6 +16,7 @@ from scheduler.remote import SshControlMasterManager
 from contracts.api import RequestIdentity
 from contracts.common import ExecutionMode, SshAuthMode
 from contracts.validation import InputBundle, InputBundleEntry
+from knowledge.query_router import KnowledgeQueryRouter
 from knowledge.runtime_store import KnowledgeRuntimeStore
 from runtime.bootstrap import create_application_context
 
@@ -68,6 +69,7 @@ def knowledge_search(
     limit: int = typer.Option(5, "--limit", min=1),
     include_embedding: bool = typer.Option(True, "--include-embedding/--no-include-embedding"),
     use_persisted_bm25: bool = typer.Option(True, "--use-persisted-bm25/--rebuild-bm25"),
+    use_query_router: bool = typer.Option(True, "--planned/--raw"),
 ) -> None:
     """Search the persisted local runtime knowledge store."""
 
@@ -80,10 +82,19 @@ def knowledge_search(
             limit=limit,
             include_embedding=include_embedding,
             use_persisted_bm25=use_persisted_bm25,
+            use_query_router=use_query_router,
         )
     except (FileNotFoundError, ValueError) as error:
         console.print_json(json.dumps({"error": str(error), "action": "knowledge_search"}))
         raise typer.Exit(code=1) from error
+    console.print_json(json.dumps(payload.model_dump(mode="json")))
+
+
+@knowledge_app.command("plan-query")
+def knowledge_plan_query(query: str) -> None:
+    """Plan metadata filters for a local-first knowledge query."""
+
+    payload = KnowledgeQueryRouter().plan(query)
     console.print_json(json.dumps(payload.model_dump(mode="json")))
 
 

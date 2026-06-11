@@ -55,8 +55,24 @@ def test_cli_knowledge_build_search_and_inspect_doc(tmp_path: Path) -> None:
     assert search_result.exit_code == 0, search_result.stdout
     search_payload = json.loads(search_result.stdout)
     assert search_payload["chunk_count"] == 10
+    assert search_payload["plan"]["blueprint_scope"] == "quantitative_genetics"
     assert search_payload["hits"][0]["chunk"]["doc_id"] == "paper_grm_vanraden_2008"
     assert search_payload["hits"][0]["chunk"]["source_path"] == "references/papers/grm_core_papers_v1.md"
+
+    plan_result = runner.invoke(
+        app,
+        [
+            "knowledge",
+            "plan-query",
+            "猪 PigGTEx FarmGTEx eQTL regulatory variants literature DOI",
+        ],
+    )
+
+    assert plan_result.exit_code == 0, plan_result.stdout
+    plan_payload = json.loads(plan_result.stdout)
+    assert plan_payload["species"] == "pig"
+    assert plan_payload["blueprint_scope"] == "association_mapping"
+    assert "paper" in plan_payload["sources"]
 
     inspect_result = runner.invoke(
         app,

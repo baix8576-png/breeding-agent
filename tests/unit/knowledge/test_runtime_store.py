@@ -52,8 +52,11 @@ def test_runtime_store_loads_searches_and_inspects_traceable_chunks(tmp_path: Pa
         blueprint_scope="quantitative_genetics",
         limit=3,
         use_persisted_bm25=True,
+        use_query_router=True,
     )
     assert search_result.chunk_count == 10
+    assert search_result.plan is not None
+    assert search_result.plan.blueprint_scope.value == "quantitative_genetics"
     assert search_result.hits
     assert search_result.hits[0].chunk.doc_id == "paper_grm_vanraden_2008"
     assert search_result.hits[0].chunk.page_or_anchor.startswith("#grm-01")
@@ -75,3 +78,21 @@ def test_runtime_store_loads_searches_and_inspects_traceable_chunks(tmp_path: Pa
 def test_runtime_store_rejects_references_as_runtime_root() -> None:
     with pytest.raises(ValueError, match="must not point inside references"):
         KnowledgeRuntimeStore(runtime_root=Path("references") / ".geneagent" / "knowledge")
+
+
+def test_runtime_store_planned_search_falls_back_from_over_strict_metadata(tmp_path: Path) -> None:
+    store = KnowledgeRuntimeStore(runtime_root=tmp_path / ".geneagent" / "knowledge")
+    store.build_from_references(Path("references"))
+
+    search_result = store.search(
+        "猪 PigGTEx FarmGTEx eQTL regulatory variants literature DOI",
+        limit=3,
+        use_query_router=True,
+    )
+
+    assert search_result.plan is not None
+    assert search_result.plan.species == "pig"
+    assert search_result.plan.blueprint_scope.value == "association_mapping"
+    assert search_result.metadata_fallbacks
+    assert search_result.hits
+    assert all(hit.chunk.source_path.startswith("references/") for hit in search_result.hits)

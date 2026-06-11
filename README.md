@@ -192,6 +192,7 @@ flowchart TD
 - `knowledge build-index` 会同步生成 `chunks/references.jsonl`、`indexes/manifest.json` 和 `indexes/bm25/references_bm25.json`
 - 可执行入口：
   - `geneagent knowledge build-index --runtime-root .geneagent/knowledge --references-root references`
+  - `geneagent knowledge plan-query "猪 FarmGTEx eQTL 文献"`
   - `geneagent knowledge search "GBLUP VanRaden GRM" --runtime-root .geneagent/knowledge --blueprint-scope quantitative_genetics`
   - `geneagent knowledge inspect-doc paper_grm_vanraden_2008 --runtime-root .geneagent/knowledge`
 

@@ -12,9 +12,11 @@ from pydantic import BaseModel, Field
 
 from contracts.knowledge import (
     BlueprintScope,
+    EvidenceLevel,
     KnowledgeChunk,
     KnowledgeIndexManifest,
     KnowledgeItemV2,
+    KnowledgeSource,
     normalize_blueprint_scope_value,
 )
 
@@ -93,6 +95,8 @@ class HybridKnowledgeIndex:
         *,
         blueprint_scope: BlueprintScope | str | None = None,
         species: str | None = None,
+        evidence_levels: list[EvidenceLevel | str] | None = None,
+        sources: list[KnowledgeSource | str] | None = None,
         limit: int = 5,
         include_embedding: bool = True,
     ) -> list[KnowledgeSearchHit]:
@@ -104,11 +108,17 @@ class HybridKnowledgeIndex:
 
         scope_filter = _normalize_scope(blueprint_scope)
         species_filter = species.strip().lower() if species else None
+        evidence_filter = _normalize_evidence_levels(evidence_levels)
+        source_filter = _normalize_sources(sources)
         hits: list[KnowledgeSearchHit] = []
         for chunk, terms in zip(self._chunks, self._chunk_terms):
             if scope_filter and chunk.blueprint_scope != scope_filter:
                 continue
             if species_filter and chunk.species.lower() not in {"multi_species", species_filter}:
+                continue
+            if evidence_filter and chunk.evidence_level not in evidence_filter:
+                continue
+            if source_filter and chunk.source not in source_filter:
                 continue
             bm25_score = self._bm25_score(query_tokens=query_tokens, terms=terms)
             keyword_score = self._keyword_score(query_tokens=query_tokens, chunk=chunk)
@@ -395,6 +405,18 @@ def _normalize_scope(scope: BlueprintScope | str | None) -> BlueprintScope | Non
     if isinstance(scope, BlueprintScope):
         return scope
     return BlueprintScope(normalize_blueprint_scope_value(scope))
+
+
+def _normalize_evidence_levels(values: list[EvidenceLevel | str] | None) -> set[EvidenceLevel]:
+    if not values:
+        return set()
+    return {value if isinstance(value, EvidenceLevel) else EvidenceLevel(value) for value in values}
+
+
+def _normalize_sources(values: list[KnowledgeSource | str] | None) -> set[KnowledgeSource]:
+    if not values:
+        return set()
+    return {value if isinstance(value, KnowledgeSource) else KnowledgeSource(value) for value in values}
 
 
 def _slugify(value: str) -> str:

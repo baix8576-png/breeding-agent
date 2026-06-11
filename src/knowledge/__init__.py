@@ -8,6 +8,7 @@ from knowledge.indexing import (
     ReferenceKnowledgeIndexer,
     tokenize_knowledge_text,
 )
+from knowledge.query_router import KnowledgeQueryRouter, KnowledgeRetrievalPlan
 from knowledge.retrieval import (
     ExternalKnowledgeRetriever,
     KnowledgeResolver,
@@ -40,6 +41,8 @@ __all__ = [
     "KnowledgeRuntimeStore",
     "KnowledgeSearchHit",
     "KnowledgeSourceFetcher",
+    "KnowledgeQueryRouter",
+    "KnowledgeRetrievalPlan",
     "LocalKnowledgeRetriever",
     "ReferenceKnowledgeIndexer",
     "RetrievalBundle",
