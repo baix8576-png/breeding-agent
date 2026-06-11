@@ -149,3 +149,31 @@ Retention guidance:
 - Keep manual confirmation records with the audit trail.
 
 Risk boundary: a successful result without traceability should not be treated as production-ready.
+
+## Command resource matrix for core tools
+
+```yaml
+knowledge_item.v2:
+  doc_id: playbook_command_resource_matrix
+  version: v2
+  species: multi_species
+  blueprint_scope: knowledge_governance
+  evidence_level: expert_opinion
+  source: parameter_playbook
+  updated_at: 2026-06-11T00:00:00+08:00
+  owner: popgen_quantgen
+```
+
+This matrix gives GeneAgent a conservative first-pass resource vocabulary for command preview, remote-shell wrappers, and report explanations. Values are planning presets for ordinary Linux servers or scheduler submissions; they are not universal scientific defaults.
+
+| Workflow | Tool | Input size trigger | Default CPU/threads | Memory estimate | Walltime preset | Command flag or wrapper field | Primary output | Breaker condition |
+|---|---|---|---|---|---|---|---|---|
+| genotype QC | PLINK2 | SNP-chip or PLINK/VCF cohort up to moderate livestock scale | `--threads 8-16` | `--memory 32768-65536` MB | `02:00:00-06:00:00` | `--threads`, `--memory-mb`, `--tmp-dir` | sample/variant QC tables, retained dataset pointer | missing genotype triplet, sample ID mismatch, output overwrite, resource request above cap |
+| VCF normalization/stats | bcftools | bgzipped/indexed VCF; large WGS VCF requires review | `--threads 4-16` where supported | `16-128` GB depending on sites and samples | `02:00:00-12:00:00` | `--threads`, `TMPDIR`, run-local output path | `bcftools.stats.txt`, normalized VCF only when authorized | uncompressed or unindexed VCF, unknown reference assembly, raw data copy outside work root |
+| PCA/LD/ROH | PLINK2 | post-QC genotype matrix | `--threads 8-16` | `32-128` GB | `02:00:00-12:00:00` | `--threads`, `--memory`, pruning/window flags | eigenvectors, LD summaries, ROH segments | missing LD pruning policy, automatic population labels, marker density too low for requested statistic |
+| GRM/REML | GCTA | post-QC PLINK input; memory scales with sample count | `--thread-num 8-32` | `64-256` GB for medium jobs; higher requires manual review | `06:00:00-24:00:00` | `--thread-num`, GRM prefix, REML phenotype/covariate files | GRM binary/text outputs, REML summaries, sample-order files | matrix dimension mismatch, phenotype mismatch, REML convergence failure, storage estimate above cap |
+| first-pass GWAS | PLINK2 `--glm` or reviewed mixed-model backend | genotype + phenotype + covariates | `--threads 8-16` | `32-128` GB | `02:00:00-12:00:00` | `--glm`, phenotype/covariate fields, memory/thread flags | association result files, model spec, metrics | missing trait, unreviewed covariates, no population correction when required, causal claims without validation |
+| genomic prediction CV | GCTA/Rscript/reviewed model backend | genotype + phenotype + validation split | `8-32` threads according to backend | `64-256` GB | `06:00:00-24:00:00` | explicit split file, model family, seed, thread flags | GEBV table, validation metrics, bias/calibration report | leakage-prone split, missing validation, auto-changing sample filters, deployment decision without review |
+| reporting/audit | shell/Rscript/Python report helpers | existing results/logs only | `1-4` threads | `4-16` GB | `00:30:00-02:00:00` | report root, task/run/session IDs, log paths | `report_index.json`, summary report, traceability bundle | secrets in logs, writing outside run root, overwriting upstream scientific artifacts |
+
+For a 96-core/1 TB ordinary server, default automated plans should still stay conservative: no more than 32 CPU threads, 256 GB memory, 24 hours walltime, and two concurrent trusted shell runs unless the operator explicitly changes local caps. The breaker policy has priority over throughput.

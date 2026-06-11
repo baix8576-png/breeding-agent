@@ -3232,3 +3232,41 @@ Paste this into a new session:
   - Start B04 parameter/resource playbooks to clear the index-depth floor and add command-level CPU/memory/walltime guidance.
   - Keep the active goal open until B00-B08 are implemented and verified.
 - resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-11 12:48 +08:00 (B04 parameter and resource playbooks)
+- intent_domain: `knowledge`, `system`
+- stage_id: `Resource + Safety Gate`, `Execution`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\references\parameter_playbooks`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`; this was local parameter/resource knowledge work only. No SSH, remote shell, scheduler submit, bio tool execution, raw PDF handling, TEI extraction, chunk/index artifact generation, or raw entity-data movement was performed.
+- contracts_impacted:
+  - No runtime or Pydantic contracts changed.
+  - Added two indexed parameter-playbook entries: `playbook_command_resource_matrix` and `playbook_ordinary_server_trusted_shell_caps`.
+- files_changed:
+  - `D:\geneagent\references\parameter_playbooks\core_parameter_playbooks.md`
+  - `D:\geneagent\references\parameter_playbooks\scheduler_resource_presets.md`
+  - `D:\geneagent\tests\unit\knowledge\test_content_completeness.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added a command resource matrix covering PLINK2, bcftools, PLINK2 PCA/LD/ROH, GCTA GRM/REML, first-pass GWAS, genomic prediction CV, and reporting/audit helpers.
+  - [x] Included input-size trigger, CPU/threads, memory, walltime, command flag or wrapper field, output, and breaker condition columns.
+  - [x] Added ordinary Linux server trusted-shell caps for the 96-core / 1 TB profile: 32 threads, 256 GB memory, 24-hour walltime, and two concurrent trusted shell runs by default.
+  - [x] Added `test_parameter_playbooks_name_tools_threads_and_breakers`.
+  - [x] Confirmed the reference index now reaches `380` docs/chunks and includes both new playbook doc IDs.
+  - [x] Confirmed the combined B03/B04 knowledge tests now fail only on remaining unverified recent-literature candidate cards.
+- not_yet_done_checklist:
+  - [ ] Remaining recent-literature candidate cards still need DOI/PMID/source verification or explicit removal/defer policy before `test_content_completeness.py` is fully green.
+  - [ ] B05 script alignment tests and shell-template checks still need to verify generated commands never omit resource limits.
+  - [ ] Failure-case expansion and species overlays remain planned in later batches.
+  - [ ] Full `pytest -q` remains intentionally blocked by the remaining recent-literature candidate-card gate.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_content_completeness.py tests\unit\knowledge\test_references_coverage.py` -> expected fail only on `test_recent_literature_cards_have_required_card_fields`; all other B00/B03/B04 checks passed.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; ReferenceKnowledgeIndexer(Path('references')).build()` -> pass with `items=380`, `chunks=380`, `errors=0`, and both new playbook doc IDs present.
+- gate_result: `partial` (B04 parameter/resource playbook content is complete; final content-completeness remains open for recent-literature candidate cleanup)
+- known_risks:
+  - Resource values are conservative planning presets for ordinary Linux server and scheduler use; they are not guaranteed OS-level enforcement on a shared server.
+  - Operator-local caps and safety breakers still take precedence over playbook defaults.
+- next_actions:
+  - Commit the B04 parameter/resource playbook batch.
+  - Start B05 script alignment and resource-limit tests, or finish remaining recent-literature candidate cleanup if prioritizing a fully green content-completeness gate.
+  - Keep the active goal open until B00-B08 are implemented and verified.
+- resume_first_command: `git status --short --branch`

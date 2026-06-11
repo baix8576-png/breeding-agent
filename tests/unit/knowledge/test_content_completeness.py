@@ -102,3 +102,13 @@ def test_domain_execution_sops_are_indexed() -> None:
         "sop_association_mapping_execution",
         "sop_reporting_audit_execution",
     } <= doc_ids
+
+
+def test_parameter_playbooks_name_tools_threads_and_breakers() -> None:
+    playbooks = sorted(Path("references/parameter_playbooks").glob("*.md"))
+    required_terms = ["threads", "memory", "walltime", "plink", "bcftools", "gcta", "breaker"]
+    combined = "\n".join(path.read_text(encoding="utf-8").lower() for path in playbooks)
+
+    assert playbooks
+    for term in required_terms:
+        assert term in combined, term
