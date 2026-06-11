@@ -3057,3 +3057,44 @@ Paste this into a new session:
   - Start B00 by adding `tests/unit/knowledge/test_content_completeness.py` and confirming it fails on current gaps.
   - Keep the goal active until B00-B08 are implemented and verified.
 - resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-11 10:58 +08:00 (B00 knowledge content audit gate)
+- intent_domain: `knowledge`
+- stage_id: `Local-first RAG`, `Blueprint Selection`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`; this was local test-gate work only. No SSH, remote shell, scheduler submit, bio tool execution, external metadata fetch, raw PDF handling, or raw entity-data movement was performed.
+- contracts_impacted:
+  - No runtime or Pydantic contracts changed.
+  - `ReferenceKnowledgeIndexer` behavior was used as an existing contract for content-depth and retrieval gates.
+  - New tests formalize expected future knowledge assets for B01-B03 and script-to-knowledge bridge coverage.
+- files_changed:
+  - `D:\geneagent\tests\unit\knowledge\test_content_completeness.py`
+  - `D:\geneagent\tests\unit\knowledge\test_references_coverage.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Used the `superpowers:subagent-driven-development` workflow for B00 implementation and review.
+  - [x] Added `tests/unit/knowledge/test_content_completeness.py` to make current content gaps fail visibly.
+  - [x] Added content-completeness retrieval expectations to `tests/unit/knowledge/test_references_coverage.py`.
+  - [x] Scoped B00 literature checks to required card fields and DOI/PMID/source URL traceability, without requiring final B01/B08 citation-export readiness.
+  - [x] Scoped operation-guide checks to the five canonical workflow folders only.
+  - [x] Added expected source-file and chunk/doc-count floors so planned SOP and literature-refresh assets must enter the index.
+  - [x] Ran independent spec and code-quality subagent reviews; fixed the prior overreach, manifest-field, scope, and weak-field assertion issues.
+  - [x] Confirmed the targeted B00 tests fail on real current gaps rather than environment or contract mistakes.
+- not_yet_done_checklist:
+  - [ ] B01 must refresh recent-literature cards that still use placeholder DOI/PMID text or candidate-only source links.
+  - [ ] B03 must add the five domain SOP files and update operation guides with SOP, parameter-playbook, and output-contract bridges.
+  - [ ] Later content batches must satisfy the new content-completeness retrieval queries and raise the index above the B00 floor.
+  - [ ] Full `tests/unit/knowledge` and full `pytest -q` are intentionally not expected to pass until planned content batches satisfy the new failing B00 gates.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_content_completeness.py tests\unit\knowledge\test_references_coverage.py` -> expected fail: four B00 content gaps remain (`DOI to verify before citation export`, missing operation-guide knowledge bridges, missing planned SOP/refresh-log sources, and retrieval misses for future SOP doc IDs).
+  - `git diff --check -- tests\unit\knowledge\test_content_completeness.py tests\unit\knowledge\test_references_coverage.py` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `partial` (B00 audit gate is implemented and reviewed; it intentionally fails until content batches B01-B03/B07 fill the missing knowledge assets)
+- known_risks:
+  - The new tests are stricter than the current repository state and will block broad knowledge-test runs until the planned content batches are filled.
+  - Some existing recent-literature cards remain retrieval candidates rather than manuscript-grade citation exports.
+  - Windows line-ending warnings may still appear during Git checks.
+- next_actions:
+  - Commit the B00 audit gate.
+  - Start B01 by refreshing recent-literature DOI/PMID/source metadata in tracked cards and adding `references/papers/literature_refresh_log_2026.md`.
+  - Keep the active goal open until B00-B08 are implemented and verified.
+- resume_first_command: `git status --short --branch`

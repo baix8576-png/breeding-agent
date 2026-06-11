@@ -59,6 +59,28 @@ LEGACY_BLUEPRINT_SCOPES = {
     "genomic_prediction",
     "shared",
 }
+CONTENT_COMPLETENESS_QUERIES = {
+    "plink2 bcftools genotype processing operation guide SOP output contract": {
+        "sop_genotype_processing_execution",
+        "playbook_qc_defaults",
+    },
+    "population genetics PCA admixture ROH LD selection signature SOP": {
+        "sop_population_genetics_execution",
+        "domain_selection_signatures_fst_window_policy",
+    },
+    "GCTA GRM REML heritability genomic prediction resource threads memory": {
+        "sop_quantitative_genetics_execution",
+        "playbook_grm_resource_baseline",
+    },
+    "GWAS mixed model GEMMA association mapping QTL report caveat": {
+        "sop_association_mapping_execution",
+        "domain_association_mapping_trait_model_policy",
+    },
+    "report index audit bundle diagnostic traceability source path anchor": {
+        "sop_reporting_audit_execution",
+        "template_report_index_v2",
+    },
+}
 
 
 def _build_references():
@@ -528,6 +550,17 @@ def test_reference_layer_retrieval_queries_cover_major_topics() -> None:
     }
 
     for query, expected_doc_ids in query_expectations.items():
+        hits = index.search(query, limit=20)
+        hit_doc_ids = {hit.chunk.doc_id for hit in hits}
+
+        assert hits, query
+        assert hit_doc_ids & expected_doc_ids, f"{query}: {hit_doc_ids}"
+
+
+def test_content_completeness_retrieval_queries_cover_workflow_assets() -> None:
+    index = ReferenceKnowledgeIndexer(REFERENCES_ROOT).build_index()
+
+    for query, expected_doc_ids in CONTENT_COMPLETENESS_QUERIES.items():
         hits = index.search(query, limit=20)
         hit_doc_ids = {hit.chunk.doc_id for hit in hits}
 
