@@ -3270,3 +3270,41 @@ Paste this into a new session:
   - Start B05 script alignment and resource-limit tests, or finish remaining recent-literature candidate cleanup if prioritizing a fully green content-completeness gate.
   - Keep the active goal open until B00-B08 are implemented and verified.
 - resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-11 13:02 +08:00 (B05 script knowledge alignment)
+- intent_domain: `knowledge`, `system`
+- stage_id: `Resource + Safety Gate`, `Execution`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\scripts`, `D:\geneagent\tests\integration`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`; this was local script-template and integration-test work only. No SSH, remote shell, scheduler submit, bio tool execution, raw PDF handling, TEI extraction, chunk/index artifact generation, or raw entity-data movement was performed.
+- contracts_impacted:
+  - No runtime or Pydantic contracts changed.
+  - Reporting/audit helper scripts now export common thread-limit environment variables with a conservative default `THREADS` value.
+- files_changed:
+  - `D:\geneagent\scripts\reporting_audit\build_result_index.sh`
+  - `D:\geneagent\scripts\reporting_audit\collect_figures.sh`
+  - `D:\geneagent\scripts\reporting_audit\export_traceability.sh`
+  - `D:\geneagent\scripts\reporting_audit\render_summary_report.sh`
+  - `D:\geneagent\scripts\reporting_audit\run_report_generator.sh`
+  - `D:\geneagent\tests\integration\test_script_knowledge_alignment.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added explicit `THREADS` defaults and `OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS`, `MKL_NUM_THREADS`, and `NUMEXPR_NUM_THREADS` exports to reporting/audit helper scripts.
+  - [x] Added `tests/integration/test_script_knowledge_alignment.py`.
+  - [x] Verified every `scripts/*/*.sh` has `#!/usr/bin/env bash`, `set -euo pipefail`, resource-control tokens, and output/result directory semantics.
+  - [x] Verified every canonical operation guide links to SOPs, parameter playbooks, and failure/diagnostic knowledge.
+  - [x] Re-ran existing analysis-script template tests, including bounded PLINK2, bcftools, and GCTA command snippets.
+- not_yet_done_checklist:
+  - [ ] B06 failure-case and diagnostic knowledge still needs expansion for Rscript, SSH/nohup, permission denied, safe repair, breaker, do-not-retry, and operator-review wording.
+  - [ ] Remaining recent-literature candidate cards still block the final content-completeness gate.
+  - [ ] Full `pytest -q` remains intentionally blocked until remaining B00/B06/B07/B08 gates are complete.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\integration\test_script_knowledge_alignment.py tests\integration\test_analysis_script_templates.py` -> pass with expected skips for unavailable shell-dependent cases.
+- gate_result: `partial` (B05 script alignment is complete and passing; later diagnostic and final content gates remain open)
+- known_risks:
+  - Thread environment exports in reporting scripts are best-effort process hints, not hard OS isolation.
+  - The test validates static script controls; real remote execution smoke tests remain operator-run and outside CI.
+- next_actions:
+  - Commit the B05 script alignment batch.
+  - Start B06 failure-case and diagnostics expansion.
+  - Keep the active goal open until B00-B08 are implemented and verified.
+- resume_first_command: `git status --short --branch`
