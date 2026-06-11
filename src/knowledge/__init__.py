@@ -29,6 +29,12 @@ from knowledge.source_fetcher import (
     SourceFetchEntry,
     SourceFetchReport,
 )
+from knowledge.traceability import (
+    KnowledgeRetrievalTrace,
+    RetrievalFilterTrace,
+    RetrievedChunkTrace,
+    build_retrieval_trace,
+)
 
 __all__ = [
     "ExternalKnowledgeRetriever",
@@ -43,16 +49,20 @@ __all__ = [
     "KnowledgeSourceFetcher",
     "KnowledgeQueryRouter",
     "KnowledgeRetrievalPlan",
+    "KnowledgeRetrievalTrace",
     "LocalKnowledgeRetriever",
     "ReferenceKnowledgeIndexer",
     "RetrievalBundle",
     "RetrievalDocument",
+    "RetrievalFilterTrace",
     "RuntimeBm25IndexArtifact",
     "RuntimeKnowledgeBuildResult",
     "RuntimeKnowledgeDocInspection",
     "RuntimeKnowledgeManifest",
     "RuntimeKnowledgeSearchResult",
+    "RetrievedChunkTrace",
     "SourceFetchEntry",
     "SourceFetchReport",
+    "build_retrieval_trace",
     "tokenize_knowledge_text",
 ]

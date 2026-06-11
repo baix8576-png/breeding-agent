@@ -3590,3 +3590,47 @@ Paste this into a new session:
   - Start R04 by adding explicit evidence-chain trace payloads and CLI/API-friendly trace output.
   - Keep the active phased RAG goal open until R04-R06 are implemented and verified.
 - resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-11 17:01 +08:00 (R04 retrieval evidence trace)
+- intent_domain: `knowledge`, `system`
+- stage_id: `Local-first RAG`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\src\knowledge`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\tests\e2e\cli`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`; this was local evidence-trace work only. No SSH, remote shell, scheduler submit, bio tool execution, raw PDF handling, TEI extraction, external network call, or raw entity-data movement was performed.
+- contracts_impacted:
+  - No external API/runtime scheduler contracts changed.
+  - Added retrieval trace models in `src/knowledge/traceability.py`: `RetrievalFilterTrace`, `RetrievedChunkTrace`, and `KnowledgeRetrievalTrace`.
+  - `RuntimeKnowledgeSearchResult` now includes `trace` in addition to `plan`, `metadata_fallbacks`, and `hits`.
+- files_changed:
+  - `D:\geneagent\README.md`
+  - `D:\geneagent\src\knowledge\__init__.py`
+  - `D:\geneagent\src\knowledge\runtime_store.py`
+  - `D:\geneagent\src\knowledge\traceability.py`
+  - `D:\geneagent\tests\unit\knowledge\test_traceability.py`
+  - `D:\geneagent\tests\e2e\cli\test_knowledge_cli.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Added `knowledge_retrieval_trace.v1` payload containing `user_query`, applied/planned filters, metadata fallbacks, and ranked retrieved chunks.
+  - [x] Trace captures `doc_id`, `chunk_id`, `source_path`, `page_or_anchor`, `section`, `species`, `blueprint_scope`, `evidence_level`, `source`, `score`, `confidence`, and hit reasons.
+  - [x] Runtime search now emits trace for both raw and planned retrieval.
+  - [x] CLI `knowledge search` JSON output now carries trace fields for downstream report/audit use.
+  - [x] Added unit tests for minimal trace chain and metadata fallback trace.
+  - [x] Added CLI e2e assertions that trace survives command serialization.
+- not_yet_done_checklist:
+  - [ ] R05: add optional embedding/rerank layer with offline-safe defaults and deterministic fallback.
+  - [ ] R06: connect PDF/GROBID ingestion outputs to runtime chunks without committing restricted full text.
+  - [ ] Later integration: wire `KnowledgeRetrievalTrace` into report/audit payloads that consume retrieved evidence.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_traceability.py tests\unit\knowledge\test_query_router.py tests\unit\knowledge\test_runtime_store.py tests\e2e\cli\test_knowledge_cli.py` -> pass, `10 passed`.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge tests\e2e\cli` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:PYTHONPYCACHEPREFIX='D:\geneagent\pycache_temp'; .\.venv\Scripts\python.exe -m compileall src tests` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q` -> pass with expected skips.
+  - `git diff --check -- README.md src\knowledge\__init__.py src\knowledge\traceability.py src\knowledge\runtime_store.py tests\unit\knowledge\test_traceability.py tests\e2e\cli\test_knowledge_cli.py` -> pass with Windows line-ending warnings only.
+- gate_result: `pass` (R04 evidence-chain trace is implemented, tested, and documented; R05/R06 remain open)
+- known_risks:
+  - Trace payloads can be verbose if many hits are returned; downstream reports should cap and summarize while preserving doc/chunk references.
+  - The trace currently describes retrieval use, not final answer generation; later report/audit integration must fill `final_answer_or_plan_ref` when an answer or plan consumes the evidence.
+- next_actions:
+  - Stage and commit R04 changes.
+  - Start R05 by adding optional local reranking with deterministic defaults and no external embedding dependency.
+  - Keep the active phased RAG goal open until R05-R06 are implemented and verified.
+- resume_first_command: `git status --short --branch`

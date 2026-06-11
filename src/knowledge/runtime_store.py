@@ -11,7 +11,13 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from contracts.knowledge import BlueprintScope, EvidenceLevel, KnowledgeChunk, KnowledgeSource
+from contracts.knowledge import (
+    BlueprintScope,
+    EvidenceLevel,
+    KnowledgeChunk,
+    KnowledgeSource,
+    normalize_blueprint_scope_value,
+)
 from knowledge.indexing import (
     HybridKnowledgeIndex,
     KnowledgeSearchHit,
@@ -19,6 +25,7 @@ from knowledge.indexing import (
     tokenize_knowledge_text,
 )
 from knowledge.query_router import KnowledgeQueryRouter, KnowledgeRetrievalPlan
+from knowledge.traceability import KnowledgeRetrievalTrace, build_retrieval_trace
 
 
 class RuntimeKnowledgeManifest(BaseModel):
@@ -85,6 +92,7 @@ class RuntimeKnowledgeSearchResult(BaseModel):
     chunk_count: int = Field(ge=0)
     plan: KnowledgeRetrievalPlan | None = None
     metadata_fallbacks: list[str] = Field(default_factory=list)
+    trace: KnowledgeRetrievalTrace | None = None
     hits: list[KnowledgeSearchHit] = Field(default_factory=list)
 
 
@@ -270,6 +278,10 @@ class KnowledgeRuntimeStore:
         effective_species = species or (plan.species if plan else None)
         effective_evidence_levels = evidence_levels or (plan.evidence_levels if plan else None)
         effective_sources = sources or (plan.sources if plan else None)
+        applied_blueprint_scope = _as_blueprint_scope(effective_blueprint_scope)
+        applied_species = effective_species
+        applied_evidence_levels = _as_evidence_levels(effective_evidence_levels)
+        applied_sources = _as_sources(effective_sources)
         index = self.build_index(
             embedding_model=embedding_model,
             use_persisted_bm25=use_persisted_bm25,
@@ -286,6 +298,8 @@ class KnowledgeRuntimeStore:
         )
         if not hits and plan and (effective_evidence_levels or effective_sources):
             metadata_fallbacks.append("dropped_evidence_source_filters")
+            applied_evidence_levels = []
+            applied_sources = []
             hits = index.search(
                 query,
                 blueprint_scope=effective_blueprint_scope,
@@ -295,6 +309,7 @@ class KnowledgeRuntimeStore:
             )
         if not hits and plan and effective_species:
             metadata_fallbacks.append("dropped_species_filter")
+            applied_species = None
             hits = index.search(
                 query,
                 blueprint_scope=effective_blueprint_scope,
@@ -303,17 +318,30 @@ class KnowledgeRuntimeStore:
             )
         if not hits and plan and effective_blueprint_scope:
             metadata_fallbacks.append("dropped_blueprint_scope_filter")
+            applied_blueprint_scope = None
             hits = index.search(
                 query,
                 limit=limit,
                 include_embedding=include_embedding,
             )
+        trace = build_retrieval_trace(
+            user_query=query,
+            plan=plan,
+            applied_blueprint_scope=applied_blueprint_scope,
+            applied_species=applied_species,
+            applied_evidence_levels=applied_evidence_levels,
+            applied_sources=applied_sources,
+            used_query_router=use_query_router,
+            metadata_fallbacks=metadata_fallbacks,
+            hits=hits,
+        )
         return RuntimeKnowledgeSearchResult(
             query=query,
             runtime_root=_display_path(self.runtime_root, self.project_root),
             chunk_count=len(chunks),
             plan=plan,
             metadata_fallbacks=metadata_fallbacks,
+            trace=trace,
             hits=hits,
         )
 
@@ -361,6 +389,26 @@ def _duplicates(values: Iterable[object]) -> list[str]:
             duplicated.append(normalized)
         seen.add(normalized)
     return duplicated
+
+
+def _as_blueprint_scope(value: BlueprintScope | str | None) -> BlueprintScope | None:
+    if value is None:
+        return None
+    if isinstance(value, BlueprintScope):
+        return value
+    return BlueprintScope(normalize_blueprint_scope_value(value))
+
+
+def _as_evidence_levels(values: list[EvidenceLevel | str] | None) -> list[EvidenceLevel]:
+    if not values:
+        return []
+    return [value if isinstance(value, EvidenceLevel) else EvidenceLevel(value) for value in values]
+
+
+def _as_sources(values: list[KnowledgeSource | str] | None) -> list[KnowledgeSource]:
+    if not values:
+        return []
+    return [value if isinstance(value, KnowledgeSource) else KnowledgeSource(value) for value in values]
 
 
 def _build_bm25_artifact(

@@ -56,6 +56,8 @@ def test_cli_knowledge_build_search_and_inspect_doc(tmp_path: Path) -> None:
     search_payload = json.loads(search_result.stdout)
     assert search_payload["chunk_count"] == 10
     assert search_payload["plan"]["blueprint_scope"] == "quantitative_genetics"
+    assert search_payload["trace"]["user_query"] == "VanRaden genomic relationship matrix GBLUP"
+    assert search_payload["trace"]["retrieved_chunks"][0]["doc_id"] == "paper_grm_vanraden_2008"
     assert search_payload["hits"][0]["chunk"]["doc_id"] == "paper_grm_vanraden_2008"
     assert search_payload["hits"][0]["chunk"]["source_path"] == "references/papers/grm_core_papers_v1.md"
 
