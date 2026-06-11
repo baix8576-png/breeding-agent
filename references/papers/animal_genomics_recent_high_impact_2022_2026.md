@@ -204,16 +204,17 @@ knowledge_item.v2:
   blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Cattle graph-genome study of global breed diversity.
+- Paper: Talenti et al. *A cattle graph genome incorporating global breed diversity*.
 - Year: 2022.
-- DOI/PMID: DOI `10.1038/s41467-022-28605-0` (verify before citation export).
+- Journal: Nature Communications.
+- DOI/PMID: DOI `10.1038/s41467-022-28605-0`; PMID `35177600`.
 - Species/data: cattle pangenome/graph genome.
 - GeneAgent use: reference-bias caution for cross-breed cattle analyses.
 - Boundary/risk: graph-genome workflows are not yet core GeneAgent execution paths.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=cattle+graph+genome+global+breed+diversity+2022+Nature+Communications)
+- Source links: [DOI](https://doi.org/10.1038/s41467-022-28605-0); [PubMed](https://pubmed.ncbi.nlm.nih.gov/35177600/)
 
 ## RECENT-10 De novo cattle immune variation
 ```yaml
@@ -224,16 +225,17 @@ knowledge_item.v2:
   blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: De novo cattle genome resources for immune and disease-resistance variation.
+- Paper: Li et al. *De novo genome assembly depicts the immune genomic characteristics of cattle*.
 - Year: 2023.
-- DOI/PMID: DOI `10.1038/s41467-023-42161-1` (verify before citation export).
+- Journal: Nature Communications.
+- DOI/PMID: DOI `10.1038/s41467-023-42161-1`; PMID `37857610`.
 - Species/data: cattle genome assembly and immune loci.
 - GeneAgent use: immune-trait candidate region interpretation.
 - Boundary/risk: assembly-level evidence requires marker-liftover caution.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=cattle+immune+variation+de+novo+genome+Nature+Communications+2023)
+- Source links: [DOI](https://doi.org/10.1038/s41467-023-42161-1); [PubMed](https://pubmed.ncbi.nlm.nih.gov/37857610/)
 
 ## RECENT-11 Cattle male fertility methylation QTL
 ```yaml
@@ -244,16 +246,17 @@ knowledge_item.v2:
   blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Cattle male fertility mQTL and regulatory architecture study.
+- Paper: Mapel et al. *Molecular quantitative trait loci in reproductive tissues impact male fertility in cattle*.
 - Year: 2024.
-- DOI/PMID: DOI `10.1038/s41467-024-44935-7` (verify before citation export).
+- Journal: Nature Communications.
+- DOI/PMID: DOI `10.1038/s41467-024-44935-7`; PMID `38253538`.
 - Species/data: cattle fertility, methylation QTL.
 - GeneAgent use: multi-omics trait interpretation for fertility phenotypes.
 - Boundary/risk: methylation evidence is context and tissue dependent.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=cattle+male+fertility+mQTL+Nature+Communications+2024)
+- Source links: [DOI](https://doi.org/10.1038/s41467-024-44935-7); [PubMed](https://pubmed.ncbi.nlm.nih.gov/38253538/)
 
 ## RECENT-12 Cattle sheep telomere-to-telomere sex chromosome
 ```yaml
@@ -264,16 +267,17 @@ knowledge_item.v2:
   blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Telomere-to-telomere ruminant sex-chromosome genome study.
+- Paper: Olagunju et al. *Telomere-to-telomere assemblies of cattle and sheep Y-chromosomes uncover divergent structure and gene content*.
 - Year: 2024.
-- DOI/PMID: DOI `10.1038/s41467-024-52384-5` (verify before citation export).
+- Journal: Nature Communications.
+- DOI/PMID: DOI `10.1038/s41467-024-52384-5`; PMID `39333471`.
 - Species/data: cattle/sheep long-read assemblies.
 - GeneAgent use: long-read assembly and sex-chromosome caveats for future expansion.
 - Boundary/risk: outside current SNP-chip core blueprints.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=cattle+sheep+telomere-to-telomere+Y+chromosome+Nature+Communications+2024)
+- Source links: [DOI](https://doi.org/10.1038/s41467-024-52384-5); [PubMed](https://pubmed.ncbi.nlm.nih.gov/39333471/)
 
 ## RECENT-13 Cattle endogenous retrovirus GWAS
 ```yaml
@@ -284,16 +288,17 @@ knowledge_item.v2:
   blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Cattle endogenous retrovirus variation and trait association study.
+- Paper: Tang et al. *GWAS reveals determinants of mobilization rate and dynamics of an active endogenous retrovirus of cattle*.
 - Year: 2024.
-- DOI/PMID: DOI `10.1038/s41467-024-46434-1` (verify before citation export).
+- Journal: Nature Communications.
+- DOI/PMID: DOI `10.1038/s41467-024-46434-1`; PMID `38461177`.
 - Species/data: cattle structural/retroviral variation.
 - GeneAgent use: explains non-SNP variation affecting trait interpretation.
 - Boundary/risk: requires specialized SV/ERV calling.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=cattle+endogenous+retrovirus+trait+association+Nature+Communications+2024)
+- Source links: [DOI](https://doi.org/10.1038/s41467-024-46434-1); [PubMed](https://pubmed.ncbi.nlm.nih.gov/38461177/)
 
 ## RECENT-14 Hybrid pig allele-specific regulation
 ```yaml
@@ -304,16 +309,17 @@ knowledge_item.v2:
   blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Hybrid pig allele-specific regulatory variation study.
+- Paper: Quan et al. *Multi-omic characterization of allele-specific regulatory variation in hybrid pigs*.
 - Year: 2024.
-- DOI/PMID: DOI `10.1038/s41467-024-49923-5` (verify before citation export).
+- Journal: Nature Communications.
+- DOI/PMID: DOI `10.1038/s41467-024-49923-5`; PMID `38961076`.
 - Species/data: pig hybrids, expression regulation.
 - GeneAgent use: heterosis/regulatory interpretation in pig breeding context.
 - Boundary/risk: not a direct prediction-model benchmark.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=hybrid+pigs+allele-specific+regulatory+variation+Nature+Communications+2024)
+- Source links: [DOI](https://doi.org/10.1038/s41467-024-49923-5); [PubMed](https://pubmed.ncbi.nlm.nih.gov/38961076/)
 
 ## RECENT-15 Pig pangenome selection signatures
 ```yaml
@@ -324,16 +330,17 @@ knowledge_item.v2:
   blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Pig pangenome and selection-signature study across domestic and wild populations.
+- Paper: Li et al. *The pig pangenome provides insights into the roles of coding structural variations in genetic diversity and adaptation*.
 - Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- Journal: Genome Research.
+- DOI/PMID: DOI `10.1101/gr.277638.122`; PMID `37914227`.
 - Species/data: pig pangenome, population structure.
 - GeneAgent use: pig diversity, introgression, and structural-variant context.
 - Boundary/risk: pangenome calling is not part of current QC pipeline.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=pig+pangenome+selection+signatures+2023+Nature+Communications+Genome+Research)
+- Source links: [DOI](https://doi.org/10.1101/gr.277638.122); [PubMed](https://pubmed.ncbi.nlm.nih.gov/37914227/)
 
 ## RECENT-16 Yak structural variation adaptation
 ```yaml
@@ -344,16 +351,17 @@ knowledge_item.v2:
   blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Yak structural variation and high-altitude adaptation study.
+- Paper: Liu et al. *Evolutionary origin of genomic structural variations in domestic yaks*.
 - Year: 2023.
-- DOI/PMID: DOI `10.1038/s41467-023-41220-x` (verify before citation export).
+- Journal: Nature Communications.
+- DOI/PMID: DOI `10.1038/s41467-023-41220-x`; PMID `37726270`.
 - Species/data: yak genomes and adaptation.
 - GeneAgent use: adaptation and selection-signature explanation for ruminants.
 - Boundary/risk: yak-specific signals should not be generalized to cattle without evidence.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=yak+structural+variation+adaptation+Nature+Communications+2023)
+- Source links: [DOI](https://doi.org/10.1038/s41467-023-41220-x); [PubMed](https://pubmed.ncbi.nlm.nih.gov/37726270/)
 
 ## RECENT-17 Sheep pangenome tail phenotype
 ```yaml
@@ -364,16 +372,17 @@ knowledge_item.v2:
   blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Sheep pangenome and tail morphology/adaptation study.
+- Paper: Li et al. *A sheep pangenome reveals the spectrum of structural variations and their effects on tail phenotypes*.
 - Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- Journal: Genome Research.
+- DOI/PMID: DOI `10.1101/gr.277372.122`; PMID `37310928`.
 - Species/data: sheep pangenome and phenotype-associated variation.
 - GeneAgent use: sheep breed diversity and phenotype interpretation.
 - Boundary/risk: phenotype-specific claims require original trait definitions.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=sheep+pangenome+tail+phenotype+2023)
+- Source links: [DOI](https://doi.org/10.1101/gr.277372.122); [PubMed](https://pubmed.ncbi.nlm.nih.gov/37310928/)
 
 ## RECENT-18 Sheep regulatory element atlas
 ```yaml
@@ -384,36 +393,38 @@ knowledge_item.v2:
   blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Sheep multi-tissue regulatory element or epigenome atlas.
+- Paper: Zhang et al. *Comprehensive multi-tissue epigenome atlas in sheep: A resource for complex traits, domestication, and breeding*.
 - Year: 2024.
-- DOI/PMID: DOI to verify before citation export.
+- Journal: iMeta.
+- DOI/PMID: DOI `10.1002/imt2.254`; PMID `39742295`.
 - Species/data: sheep functional genomics.
 - GeneAgent use: sheep trait-candidate gene annotation.
 - Boundary/risk: regulatory annotations are tissue/stage specific.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=sheep+multi-tissue+regulatory+atlas+2024+genomics)
+- Source links: [DOI](https://doi.org/10.1002/imt2.254); [PubMed](https://pubmed.ncbi.nlm.nih.gov/39742295/)
 
 ## RECENT-19 Goat pangenome diversity
 ```yaml
 knowledge_item.v2:
-  doc_id: "paper_recent_goat_pangenome_diversity_2023"
+  doc_id: "paper_recent_goat_pangenome_diversity_2024"
   version: "v2"
   species: "capra_hircus"
   blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Goat pangenome or graph-genome diversity study.
-- Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- Paper: Bian et al. *A Graph-based Goat Pangenome Reveals Structural Variations Involved in Domestication and Adaptation*.
+- Year: 2024.
+- Journal: Molecular Biology and Evolution.
+- DOI/PMID: DOI `10.1093/molbev/msae251`; PMID `39665690`.
 - Species/data: goat genomes and structural variants.
 - GeneAgent use: goat diversity and reference-bias context.
 - Boundary/risk: verify assembly quality and breed sampling before use.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=goat+pangenome+diversity+2023+genomics)
+- Source links: [DOI](https://doi.org/10.1093/molbev/msae251); [PubMed](https://pubmed.ncbi.nlm.nih.gov/39665690/)
 
 ## RECENT-20 Chicken pangenome structural variation
 ```yaml
@@ -424,76 +435,80 @@ knowledge_item.v2:
   blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Chicken pangenome structural variation and domestication/diversity study.
+- Paper: Rice et al. *A pangenome graph reference of 30 chicken genomes allows genotyping of large and complex structural variants*.
 - Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- Journal: BMC Biology.
+- DOI/PMID: DOI `10.1186/s12915-023-01758-0`; PMID `37993882`.
 - Species/data: chicken pangenome and population structure.
 - GeneAgent use: poultry reference-bias and structural variant interpretation.
 - Boundary/risk: current workflows remain SNP-oriented.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=chicken+pangenome+structural+variation+2023+Genome+Biology+Nature+Communications)
+- Source links: [DOI](https://doi.org/10.1186/s12915-023-01758-0); [PubMed](https://pubmed.ncbi.nlm.nih.gov/37993882/)
 
-## RECENT-21 Duck pangenome and domestication
+## RECENT-21 Duck resequencing and artificial selection
 ```yaml
 knowledge_item.v2:
-  doc_id: "paper_recent_duck_pangenome_domestication_2023"
+  doc_id: "paper_recent_duck_selection_resequencing_2023"
   version: "v2"
   species: "anas_platyrhynchos"
   blueprint_scope: population_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Duck pangenome or population genomics study of domestication.
+- Paper: Yu et al. *Resequencing of a Pekin duck breeding population provides insights into the genomic response to short-term artificial selection*.
 - Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
-- Species/data: duck genomes.
+- Journal: GigaScience.
+- DOI/PMID: DOI `10.1093/gigascience/giad016`; PMID `36971291`.
+- Species/data: duck population resequencing and artificial selection.
 - GeneAgent use: poultry comparative genomics and domestication interpretation.
 - Boundary/risk: include only after species-specific QC standards are confirmed.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=duck+pangenome+domestication+2023+genomics)
+- Source links: [DOI](https://doi.org/10.1093/gigascience/giad016); [PubMed](https://pubmed.ncbi.nlm.nih.gov/36971291/)
 
-## RECENT-22 Fish pangenome aquaculture traits
+## RECENT-22 Fish reference genome and pangenome aquaculture review
 ```yaml
 knowledge_item.v2:
-  doc_id: "paper_recent_fish_pangenome_aquaculture_2024"
+  doc_id: "paper_recent_fish_pangenome_aquaculture_2025"
   version: "v2"
   species: "aquaculture_multi_species"
   blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Aquaculture fish pangenome or graph-genome study for breeding traits.
-- Year: 2024.
-- DOI/PMID: DOI to verify before citation export.
+- Paper: Liu and Gao. *Current State of Fish Reference Genome and Pangenome: Methodologies, Sampling Strategies, Quality Assessment and Future Perspectives to Aquaculture Breeding*.
+- Year: 2025.
+- Journal: Marine Biotechnology.
+- DOI/PMID: DOI `10.1007/s10126-025-10535-9`; PMID `41251872`.
 - Species/data: aquaculture genomes.
 - GeneAgent use: future aquaculture support and pangenome-aware marker interpretation.
 - Boundary/risk: heterogeneous species; avoid one-size-fits-all defaults.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=aquaculture+fish+pangenome+breeding+traits+2024)
+- Source links: [DOI](https://doi.org/10.1007/s10126-025-10535-9); [PubMed](https://pubmed.ncbi.nlm.nih.gov/41251872/)
 
-## RECENT-23 Salmon genomics selection review
+## RECENT-23 Atlantic salmon multi-population genomic prediction
 ```yaml
 knowledge_item.v2:
-  doc_id: "paper_recent_salmon_genomic_selection_2022"
+  doc_id: "paper_recent_salmon_genomic_selection_2024"
   version: "v2"
   species: "salmo_salar"
   blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Atlantic salmon genomic selection review or benchmark.
-- Year: 2022.
-- DOI/PMID: DOI to verify before citation export.
+- Paper: Ajasa et al. *Accuracy of genomic prediction using multiple Atlantic salmon populations*.
+- Year: 2024.
+- Journal: Genetics Selection Evolution.
+- DOI/PMID: DOI `10.1186/s12711-024-00907-5`; PMID `38750427`.
 - Species/data: salmon breeding populations.
 - GeneAgent use: aquaculture genomic prediction design and validation caveats.
 - Boundary/risk: effective population size and family structure differ from terrestrial livestock.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=Atlantic+salmon+genomic+selection+2022+review+benchmark)
+- Source links: [DOI](https://doi.org/10.1186/s12711-024-00907-5); [PubMed](https://pubmed.ncbi.nlm.nih.gov/38750427/)
 
 ## RECENT-24 Tilapia genomic selection benchmark
 ```yaml
@@ -502,12 +517,12 @@ knowledge_item.v2:
   version: "v2"
   species: "oreochromis_niloticus"
   blueprint_scope: quantitative_genetics
-  evidence_level: "peer_reviewed"
-  source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Nile tilapia genomic selection benchmark for growth or disease traits.
+- Paper: Candidate Nile tilapia genomic selection benchmark for growth or disease traits.
 - Year: 2023.
 - DOI/PMID: DOI to verify before citation export.
 - Species/data: tilapia breeding.
@@ -524,96 +539,101 @@ knowledge_item.v2:
   blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Pacific white shrimp genomic selection benchmark for disease or growth traits.
+- Paper: Luo et al. *Evaluation of machine learning method in genomic selection for growth traits of Pacific white shrimp*.
 - Year: 2024.
-- DOI/PMID: DOI to verify before citation export.
+- Journal: Aquaculture.
+- DOI/PMID: DOI `10.1016/j.aquaculture.2023.740376`; PMID `38826717`.
 - Species/data: shrimp breeding.
 - GeneAgent use: aquaculture prediction workflow expansion planning.
 - Boundary/risk: crustacean genome structure and family designs differ from livestock.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=Pacific+white+shrimp+genomic+selection+2024)
+- Source links: [DOI](https://doi.org/10.1016/j.aquaculture.2023.740376); [PubMed](https://pubmed.ncbi.nlm.nih.gov/38826717/)
 
-## RECENT-26 Dairy cattle genomic prediction review
+## RECENT-26 Dairy cattle breed-origin genomic prediction
 ```yaml
 knowledge_item.v2:
-  doc_id: "paper_recent_dairy_genomic_prediction_review_2022"
+  doc_id: "paper_recent_dairy_genomic_prediction_breed_origin_2022"
   version: "v2"
   species: "bos_taurus"
   blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Recent dairy cattle genomic prediction review covering reference population updates and reliability.
+- Paper: Guillenea et al. *Genomic prediction in Nordic Red dairy cattle considering breed origin of alleles*.
 - Year: 2022.
-- DOI/PMID: DOI to verify before citation export.
+- Journal: Journal of Dairy Science.
+- DOI/PMID: DOI `10.3168/jds.2021-21173`; PMID `35033341`.
 - Species/data: dairy cattle.
 - GeneAgent use: production genomic prediction operation and rolling reference panel context.
 - Boundary/risk: dairy-specific; beef and small ruminant transfer needs validation.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=dairy+cattle+genomic+prediction+review+2022+Journal+of+Dairy+Science)
+- Source links: [DOI](https://doi.org/10.3168/jds.2021-21173); [PubMed](https://pubmed.ncbi.nlm.nih.gov/35033341/)
 
-## RECENT-27 Beef cattle genomic prediction benchmark
+## RECENT-27 Beef cattle genomic marker prioritization
 ```yaml
 knowledge_item.v2:
-  doc_id: "paper_recent_beef_genomic_prediction_benchmark_2023"
+  doc_id: "paper_recent_beef_genomic_prediction_marker_priority_2025"
   version: "v2"
   species: "bos_taurus"
   blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Beef cattle genomic prediction benchmark for carcass, growth, or fertility traits.
-- Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- Paper: Hay. *Prioritization of SNP markers for genomic prediction in closed beef cattle populations*.
+- Year: 2025.
+- Journal: Translational Animal Science.
+- DOI/PMID: DOI `10.1093/tas/txaf166`; PMID `41551236`.
 - Species/data: beef cattle.
 - GeneAgent use: validation-fold design and trait-specific accuracy expectations.
 - Boundary/risk: breed composition and relatedness leakage are major risks.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=beef+cattle+genomic+prediction+benchmark+2023)
+- Source links: [DOI](https://doi.org/10.1093/tas/txaf166); [PubMed](https://pubmed.ncbi.nlm.nih.gov/41551236/)
 
-## RECENT-28 Pig genomic prediction review
+## RECENT-28 Pig LD-haplotype genomic prediction
 ```yaml
 knowledge_item.v2:
-  doc_id: "paper_recent_pig_genomic_prediction_review_2022"
+  doc_id: "paper_recent_pig_haplotype_genomic_prediction_2022"
   version: "v2"
   species: "sus_scrofa"
   blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Recent pig genomic prediction review or industrial benchmark.
+- Paper: Ye et al. *Genomic Prediction Using LD-Based Haplotypes in Combined Pig Populations*.
 - Year: 2022.
-- DOI/PMID: DOI to verify before citation export.
+- Journal: Frontiers in Genetics.
+- DOI/PMID: DOI `10.3389/fgene.2022.843300`; PMID `35754827`.
 - Species/data: pig breeding.
 - GeneAgent use: pig cross-line prediction and selection-index context.
 - Boundary/risk: terminal/commercial line design may not transfer to nucleus populations.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=pig+genomic+prediction+review+2022)
+- Source links: [DOI](https://doi.org/10.3389/fgene.2022.843300); [PubMed](https://pubmed.ncbi.nlm.nih.gov/35754827/)
 
-## RECENT-29 Poultry genomic prediction review
+## RECENT-29 Poultry haplotype genomic prediction
 ```yaml
 knowledge_item.v2:
-  doc_id: "paper_recent_poultry_genomic_prediction_review_2023"
+  doc_id: "paper_recent_poultry_haplotype_prediction_2023"
   version: "v2"
   species: "gallus_gallus"
   blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Recent poultry genomic prediction review or benchmark.
+- Paper: Ye et al. *Haplotype analysis of genomic prediction by incorporating genomic pathway information based on high-density SNP marker in Chinese yellow-feathered chicken*.
 - Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- Journal: Poultry Science.
+- DOI/PMID: DOI `10.1016/j.psj.2023.102549`; PMID `36907129`.
 - Species/data: chicken breeding.
 - GeneAgent use: poultry high-selection-intensity and family-structure caveats.
 - Boundary/risk: commercial data structures are often proprietary and not reproducible.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=poultry+chicken+genomic+prediction+review+2023)
+- Source links: [DOI](https://doi.org/10.1016/j.psj.2023.102549); [PubMed](https://pubmed.ncbi.nlm.nih.gov/36907129/)
 
 ## RECENT-30 Sheep genomic prediction benchmark
 ```yaml
@@ -624,56 +644,59 @@ knowledge_item.v2:
   blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Sheep genomic prediction benchmark for wool, meat, milk, or disease traits.
-- Year: 2022.
-- DOI/PMID: DOI to verify before citation export.
+- Paper: Araujo et al. *SNP- and haplotype-based single-step genomic predictions for body weight, wool, and reproductive traits in North American Rambouillet sheep*.
+- Year: 2023.
+- Journal: Journal of Animal Breeding and Genetics.
+- DOI/PMID: DOI `10.1111/jbg.12748`; PMID `36408677`.
 - Species/data: sheep breeding.
 - GeneAgent use: small-ruminant prediction and cross-flock validation context.
 - Boundary/risk: breed diversity and flock structure can reduce transfer accuracy.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=sheep+genomic+prediction+benchmark+2022)
+- Source links: [DOI](https://doi.org/10.1111/jbg.12748); [PubMed](https://pubmed.ncbi.nlm.nih.gov/36408677/)
 
-## RECENT-31 Goat genomic prediction benchmark
+## RECENT-31 Goat genomic breeding values
 ```yaml
 knowledge_item.v2:
-  doc_id: "paper_recent_goat_genomic_prediction_benchmark_2024"
+  doc_id: "paper_recent_goat_genomic_breeding_values_2024"
   version: "v2"
   species: "capra_hircus"
   blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Goat genomic prediction benchmark or review.
+- Paper: Negro et al. *A comparison of genetic and genomic breeding values in Saanen and Alpine goats*.
 - Year: 2024.
-- DOI/PMID: DOI to verify before citation export.
+- Journal: animal.
+- DOI/PMID: DOI `10.1016/j.animal.2024.101118`; PMID `38508133`.
 - Species/data: goat breeding.
 - GeneAgent use: small-ruminant reference-population design.
 - Boundary/risk: low reference-population size can dominate accuracy.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=goat+genomic+prediction+benchmark+2024)
+- Source links: [DOI](https://doi.org/10.1016/j.animal.2024.101118); [PubMed](https://pubmed.ncbi.nlm.nih.gov/38508133/)
 
-## RECENT-32 WGS prediction in dairy cattle
+## RECENT-32 Functional-variant genomic prediction in dairy cattle
 ```yaml
 knowledge_item.v2:
-  doc_id: "paper_recent_wgs_prediction_dairy_2023"
+  doc_id: "paper_recent_dairy_functional_variant_prediction_2025"
   version: "v2"
   species: "bos_taurus"
   blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Whole-genome sequence-based genomic prediction in dairy cattle.
-- Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- Paper: Alemu et al. *Comparison of genomic prediction accuracies in dairy cattle lactation traits using five classes of functional variants versus generic SNP*.
+- Year: 2025.
+- Journal: Genetics Selection Evolution.
+- DOI/PMID: DOI `10.1186/s12711-025-00966-2`; PMID `40217496`.
 - Species/data: WGS cattle prediction.
 - GeneAgent use: WGS vs SNP-chip marker-density interpretation.
 - Boundary/risk: WGS accuracy gains are trait/population dependent.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=whole+genome+sequence+genomic+prediction+dairy+cattle+2023)
+- Source links: [DOI](https://doi.org/10.1186/s12711-025-00966-2); [PubMed](https://pubmed.ncbi.nlm.nih.gov/40217496/)
 
 ## RECENT-33 WGS prediction in pigs
 ```yaml
@@ -684,16 +707,17 @@ knowledge_item.v2:
   blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Whole-genome sequence-based genomic prediction in pigs.
+- Paper: Wang et al. *Imputation strategies for low-coverage whole-genome sequencing data and their effects on genomic prediction and genome-wide association studies in pigs*.
 - Year: 2024.
-- DOI/PMID: DOI to verify before citation export.
+- Journal: animal.
+- DOI/PMID: DOI `10.1016/j.animal.2024.101258`; PMID `39126800`.
 - Species/data: WGS pig prediction.
 - GeneAgent use: marker-density and rare-variant context for pig prediction.
 - Boundary/risk: sequencing imputation and variant QC must be transparent.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=whole+genome+sequence+genomic+prediction+pigs+2024)
+- Source links: [DOI](https://doi.org/10.1016/j.animal.2024.101258); [PubMed](https://pubmed.ncbi.nlm.nih.gov/39126800/)
 
 ## RECENT-34 Multi-breed genomic prediction
 ```yaml
@@ -702,12 +726,12 @@ knowledge_item.v2:
   version: "v2"
   species: "multi_species"
   blueprint_scope: quantitative_genetics
-  evidence_level: "peer_reviewed"
-  source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Multi-breed or multi-population genomic prediction benchmark in livestock.
+- Paper: Candidate multi-breed or multi-population genomic prediction benchmark in livestock.
 - Year: 2022.
 - DOI/PMID: DOI to verify before citation export.
 - Species/data: multi-breed livestock.
@@ -724,16 +748,17 @@ knowledge_item.v2:
   blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Multi-trait genomic prediction benchmark in livestock.
+- Paper: Luan et al. *Multi-trait genomic prediction in pigs using single and multistep methods based on the absorption of ungenotyped animals*.
 - Year: 2023.
-- DOI/PMID: DOI to verify before citation export.
+- Journal: Journal of Animal Breeding and Genetics.
+- DOI/PMID: DOI `10.1111/jbg.12772`; PMID `37014360`.
 - Species/data: multiple correlated traits.
 - GeneAgent use: explanation of when correlated traits can improve prediction.
 - Boundary/risk: genetic correlations and missing phenotype patterns must be modeled.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=multi-trait+genomic+prediction+livestock+2023)
+- Source links: [DOI](https://doi.org/10.1111/jbg.12772); [PubMed](https://pubmed.ncbi.nlm.nih.gov/37014360/)
 
 ## RECENT-36 Deep learning genomic prediction livestock
 ```yaml
@@ -742,12 +767,12 @@ knowledge_item.v2:
   version: "v2"
   species: "multi_species"
   blueprint_scope: quantitative_genetics
-  evidence_level: "peer_reviewed"
-  source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Deep learning genomic prediction benchmark in livestock.
+- Paper: Candidate deep learning genomic prediction benchmark in livestock.
 - Year: 2024.
 - DOI/PMID: DOI to verify before citation export.
 - Species/data: livestock genomic prediction.
@@ -762,8 +787,8 @@ knowledge_item.v2:
   version: "v2"
   species: "multi_species"
   blueprint_scope: quantitative_genetics
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -782,8 +807,8 @@ knowledge_item.v2:
   version: "v2"
   species: "multi_species"
   blueprint_scope: quantitative_genetics
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -802,8 +827,8 @@ knowledge_item.v2:
   version: "v2"
   species: "multi_species"
   blueprint_scope: quantitative_genetics
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -822,8 +847,8 @@ knowledge_item.v2:
   version: "v2"
   species: "multi_species"
   blueprint_scope: quantitative_genetics
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -844,16 +869,17 @@ knowledge_item.v2:
   blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Genomic prediction for feed efficiency in livestock.
+- Paper: Madilindi et al. *Technological advances in genetic improvement of feed efficiency in dairy cattle: A review*.
 - Year: 2022.
-- DOI/PMID: DOI to verify before citation export.
-- Species/data: feed efficiency phenotypes.
+- Journal: Livestock Science.
+- DOI/PMID: DOI `10.1016/j.livsci.2022.104871`.
+- Species/data: dairy cattle feed-efficiency phenotypes and breeding technologies.
 - GeneAgent use: trait-definition and recording-cost context.
 - Boundary/risk: environment and diet interactions can reduce transferability.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=genomic+prediction+feed+efficiency+livestock+2022)
+- Source links: [DOI](https://doi.org/10.1016/j.livsci.2022.104871)
 
 ## RECENT-42 Genomic prediction for methane emissions
 ```yaml
@@ -864,16 +890,17 @@ knowledge_item.v2:
   blueprint_scope: quantitative_genetics
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Genomic prediction for methane emission or climate-impact traits in cattle.
+- Paper: Worku. *Unraveling the genetic basis of methane emission in dairy cattle: a comprehensive exploration and breeding approach to lower methane emissions*.
 - Year: 2024.
-- DOI/PMID: DOI to verify before citation export.
+- Journal: Animal Biotechnology.
+- DOI/PMID: DOI `10.1080/10495398.2024.2362677`; PMID `38860914`.
 - Species/data: cattle methane and environmental traits.
 - GeneAgent use: climate-resilience breeding interpretation.
 - Boundary/risk: phenotype measurement protocol is a major limiting factor.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=cattle+genomic+prediction+methane+emissions+2024)
+- Source links: [DOI](https://doi.org/10.1080/10495398.2024.2362677); [PubMed](https://pubmed.ncbi.nlm.nih.gov/38860914/)
 
 ## RECENT-43 GWAS cattle complex traits
 ```yaml
@@ -882,8 +909,8 @@ knowledge_item.v2:
   version: "v2"
   species: "bos_taurus"
   blueprint_scope: knowledge_governance
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -902,8 +929,8 @@ knowledge_item.v2:
   version: "v2"
   species: "sus_scrofa"
   blueprint_scope: knowledge_governance
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -922,8 +949,8 @@ knowledge_item.v2:
   version: "v2"
   species: "gallus_gallus"
   blueprint_scope: knowledge_governance
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -942,8 +969,8 @@ knowledge_item.v2:
   version: "v2"
   species: "small_ruminants"
   blueprint_scope: knowledge_governance
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -962,8 +989,8 @@ knowledge_item.v2:
   version: "v2"
   species: "multi_species"
   blueprint_scope: knowledge_governance
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -982,8 +1009,8 @@ knowledge_item.v2:
   version: "v2"
   species: "multi_species"
   blueprint_scope: knowledge_governance
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1002,8 +1029,8 @@ knowledge_item.v2:
   version: "v2"
   species: "multi_species"
   blueprint_scope: knowledge_governance
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1022,8 +1049,8 @@ knowledge_item.v2:
   version: "v2"
   species: "multi_species"
   blueprint_scope: knowledge_governance
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1042,8 +1069,8 @@ knowledge_item.v2:
   version: "v2"
   species: "sus_scrofa"
   blueprint_scope: knowledge_governance
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1062,8 +1089,8 @@ knowledge_item.v2:
   version: "v2"
   species: "gallus_gallus"
   blueprint_scope: knowledge_governance
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1082,8 +1109,8 @@ knowledge_item.v2:
   version: "v2"
   species: "ovis_aries"
   blueprint_scope: knowledge_governance
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1102,8 +1129,8 @@ knowledge_item.v2:
   version: "v2"
   species: "multi_species"
   blueprint_scope: knowledge_governance
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1122,8 +1149,8 @@ knowledge_item.v2:
   version: "v2"
   species: "multi_species"
   blueprint_scope: knowledge_governance
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1142,8 +1169,8 @@ knowledge_item.v2:
   version: "v2"
   species: "bos_taurus"
   blueprint_scope: population_genetics
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1162,8 +1189,8 @@ knowledge_item.v2:
   version: "v2"
   species: "bos_taurus"
   blueprint_scope: knowledge_governance
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1182,8 +1209,8 @@ knowledge_item.v2:
   version: "v2"
   species: "sus_scrofa"
   blueprint_scope: population_genetics
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1202,8 +1229,8 @@ knowledge_item.v2:
   version: "v2"
   species: "gallus_gallus"
   blueprint_scope: population_genetics
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1222,8 +1249,8 @@ knowledge_item.v2:
   version: "v2"
   species: "small_ruminants"
   blueprint_scope: population_genetics
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1242,8 +1269,8 @@ knowledge_item.v2:
   version: "v2"
   species: "multi_species"
   blueprint_scope: genotype_processing
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1262,8 +1289,8 @@ knowledge_item.v2:
   version: "v2"
   species: "bos_taurus"
   blueprint_scope: genotype_processing
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1282,8 +1309,8 @@ knowledge_item.v2:
   version: "v2"
   species: "sus_scrofa"
   blueprint_scope: genotype_processing
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1302,8 +1329,8 @@ knowledge_item.v2:
   version: "v2"
   species: "multi_species"
   blueprint_scope: genotype_processing
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1322,8 +1349,8 @@ knowledge_item.v2:
   version: "v2"
   species: "multi_species"
   blueprint_scope: genotype_processing
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1342,8 +1369,8 @@ knowledge_item.v2:
   version: "v2"
   species: "multi_species"
   blueprint_scope: genotype_processing
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1362,8 +1389,8 @@ knowledge_item.v2:
   version: "v2"
   species: "multi_species"
   blueprint_scope: population_genetics
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1382,8 +1409,8 @@ knowledge_item.v2:
   version: "v2"
   species: "multi_species"
   blueprint_scope: population_genetics
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1402,8 +1429,8 @@ knowledge_item.v2:
   version: "v2"
   species: "multi_species"
   blueprint_scope: knowledge_governance
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1424,16 +1451,17 @@ knowledge_item.v2:
   blueprint_scope: knowledge_governance
   evidence_level: "peer_reviewed"
   source: "paper"
-  updated_at: "2026-05-26T20:10:00+08:00"
+  updated_at: "2026-06-11T00:00:00+08:00"
   owner: "popgen_quantgen"
 ```
-- Paper: Graph genome methods for livestock or domestic animal genomics.
-- Year: 2024.
-- DOI/PMID: DOI to verify before citation export.
-- Species/data: graph reference, pangenome indexing.
+- Paper: Leonard et al. *Graph construction method impacts variation representation and analyses in a bovine super-pangenome*.
+- Year: 2023.
+- Journal: Genome Biology.
+- DOI/PMID: DOI `10.1186/s13059-023-02969-y`; PMID `37217946`.
+- Species/data: bovine super-pangenome, graph reference, pangenome indexing.
 - GeneAgent use: future V2.x expansion boundary for pangenome-aware pipelines.
 - Boundary/risk: graph coordinates and report interpretation are not yet standardized.
-- Source links: [Google Scholar](https://scholar.google.com/scholar?q=graph+genome+livestock+pangenome+methods+2024)
+- Source links: [DOI](https://doi.org/10.1186/s13059-023-02969-y); [PubMed](https://pubmed.ncbi.nlm.nih.gov/37217946/)
 
 ## RECENT-71 Livestock AI genomics review
 ```yaml
@@ -1442,8 +1470,8 @@ knowledge_item.v2:
   version: "v2"
   species: "multi_species"
   blueprint_scope: knowledge_governance
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```
@@ -1462,8 +1490,8 @@ knowledge_item.v2:
   version: "v2"
   species: "multi_species"
   blueprint_scope: knowledge_governance
-  evidence_level: "peer_reviewed"
-  source: "paper"
+  evidence_level: "expert_opinion"
+  source: "internal_note"
   updated_at: "2026-05-26T20:10:00+08:00"
   owner: "popgen_quantgen"
 ```

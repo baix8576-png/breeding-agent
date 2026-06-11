@@ -79,16 +79,41 @@ def test_recent_pack_distinguishes_verified_and_candidate_cards() -> None:
 
         if needs_refresh:
             candidate_count += 1
+            assert 'evidence_level: "expert_opinion"' in section, heading
+            assert 'source: "internal_note"' in section, heading
             assert "DOI to verify before citation export" in doi_line or re.search(r"`10\.[^`]+`", doi_line), heading
             assert "[Google Scholar]" in source_line, heading
         else:
             verified_count += 1
+            assert 'evidence_level: "peer_reviewed"' in section, heading
+            assert 'source: "paper"' in section, heading
             assert "*" in paper_line, heading
             assert re.search(r"`10\.[^`]+`|PMID `\d+`", doi_line), heading
             assert "[Google Scholar]" not in source_line or source_line.count("](") > 1, heading
 
     assert verified_count >= 8
-    assert candidate_count >= 1
+    assert verified_count + candidate_count == len(recent_sections)
+
+
+def test_recent_pack_has_at_least_half_verified_cards_after_refresh_batch() -> None:
+    text = RECENT_PACK.read_text(encoding="utf-8")
+    sections = re.split(r"(?=^## RECENT-\d+ )", text, flags=re.MULTILINE)
+    cards = [section for section in sections if section.startswith("## RECENT-")]
+    verified = [
+        section
+        for section in cards
+        if "verify before citation export"
+        not in next(line for line in section.splitlines() if line.startswith("- DOI/PMID:"))
+    ]
+    candidates = [
+        section.splitlines()[0]
+        for section in cards
+        if "verify before citation export"
+        in next(line for line in section.splitlines() if line.startswith("- DOI/PMID:"))
+    ]
+
+    assert len(cards) == 72
+    assert len(verified) >= 36, candidates
 
 
 def test_public_knowledge_base_name_is_not_stage_named() -> None:

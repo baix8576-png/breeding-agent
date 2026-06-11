@@ -3098,3 +3098,49 @@ Paste this into a new session:
   - Start B01 by refreshing recent-literature DOI/PMID/source metadata in tracked cards and adding `references/papers/literature_refresh_log_2026.md`.
   - Keep the active goal open until B00-B08 are implemented and verified.
 - resume_first_command: `git status --short --branch`
+
+## Session Update 2026-06-11 11:44 +08:00 (B01 recent literature refresh)
+- intent_domain: `knowledge`
+- stage_id: `Local-first RAG`, `Blueprint Selection`, `Artifact + Report`, `Audit + Memory`
+- module_owner_path: `D:\geneagent\references\papers`, `D:\geneagent\tests\unit\knowledge`, `D:\geneagent\docs`
+- cluster_execution_expected: `false`; this was local literature-card curation and metadata-test work only. No SSH, remote shell, scheduler submit, bio tool execution, raw PDF handling, TEI extraction, chunk/index artifact generation, or raw entity-data movement was performed.
+- contracts_impacted:
+  - No runtime or Pydantic contracts changed.
+  - Existing `knowledge_item.v2` metadata semantics were tightened in content: verified recent cards remain `peer_reviewed/paper`, while unverified candidate cards are now `expert_opinion/internal_note` so the index can distinguish candidate knowledge from citation-export-ready papers.
+  - `tests/unit/knowledge/test_literature_knowledge_pack.py` now requires at least 36 recent cards without `verify before citation export`.
+- files_changed:
+  - `D:\geneagent\references\papers\animal_genomics_recent_high_impact_2022_2026.md`
+  - `D:\geneagent\references\papers\literature_refresh_log_2026.md`
+  - `D:\geneagent\tests\unit\knowledge\test_literature_knowledge_pack.py`
+  - `D:\geneagent\docs\HANDOFF.md`
+- completed_checklist:
+  - [x] Refreshed recent literature metadata from 8 verified cards to 36 verified cards.
+  - [x] Created `references/papers/literature_refresh_log_2026.md` with `knowledge_item.v2` metadata and B01 refresh decisions.
+  - [x] Verified RECENT-09 through RECENT-23, RECENT-25 through RECENT-33, RECENT-35, RECENT-41, RECENT-42, and RECENT-70 with concrete title, year, journal, DOI/PMID where available, and DOI/PubMed source links.
+  - [x] Deferred uncertain cards instead of forcing low-confidence matches.
+  - [x] Changed unverified candidate cards to `evidence_level: "expert_opinion"` and `source: "internal_note"` so downstream retrieval can distinguish them from verified papers.
+  - [x] Added and passed the B01 half-pack verified-card regression test.
+  - [x] Confirmed the refreshed literature files parse through `ReferenceKnowledgeIndexer` without metadata errors.
+  - [x] Confirmed no PDF, TEI, XML, VCF, BAM, FASTQ, FASTA, or other raw data artifacts were added under `references/papers`.
+- not_yet_done_checklist:
+  - [ ] RECENT-24, RECENT-34, RECENT-36, RECENT-37 through RECENT-40, RECENT-43 through RECENT-69 except RECENT-70, and RECENT-71 through RECENT-72 remain candidate cards until later refresh batches verify DOI/PMID and source links.
+  - [ ] `tests/unit/knowledge/test_content_completeness.py` still intentionally fails until all recent candidates are traceable and the planned SOP/operation-guide bridge content is added.
+  - [ ] `tests/unit/knowledge/test_references_coverage.py::test_content_completeness_retrieval_queries_cover_workflow_assets` still intentionally fails until B03/B07 add the planned SOP and retrieval assets.
+  - [ ] Full `pytest -q` is intentionally not expected to pass until later content-completion batches satisfy the B00 gates.
+- verification_commands:
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_literature_knowledge_pack.py` -> pass.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; ReferenceKnowledgeIndexer(Path('references')).build(paths=[RECENT_PACK, literature_refresh_log_2026.md])` -> pass with `items=74`, `chunks=74`, `errors=[]`.
+  - `rg --files references\papers | rg '\.(pdf|tei|xml|vcf|bam|fastq|fq|fasta)$'` -> no matches.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_references_coverage.py` -> expected fail only on `test_content_completeness_retrieval_queries_cover_workflow_assets`, because B03/B07 SOP retrieval targets are not added yet.
+  - `$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; .\.venv\Scripts\python.exe -m pytest -q tests\unit\knowledge\test_content_completeness.py` -> expected fail on remaining candidate cards plus planned SOP/operation-guide bridge gaps.
+  - `git diff --check -- references\papers tests\unit\knowledge\test_literature_knowledge_pack.py` -> pass; Git emitted LF-to-CRLF working-copy warnings only.
+- gate_result: `partial` (B01 literature half-pack refresh gate is complete and passing; full knowledge-content gates remain intentionally open for later batches)
+- known_risks:
+  - Some verified cards are strong peer-reviewed but not all are Tier-1 journals; the log and card boundaries keep them scoped to GeneAgent utility rather than manuscript-grade review authority.
+  - Semantic Scholar broad search hit HTTP 429 during curation; CrossRef/PubMed/DOI metadata were used for accepted cards.
+  - Candidate cards remain useful retrieval placeholders but must not be exported as formal citations.
+- next_actions:
+  - Commit the B01 literature refresh batch.
+  - Start B02 classic literature and method-family crosswalk, or B03 SOP bridge if prioritizing removal of the current B00 content-completeness failures.
+  - Keep the active goal open until B00-B08 are implemented and verified.
+- resume_first_command: `git status --short --branch`
